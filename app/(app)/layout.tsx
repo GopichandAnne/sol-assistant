@@ -22,6 +22,15 @@ export default async function AppLayout({
     redirect("/welcome");
   }
 
+  // A phone on every account: the number that unifies a person's WhatsApp and
+  // console identities. Catches BOTH new accounts (right after store creation) and
+  // existing ones (backfill). /account/phone lives OUTSIDE this layout group so the
+  // gate can't loop. Platform admins are exempt (internal accounts). phoneCaptured
+  // releases the gate even if the number couldn't be claimed as the auth identity.
+  if (!ctx.isPlatformAdmin && !ctx.user.phone && !ctx.user.phoneCaptured) {
+    redirect("/account/phone");
+  }
+
   const capabilities = await getStoreCapabilities(ctx.active.id);
 
   // Product-tour: on the tour store's own console, embed its customer-facing

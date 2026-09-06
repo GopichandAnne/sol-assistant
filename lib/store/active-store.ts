@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { getSessionContext, type StoreAccess } from "@/lib/auth/session";
+import { getSessionContext, type StoreAccess, type SessionUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 export const ACTIVE_STORE_COOKIE = "ar_store";
@@ -25,7 +25,7 @@ export async function getStoreCapabilities(storeId: string): Promise<StoreCapabi
 }
 
 export type ActiveStoreContext = {
-  user: { id: string; email: string | null };
+  user: SessionUser;
   isPlatformAdmin: boolean;
   stores: StoreAccess[];
   active: StoreAccess | null;

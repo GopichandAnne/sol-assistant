@@ -15,8 +15,19 @@ export type StoreAccess = {
   insightsEnabled: boolean;
 };
 
+export type SessionUser = {
+  id: string;
+  email: string | null;
+  /** auth.users.phone (E.164, no "+") — the account phone that unifies a person's
+   *  WhatsApp and console identities. Null until captured. */
+  phone: string | null;
+  /** Set once a number has been captured for the account, even if Supabase couldn't
+   *  claim it as the auth identity (already used elsewhere) — releases the phone gate. */
+  phoneCaptured: boolean;
+};
+
 export type SessionContext = {
-  user: { id: string; email: string | null };
+  user: SessionUser;
   isPlatformAdmin: boolean;
   stores: StoreAccess[];
 };
@@ -96,7 +107,12 @@ export const getSessionContext = cache(
     }));
 
     return {
-      user: { id: user.id, email: user.email ?? null },
+      user: {
+        id: user.id,
+        email: user.email ?? null,
+        phone: user.phone ?? null,
+        phoneCaptured: (user.user_metadata as Record<string, unknown> | null)?.phone_captured === true,
+      },
       isPlatformAdmin,
       stores,
     };
