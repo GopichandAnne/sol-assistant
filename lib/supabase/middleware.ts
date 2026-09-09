@@ -11,6 +11,12 @@ const PUBLIC_PREFIXES = [
   // /api/tour/upgrade are called server-to-server by the chat engine with a signed
   // bearer token — they must not be bounced to /login.
   "/api/tour",
+  // The web channel. /embed is the chat itself, loaded in an iframe on somebody
+  // else's website by people who have no account here and never will \u2014 bouncing it
+  // to /login would make the one channel that needs no setup impossible to use.
+  // It is not unauthenticated in the sense that matters: it opens nothing without a
+  // valid publishable key, and every turn is validated again server-side.
+  "/embed",
 ];
 
 function isPublic(pathname: string) {
