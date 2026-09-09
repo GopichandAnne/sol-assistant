@@ -250,6 +250,47 @@ export type Database = {
           },
         ]
       }
+      assistant_setup: {
+        Row: {
+          approvals: Json
+          channel: string | null
+          created_at: string
+          job: string | null
+          serves: string | null
+          store_id: string
+          systems: Json
+          updated_at: string
+        }
+        Insert: {
+          approvals?: Json
+          channel?: string | null
+          created_at?: string
+          job?: string | null
+          serves?: string | null
+          store_id: string
+          systems?: Json
+          updated_at?: string
+        }
+        Update: {
+          approvals?: Json
+          channel?: string | null
+          created_at?: string
+          job?: string | null
+          serves?: string | null
+          store_id?: string
+          systems?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_setup_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attribution_events: {
         Row: {
           campaign_id: string

@@ -11,77 +11,47 @@ import { Loader2, Mic, Send } from "lucide-react";
 
 type Msg = { role: "owner" | "rani"; text: string };
 interface Config {
-  businessName?: string;
-  businessType?: string;
-  website?: string;
-  address?: string;
-  ownerName?: string;
-  email?: string;
+  assistantName?: string;
+  job?: string;
+  channel?: "teams" | "slack" | "web";
+  systems?: { name?: string; why?: string }[];
+  approvals?: string[];
+  serves?: string;
   personality?: string;
-  storePrompt?: string;
+  assistantPrompt?: string;
   greeting?: string;
   suggestionChips?: string[];
-  captureTypes?: string[];
 }
-type Detect = { kind: "local" | "online"; query: string; name?: string };
-type Detected = Record<string, unknown> | null;
 
 /**
- * The Setup Copilot — conversational store setup. The assistant interviews the owner one
- * plain question at a time (their language, tap-able chips, or voice); when it has
- * enough it writes the whole config and provisions the store. No forms, no prompts.
+ * The setup conversation. It agrees a PLAN rather than finishing setup: what this
+ * assistant is for, where it lives, which systems that implies, and what must never
+ * happen without a person. Most of that cannot be completed in a chat anyway, since
+ * connecting a system usually needs credentials or an admin. The console turns the
+ * plan into a checklist the owner works through afterwards, in any order.
  */
-export function WelcomeChat({ email, initialSite, initialType }: { email: string | null; initialSite?: string; initialType?: string }) {
+export function WelcomeChat({ email }: { email: string | null }) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [chips, setChips] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(true);
-  const [detecting, setDetecting] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
-  // Hold the crawl result so its Q&A pairs can seed the KB at provision time.
-  const detectedRef = useRef<Detected | null>(null);
 
   const supabase = createClient();
 
-  // Look the business up from the one identifier the owner gave (address → Google
-  // Place + hours, or website → homepage read). Fail-soft: a miss just returns null
-  // and the interview carries on asking normally.
-  async function runDetect(detect: Detect): Promise<Detected> {
-    try {
-      const { data } = await supabase.functions.invoke("detect-business", { body: detect });
-      return (data as { detected?: Detected } | null)?.detected ?? null;
-    } catch {
-      return null;
-    }
-  }
-
-  async function turn(next: Msg[], detected?: Detected, afterDetect = false) {
+  async function turn(next: Msg[]) {
     setBusy(true);
     setChips([]);
-    const { data, error } = await supabase.functions.invoke("setup-interview", { body: { messages: next, email, detected, site: initialSite, presetType: initialType } });
+    const { data, error } = await supabase.functions.invoke("setup-interview", { body: { messages: next, email } });
     if (error || !data?.reply) {
       setBusy(false);
-      setDetecting(false);
       toast.error("The assistant had trouble responding", { description: "Please try again." });
       return;
     }
     const withReply: Msg[] = [...next, { role: "rani", text: data.reply as string }];
     setMessages(withReply);
-
-    // Detect handshake: The assistant asked us to look the business up. Run it, then feed the
-    // result back into the very next turn so the assistant confirms instead of interrogates.
-    // `afterDetect` guards against ever looping on a second detect signal.
-    const detect = data.detect as Detect | null;
-    if (detect?.query && !afterDetect) {
-      setDetecting(true);
-      const found = await runDetect(detect);
-      if (found) detectedRef.current = found;
-      setDetecting(false);
-      await turn(withReply, found ?? { found: false }, true);
-      return;
-    }
 
     if (data.done && data.config) {
       await provision(data.config as Config);
@@ -91,32 +61,27 @@ export function WelcomeChat({ email, initialSite, initialType }: { email: string
     }
   }
 
-  // Pull the {q,a} pairs out of the crawl result (local `knowledge.faqs` or
-  // online/B2B `b2b.faqs`) to seed the KB. Shape-tolerant.
-  function detectedFaqs(): { q: string; a: string }[] {
-    const d = detectedRef.current as unknown as {
-      knowledge?: { faqs?: { q?: string; a?: string }[] };
-      b2b?: { faqs?: { q?: string; a?: string }[] };
-    } | null;
-    const raw = d?.knowledge?.faqs ?? d?.b2b?.faqs ?? [];
-    return raw.map((f) => ({ q: String(f?.q ?? ""), a: String(f?.a ?? "") })).filter((f) => f.q && f.a);
-  }
-
   async function provision(config: Config) {
     setProvisioning(true);
     const res = await createMyStore({
-      businessName: String(config.businessName ?? "My business"),
-      businessType: config.businessType || undefined,
-      ownerName: config.ownerName || undefined,
-      email: config.email || email || undefined,
+      businessName: String(config.assistantName ?? "My assistant"),
+      email: email || undefined,
       agent: {
         personality: config.personality || undefined,
-        storePrompt: config.storePrompt || undefined,
+        storePrompt: config.assistantPrompt || undefined,
         greeting: config.greeting || undefined,
         suggestionChips: Array.isArray(config.suggestionChips) ? config.suggestionChips : undefined,
       },
-      captureTypes: Array.isArray(config.captureTypes) ? config.captureTypes : undefined,
-      faqs: detectedFaqs(),
+      // The plan the conversation agreed. Drives the checklist, not the engine.
+      setup: {
+        job: config.job || undefined,
+        channel: config.channel || undefined,
+        systems: Array.isArray(config.systems)
+          ? config.systems.map((x) => ({ name: String(x?.name ?? ""), why: String(x?.why ?? "") })).filter((x) => x.name)
+          : undefined,
+        approvals: Array.isArray(config.approvals) ? config.approvals.map(String).filter(Boolean) : undefined,
+        serves: config.serves || undefined,
+      },
     });
     if (!res.ok) {
       setProvisioning(false);
@@ -178,7 +143,7 @@ export function WelcomeChat({ email, initialSite, initialType }: { email: string
           <div className="flex justify-start">
             <div className="bg-muted text-muted-foreground flex items-center gap-2 rounded-2xl rounded-bl-sm px-3.5 py-2 text-sm">
               <Loader2 className="size-3.5 animate-spin" />
-              {provisioning ? "Setting up your assistant…" : detecting ? "Looking up your business…" : "The assistant is typing…"}
+              {provisioning ? "Setting up your assistant…" : "Typing…"}
             </div>
           </div>
         )}

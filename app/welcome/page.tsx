@@ -18,12 +18,6 @@ export default async function WelcomePage() {
   if (!ctx) redirect("/login");
   if (ctx.stores.length > 0) redirect("/");
 
-  const cookieStore = await cookies();
-  const initialSite = cookieStore.get("ar_intent_site")?.value || undefined;
-  // Every account here is a SaaS/product team, so the interview always skips the
-  // "what kind of business are you?" question rather than asking a question with
-  // one possible answer. (Upstream this came from a signup-door cookie.)
-  const initialType = "saas";
 
   return (
     <div className="flex min-h-dvh items-center justify-center p-6">
@@ -32,11 +26,11 @@ export default async function WelcomePage() {
           <Wordmark className="justify-center text-2xl" />
           <div className="space-y-1">
             <CardTitle className="text-lg">Let&apos;s set up your the assistant</CardTitle>
-            <CardDescription>Just chat with me about your business — type or tap the mic. No forms.</CardDescription>
+            <CardDescription>Tell me what you want it to handle. A few questions, then I&apos;ll make you a checklist.</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
-          <WelcomeChat email={ctx.user.email} initialSite={initialSite} initialType={initialType} />
+          <WelcomeChat email={ctx.user.email} />
         </CardContent>
       </Card>
     </div>

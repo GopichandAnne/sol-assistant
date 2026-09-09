@@ -1,18 +1,24 @@
-// setup-interview — the Setup Copilot's brain (one interview turn).
+// setup-interview — the setup conversation, one turn at a time.
 //
-// Rani warmly interviews a small-business owner (in THEIR language, one plain
-// question at a time, offering tap-able chips) and, when it has enough, writes the
-// whole store config itself. No forms, no prompt-engineering — the owner just talks
-// about their business. Stateless: the client sends the running transcript each
-// turn; we return Rani's next message + chips, whether we're done, and (when done)
-// the config the control panel provisions with (createMyStore).
+// The person setting up an assistant here works in operations or IT, is setting it
+// up for colleagues, and knows the JOB they want done. They usually do not know
+// which systems that touches, and often cannot connect those systems themselves in
+// the next five minutes.
 //
-// PHASE 1 — universal auto-fill. Instead of interrogating the owner for every
-// detail, Rani asks for ONE identifier — a street address (local storefront) or a
-// website (online/product company) — then emits a `detect` signal. The client runs
-// the detect-business lookup (Google Place + hours, or a homepage read) and feeds
-// the result back on the next turn as `detected`, so Rani CONFIRMS the specifics
-// instead of asking them cold. A miss just falls back to asking normally.
+// So this conversation does NOT try to finish setup. It agrees a PLAN: what the
+// assistant is for, where it lives, which systems that implies, what must never
+// happen without a person, and who it serves. The console turns that into a
+// checklist the owner can work through over days, with other people.
+//
+// Deliberately gone from the previous version:
+//   • "What kind of business is it?" — classified into a retail enum (grocery,
+//     liquor, nursery…) whose answer the app then discarded.
+//   • The website/address lookup — it existed to crawl a public site into a
+//     customer-facing FAQ. An internal assistant's knowledge is not on the
+//     marketing site, and its value is in the systems it can reach.
+//
+// Stateless: the client sends the running transcript each turn; we return the next
+// message + chips, whether we are done, and (when done) the plan.
 //
 // verify_jwt stays ON (default) — only a signed-in owner can spend the model.
 
@@ -23,145 +29,79 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
+const json = (b: unknown, s = 200) =>
+  new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 
-const SYS = `You are Rani, setting up your own AI assistant for a small-business owner. You are interviewing them to learn about their business so you can configure yourself for them.
+const SYS = `You are setting up a new AI assistant for someone's team. They work in operations or IT. They are setting this up for colleagues, not for customers.
 
-CRITICAL RULES:
-- The owner may not be comfortable in English and is NOT technical. Be exceptionally warm, simple, and encouraging. Never use jargon (no "prompt", "config", "LLM", "catalog schema").
-- Detect the language the owner writes in and ALWAYS reply in that same language. If unclear, use simple English.
-- Ask ONE short question at a time. Keep each message to 1-2 short sentences.
-- With most questions, offer 2-5 tap-able quick answers in "chips" (in the owner's language) so they can tap instead of type. Always still allow free text.
-- Briefly acknowledge what they said before the next question, so it feels like a real conversation.
+WHO YOU ARE TALKING TO:
+- Comfortable with software, but not necessarily a developer. Do not assume they can write code or call an API.
+- They know the JOB they want done. They usually do NOT know which systems that touches, and often cannot connect those systems themselves right now.
 
-THE FLOW (follow this order):
-1. Ask the business name.
-2. Ask what kind of business it is, so you can tell if they serve customers at a PHYSICAL location or are an ONLINE / software / B2B company. Offer chips.
-3. Ask for the ONE identifier that lets you look them up automatically:
-   - Physical storefront (shop, restaurant, salon, grocery, etc.) → ask for their STREET ADDRESS.
-   - Online / software / product / B2B company → ask for their WEBSITE.
-   When the owner gives you that address or website, DO NOT ask anything else in that turn. Instead set "done": false, write a short warm holding line like "Perfect — give me a moment to look you up…", and set "detect" to {"kind": "local" (address) or "online" (website), "query": "<exactly what they gave you>", "name": "<business name if known>"}.
-4. On the NEXT turn you will be given a [DETECTED] block with what the lookup found:
-   - If it found the business, ACKNOWLEDGE the specifics warmly and CONFIRM them in one message — e.g. "Found you! <name> at <address>, open <hours>. Does that look right?" Offer chips like "Yes, that's right" and "Something's off". Trust these facts; don't re-ask for hours/address you were just shown.
-   - If the block includes DRAFT STORE KNOWLEDGE (departments, services, likely questions), tell the owner you've also set up a starting point for them and SUMMARIZE it in a friendly, compact way (e.g. "I also set you up to answer about your departments — produce, frozen, spices… — plus common questions like fresh sabzi and catering."). Then ask, in the SAME message, one simple confirm: "Want to add or change anything, or shall I go with this?" Offer chips like "Looks good" and "Add something". Keep it to a few lines — do NOT dump the whole list.
-   - If it found NOTHING (or the owner says something's off), don't dwell on it — just continue asking normally.
-5. Fill only the REMAINING gaps. If the draft knowledge already covered what they sell/offer, do NOT re-interrogate — just confirm the tone they want (friendly vs professional) and anything the owner wants to add. Infer sensible defaults for anything they don't know.
-5b. FOR ONLINE / PRODUCT / B2B COMPANIES (a DRAFT PRODUCT KNOWLEDGE block was provided): after confirming the product facts, offer to set up LEAD CAPTURE — tell them Rani can capture the lead types the site suggested (e.g. "demo requests, sales/pricing enquiries, support questions, job applicants") and ask which they want. Put the agreed keys (any of: demo, quote, support, careers) in config.captureTypes. Fold the features, integrations, pricing and prospect Q&A into storePrompt so Rani answers prospects from day one.
-6. When you have enough (often just the confirm + tone after the lookup), set "done": true, write a warm closing message, and produce "config".
+HOW TO TALK:
+- One short question at a time. One or two sentences.
+- Offer 2-5 tap-able quick answers in "chips" wherever it helps. Always still allow free text.
+- Briefly acknowledge what they said before the next question.
+- Plain language. No jargon: no "prompt", "LLM", "schema", "tool-calling".
+- Never use em dashes. Use a period, comma, colon, or parentheses instead.
+
+THE FLOW:
+1. Ask what they want this assistant to handle for their team. This is the most important answer, so let them describe it in their own words. Offer chips of common jobs: "IT and access requests", "HR and policy questions", "Status of tickets and requests", "Finding documents and answers", "Something else".
+2. Ask where their team will talk to it. Chips: "Microsoft Teams", "Slack", "On a web page".
+3. From the job they described, NAME the systems that job would need, and ask if that sounds right. Do not ask them to pick from a list of connectors cold: they will not know. Derive it. For example, access requests imply their identity directory and probably a ticketing system; timesheet chasing implies whatever they track time in. Ask them to confirm or correct the names, and tell them plainly that connecting these can happen later, that it often needs someone who administers that system, and that nothing is blocked in the meantime.
+4. Ask what this assistant must NEVER do on its own, without a person approving. Frame it concretely against the job they described. Chips should be real examples from THEIR job, e.g. "Granting access", "Anything that spends money", "Emailing a client", "Nothing, it can act freely".
+5. Ask who it is for: a specific team, a department, or everyone.
+6. Then set "done": true, write a short closing message telling them you have made them a checklist and they can work through it in any order, and produce "config".
+
+IMPORTANT: do not ask for a website. Do not ask what kind of business it is. Do not ask for an address or opening hours. None of that applies here.
+
+If they ask for something this assistant cannot do, say so plainly rather than agreeing.
 
 In "config":
-- "businessType" MUST be one of: grocery, convenience, liquor, hardware, pet, bookstore, nursery, restaurant, hospitality, rental, realtor, wholesale, church, other. Pick the closest using the detected category/vertical when available.
-- "personality": 2-3 sentences describing how Rani should talk to THIS business's customers (reflect their chosen tone), in ENGLISH (the assistant translates per customer at runtime).
-- "storePrompt": the ENGLISH knowledge the assistant answers customers from. FOLD IN every useful detected fact — address, opening hours, phone, what they sell/offer (or the online company's summary + main offerings), ordering, delivery/pickup, and any policy mentioned. When DRAFT STORE KNOWLEDGE was provided, include ALL of it: the departments/sections (so the bot can direct shoppers), the services, what they're known for, and the likely customer questions with their answers (write these out as Q&A the assistant can use). Be specific and thorough — this is the bot's brain from day one.
-- "suggestionChips": 3-4 short example things a CUSTOMER might tap to start (English), fitting this business.
-- "greeting": a short friendly opening line the assistant says to customers (English).
-- Include "businessName", "website" and "address" when known, and "ownerName"/"email" only if the owner gave them.
+- "assistantName": a short name for this assistant, based on the job (e.g. "IT Helpdesk", "People Ops"). If they gave a name, use theirs.
+- "job": their description of what it should handle, in their own words. Keep their phrasing.
+- "channel": one of "teams", "slack", "web".
+- "systems": array of { "name": string, "why": string } — the systems the job needs and what it would do there. Use the names THEY confirmed. Empty array if genuinely none.
+- "approvals": array of short strings, the actions that must be held for a person. Empty array if they said it can act freely.
+- "serves": who it is for, in a few words.
+- "personality": 2-3 sentences on how it should talk to their colleagues. Internal tools should be direct and efficient. Reflect anything they said about tone.
+- "assistantPrompt": the ENGLISH knowledge and instructions this assistant works from. Fold in the job, who it serves, the systems it will use and what it should do in each, and the approval rules stated as rules it must follow. Be specific: this is the assistant's brief from day one.
+- "suggestionChips": 3-4 short things a COLLEAGUE might tap to start, fitting this job.
+- "greeting": a short opening line it says to a colleague.
 
 Respond with ONLY a JSON object of this exact shape (no markdown, no code fences):
-{"reply": string, "chips": string[], "done": boolean, "detect"?: {"kind": "local"|"online", "query": string, "name"?: string}, "config"?: {"businessName": string, "businessType": string, "website"?: string, "address"?: string, "ownerName"?: string, "email"?: string, "personality": string, "storePrompt": string, "suggestionChips": string[], "greeting": string, "captureTypes"?: string[]}}
+{"reply": string, "chips": string[], "done": boolean, "config"?: {"assistantName": string, "job": string, "channel": "teams"|"slack"|"web", "systems": [{"name": string, "why": string}], "approvals": string[], "serves": string, "personality": string, "assistantPrompt": string, "suggestionChips": string[], "greeting": string}}
 
-"captureTypes" (online/product/B2B only): any of "demo", "quote", "support", "careers" — the lead types the owner agreed to capture. Omit for local storefronts.
-
-If the transcript is empty (first turn), warmly welcome them and ask for the business name, with no chips.`;
-
-/** Render the detect result into a compact block the model confirms from. */
-function formatDetected(d: Record<string, unknown> | null): string {
-  if (!d || d.found === false) {
-    return "\n\n[DETECTED] The automatic lookup found nothing usable. Don't mention the lookup failed — just keep interviewing normally to fill the gaps.";
-  }
-  const lines: string[] = [];
-  const s = (v: unknown) => (typeof v === "string" ? v.trim() : "");
-  if (s(d.name)) lines.push(`Name: ${s(d.name)}`);
-  if (s(d.category)) lines.push(`Category: ${s(d.category)}`);
-  if (s(d.vertical)) lines.push(`Vertical: ${s(d.vertical)}`);
-  if (s(d.address)) lines.push(`Address: ${s(d.address)}`);
-  if (s(d.website)) lines.push(`Website: ${s(d.website)}`);
-  if (s(d.phone)) lines.push(`Phone: ${s(d.phone)}`);
-  if (Array.isArray(d.hours) && d.hours.length) lines.push(`Hours:\n  ${d.hours.map(String).join("\n  ")}`);
-  if (typeof d.rating === "number") lines.push(`Rating: ${d.rating}★ (${d.reviews ?? 0} reviews)`);
-  if (s(d.summary)) lines.push(`What they do: ${s(d.summary)}`);
-  if (Array.isArray(d.offerings) && d.offerings.length) lines.push(`Main offerings: ${d.offerings.map(String).join(", ")}`);
-
-  // P3 — the product/B2B company draft (from the website).
-  const bz = d.b2b as Record<string, unknown> | undefined;
-  if (bz && typeof bz === "object") {
-    const bl: string[] = [];
-    if (Array.isArray(bz.features) && bz.features.length) bl.push(`Key features: ${bz.features.map(String).join(", ")}`);
-    if (Array.isArray(bz.integrations) && bz.integrations.length) bl.push(`Integrations: ${bz.integrations.map(String).join(", ")}`);
-    if (Array.isArray(bz.pricingTiers) && bz.pricingTiers.length) bl.push(`Pricing/plans: ${bz.pricingTiers.map(String).join(", ")}`);
-    if (Array.isArray(bz.faqs) && bz.faqs.length) {
-      const faqs = (bz.faqs as { q?: unknown; a?: unknown }[]).filter((f) => s(f?.q) && s(f?.a)).map((f) => `    • ${s(f.q)} → ${s(f.a)}`);
-      if (faqs.length) bl.push(`Likely prospect questions (with draft answers):\n${faqs.join("\n")}`);
-    }
-    if (Array.isArray(bz.captureTypes) && bz.captureTypes.length) bl.push(`Leads worth capturing: ${bz.captureTypes.map(String).join(", ")}`);
-    if (bl.length) lines.push(`\nDRAFT PRODUCT KNOWLEDGE (built from their website — present as a draft to confirm; put the product facts + Q&A into storePrompt, and set config.captureTypes from the capture list they agree to):\n${bl.join("\n")}`);
-  }
-
-  // Lever A — a draft knowledge base built from the business's public footprint.
-  const k = d.knowledge as Record<string, unknown> | undefined;
-  if (k && typeof k === "object") {
-    const kl: string[] = [];
-    if (Array.isArray(k.departments) && k.departments.length) kl.push(`Departments/sections: ${k.departments.map(String).join(", ")}`);
-    if (Array.isArray(k.services) && k.services.length) kl.push(`Services: ${k.services.map(String).join(", ")}`);
-    if (Array.isArray(k.highlights) && k.highlights.length) kl.push(`Known for: ${k.highlights.map(String).join(", ")}`);
-    if (Array.isArray(k.faqs) && k.faqs.length) {
-      const faqs = (k.faqs as { q?: unknown; a?: unknown }[])
-        .filter((f) => s(f?.q) && s(f?.a))
-        .map((f) => `    • ${s(f.q)} → ${s(f.a)}`);
-      if (faqs.length) kl.push(`Likely customer questions (with draft answers):\n${faqs.join("\n")}`);
-    }
-    if (kl.length) lines.push(`\nDRAFT STORE KNOWLEDGE (built from their website + reviews — present as a draft to confirm, then put it ALL into storePrompt):\n${kl.join("\n")}`);
-  }
-  return `\n\n[DETECTED] The automatic lookup found this — confirm it warmly with the owner and reuse it (don't re-ask for these):\n${lines.join("\n")}`;
-}
+If the transcript is empty (first turn), welcome them briefly and ask question 1, with its chips.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
-  let body: { messages?: { role?: string; text?: string }[]; email?: string; detected?: Record<string, unknown> | null; site?: string; presetType?: string };
-  try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
+  let body: { messages?: { role?: string; text?: string }[]; email?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: "bad json" }, 400);
+  }
 
   const messages = Array.isArray(body.messages) ? body.messages : [];
   const transcript = messages.length === 0
     ? "[The conversation is just starting — no messages yet.]"
-    : messages.map((m) => `${m.role === "owner" ? "Owner" : "Rani"}: ${String(m.text ?? "")}`).join("\n");
-  const known = body.email ? `\n\n[The owner's account email is already ${body.email} — don't ask for it again.]` : "";
-  const detected = body.detected !== undefined ? formatDetected(body.detected) : "";
-  // Grader hand-off: the owner came from our website grader, so we already have
-  // their site — treat them as online and detect from it instead of asking again.
-  const site = typeof body.site === "string" ? body.site.trim() : "";
-  const siteHint = site
-    ? `\n\n[The owner arrived from our website grader, which just graded the site: ${site}. Ask their business name first. IF the name they give is the SAME company as ${site}, treat them as an ONLINE / software / product company and run detect (kind "online", query "${site}") WITHOUT asking for their website — we already have it. BUT if the name they give is clearly a DIFFERENT business than ${site} (a different company name), IGNORE this grader site entirely and follow the normal flow: ask for their own website or address and detect from what THEY give you — never detect ${site} for a business it doesn't belong to.]`
+    : messages.map((m) => `${m.role === "owner" ? "Them" : "You"}: ${String(m.text ?? "")}`).join("\n");
+  const known = body.email
+    ? `\n\n[Their account email is already ${body.email} — don't ask for it again.]`
     : "";
 
-  // Agent/SaaS product signup: the business type is already known (software/online),
-  // so SKIP the "what kind of business is it?" question entirely and set up an
-  // in-product assistant, not a local business.
-  const presetType = typeof body.presetType === "string" ? body.presetType.trim().toLowerCase() : "";
-  const presetHint = ["saas", "product", "software", "agent"].includes(presetType)
-    ? `\n\n[This owner signed up for the AI assistant / agent product — they are an ONLINE / software / product company. Do NOT ask what kind of business it is; skip that question entirely. Ask their product or company name, then (if they give a website or docs URL) run detect (kind "online") from it to draft the assistant's knowledge. Set businessType to "software" (or the closest online type). Fold what the product does into storePrompt so the assistant can answer prospects, keep the tone professional and helpful, and offer to capture demo / sales / support requests (config.captureTypes). After confirming, tell them they can connect their own APIs, MCP servers, and tools — and embed Rani — from the console.]`
-    : "";
-
-  const out = await generateStructured(SYS, `${transcript}${known}${siteHint}${presetHint}${detected}\n\nWrite Rani's next turn as JSON.`);
+  const out = await generateStructured(SYS, `${transcript}${known}\n\nWrite your next turn as JSON.`);
   if (!out || typeof out.reply !== "string") {
-    return json({ reply: "Sorry, I didn't catch that — could you say it once more?", chips: [], done: false });
+    return json({ reply: "Sorry, I didn't catch that. Could you say it once more?", chips: [], done: false });
   }
-
-  // A detect signal is only valid mid-interview (never on the same turn we finish).
-  const det = out.detect && typeof out.detect === "object" && !out.done
-    ? {
-        kind: (out.detect as Record<string, unknown>).kind === "online" ? "online" : "local",
-        query: String((out.detect as Record<string, unknown>).query ?? "").trim(),
-        name: String((out.detect as Record<string, unknown>).name ?? "").trim() || undefined,
-      }
-    : null;
 
   return json({
     reply: out.reply,
     chips: Array.isArray(out.chips) ? out.chips.slice(0, 5).map(String) : [],
     done: out.done === true,
-    detect: det && det.query ? det : null,
     config: out.done === true ? (out.config ?? null) : null,
   });
 });

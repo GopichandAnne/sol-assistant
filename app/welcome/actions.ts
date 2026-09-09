@@ -63,10 +63,17 @@ export async function createMyStore(input: {
   /** Online/B2B only — lead types to capture (demo/quote/support/careers). Seeds
    *  request_types so the bot captures leads from day one (P3). */
   captureTypes?: string[];
-  /** Q&A pairs the assistant detected by crawling the business's site during onboarding.
-   *  Seeded into the KB so the assistant answers from real content on day one
-   *  (instead of an empty knowledge base). */
+  /** Q&A pairs seeded into the KB at creation, when the caller has any. */
   faqs?: { q: string; a: string }[];
+  /** The plan the setup conversation agreed. Drives the checklist, never the
+   *  engine, so a partial plan just yields a shorter list (migration 0115). */
+  setup?: {
+    job?: string;
+    channel?: string;
+    systems?: { name: string; why: string }[];
+    approvals?: string[];
+    serves?: string;
+  };
 }): Promise<CreateResult> {
   const ctx = await getSessionContext();
   if (!ctx) return { ok: false, error: "You're not signed in." };
@@ -136,6 +143,20 @@ export async function createMyStore(input: {
     role: "owner",
   });
   if (memberErr) console.error("[welcome] company_member:", memberErr.message);
+
+  // Record the setup plan. Best-effort: the assistant exists and works without it,
+  // and losing the checklist must never fail account creation.
+  if (input.setup && Object.values(input.setup).some((v) => v !== undefined)) {
+    const { error: setupErr } = await db.from("assistant_setup").insert({
+      store_id: store.id,
+      job: input.setup.job ?? null,
+      channel: input.setup.channel ?? null,
+      systems: input.setup.systems ?? [],
+      approvals: input.setup.approvals ?? [],
+      serves: input.setup.serves ?? null,
+    });
+    if (setupErr) console.error("[welcome] assistant_setup:", setupErr.message);
+  }
 
   // Seed the agent from the business-type preset, then let the Setup Copilot's
   // synthesized config override the persona + business knowledge so the bot is
