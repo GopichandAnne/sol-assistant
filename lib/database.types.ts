@@ -14,6 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_request: {
+        Row: {
+          acted_as: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          detail: string
+          id: string
+          kind: string
+          session_id: string | null
+          status: string
+          store_id: string
+          tool: string
+        }
+        Insert: {
+          acted_as?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          detail?: string
+          id?: string
+          kind: string
+          session_id?: string | null
+          status?: string
+          store_id: string
+          tool: string
+        }
+        Update: {
+          acted_as?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          detail?: string
+          id?: string
+          kind?: string
+          session_id?: string | null
+          status?: string
+          store_id?: string
+          tool?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_request_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_action_log: {
+        Row: {
+          acted_as: string | null
+          id: string
+          kind: string
+          session_id: string | null
+          side_effect: boolean
+          status: string
+          store_id: string
+          tool: string
+          ts: string
+        }
+        Insert: {
+          acted_as?: string | null
+          id?: string
+          kind: string
+          session_id?: string | null
+          side_effect?: boolean
+          status?: string
+          store_id: string
+          tool: string
+          ts?: string
+        }
+        Update: {
+          acted_as?: string | null
+          id?: string
+          kind?: string
+          session_id?: string | null
+          side_effect?: boolean
+          status?: string
+          store_id?: string
+          tool?: string
+          ts?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_action_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_config: {
         Row: {
           created_at: string
@@ -103,6 +197,59 @@ export type Database = {
           },
         ]
       }
+      answer_proofs: {
+        Row: {
+          answer_text: string | null
+          answered: boolean
+          checked_at: string
+          citations: Json
+          cited: boolean
+          competitors: Json
+          engine: string
+          id: string
+          kind: string
+          phase: string
+          question: string
+          store_id: string
+        }
+        Insert: {
+          answer_text?: string | null
+          answered?: boolean
+          checked_at?: string
+          citations?: Json
+          cited?: boolean
+          competitors?: Json
+          engine?: string
+          id?: string
+          kind?: string
+          phase: string
+          question: string
+          store_id: string
+        }
+        Update: {
+          answer_text?: string | null
+          answered?: boolean
+          checked_at?: string
+          citations?: Json
+          cited?: boolean
+          competitors?: Json
+          engine?: string
+          id?: string
+          kind?: string
+          phase?: string
+          question?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answer_proofs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attribution_events: {
         Row: {
           campaign_id: string
@@ -158,6 +305,38 @@ export type Database = {
           },
         ]
       }
+      billing_events: {
+        Row: {
+          created_at: string
+          credits: number | null
+          event_id: string
+          kind: string | null
+          store_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits?: number | null
+          event_id: string
+          kind?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits?: number | null
+          event_id?: string
+          kind?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carts: {
         Row: {
           created_at: string
@@ -199,6 +378,151 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["slug"]
+          },
+        ]
+      }
+      company: {
+        Row: {
+          billing_email: string | null
+          created_at: string
+          id: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          billing_email?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          billing_email?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_ledger: {
+        Row: {
+          company_id: string
+          cost_usd: number | null
+          delta: number
+          id: number
+          reason: string
+          ref: Json | null
+          store_id: string | null
+          ts: string
+        }
+        Insert: {
+          company_id: string
+          cost_usd?: number | null
+          delta: number
+          id?: never
+          reason: string
+          ref?: Json | null
+          store_id?: string | null
+          ts?: string
+        }
+        Update: {
+          company_id?: string
+          cost_usd?: number | null
+          delta?: number
+          id?: never
+          reason?: string
+          ref?: Json | null
+          store_id?: string | null
+          ts?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_ledger_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_member: {
+        Row: {
+          company_id: string
+          created_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_member_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_wallet: {
+        Row: {
+          company_id: string
+          created_at: string
+          granted_credits: number
+          spent_credits: number
+          threshold_credits: number
+          threshold_fired_at: string | null
+          total_cost_usd: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          granted_credits?: number
+          spent_credits?: number
+          threshold_credits?: number
+          threshold_fired_at?: string | null
+          total_cost_usd?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          granted_credits?: number
+          spent_credits?: number
+          threshold_credits?: number
+          threshold_fired_at?: string | null
+          total_cost_usd?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_wallet_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "company"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -317,6 +641,71 @@ export type Database = {
         }
         Relationships: []
       }
+      http_tool: {
+        Row: {
+          action_policy: string
+          api_key: string | null
+          auth: Json
+          base_url: string
+          created_at: string
+          description: string
+          enabled: boolean
+          id: string
+          method: string
+          name: string
+          params: Json
+          path: string
+          request_map: Json
+          side_effect: boolean
+          store_id: string
+          timeout_ms: number
+        }
+        Insert: {
+          action_policy?: string
+          api_key?: string | null
+          auth?: Json
+          base_url: string
+          created_at?: string
+          description: string
+          enabled?: boolean
+          id?: string
+          method?: string
+          name: string
+          params?: Json
+          path: string
+          request_map?: Json
+          side_effect?: boolean
+          store_id: string
+          timeout_ms?: number
+        }
+        Update: {
+          action_policy?: string
+          api_key?: string | null
+          auth?: Json
+          base_url?: string
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          id?: string
+          method?: string
+          name?: string
+          params?: Json
+          path?: string
+          request_map?: Json
+          side_effect?: boolean
+          store_id?: string
+          timeout_ms?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "http_tool_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       identity_providers: {
         Row: {
           active: boolean
@@ -385,6 +774,79 @@ export type Database = {
           },
         ]
       }
+      insights_access_audit: {
+        Row: {
+          actor_email: string | null
+          actor_user_id: string | null
+          created_at: string
+          enabled: boolean
+          id: string
+          store_id: string
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          enabled: boolean
+          id?: string
+          store_id: string
+        }
+        Update: {
+          actor_email?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insights_access_audit_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_gap: {
+        Row: {
+          created_at: string
+          id: string
+          question: string
+          resolved_at: string | null
+          session_id: string | null
+          status: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          question: string
+          resolved_at?: string | null
+          session_id?: string | null
+          status?: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          question?: string
+          resolved_at?: string | null
+          session_id?: string | null
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_gap_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_index: {
         Row: {
           chunk_index: number
@@ -395,6 +857,7 @@ export type Database = {
           embedding_stale: boolean
           id: string
           kind: string
+          members_only: boolean
           source_mime: string | null
           source_path: string | null
           source_ref: string | null
@@ -403,7 +866,6 @@ export type Database = {
           updated_at: string
           valid_from: string | null
           valid_until: string | null
-          members_only: boolean
         }
         Insert: {
           chunk_index?: number
@@ -414,6 +876,7 @@ export type Database = {
           embedding_stale?: boolean
           id?: string
           kind: string
+          members_only?: boolean
           source_mime?: string | null
           source_path?: string | null
           source_ref?: string | null
@@ -422,7 +885,6 @@ export type Database = {
           updated_at?: string
           valid_from?: string | null
           valid_until?: string | null
-          members_only?: boolean
         }
         Update: {
           chunk_index?: number
@@ -433,6 +895,7 @@ export type Database = {
           embedding_stale?: boolean
           id?: string
           kind?: string
+          members_only?: boolean
           source_mime?: string | null
           source_path?: string | null
           source_ref?: string | null
@@ -441,11 +904,108 @@ export type Database = {
           updated_at?: string
           valid_from?: string | null
           valid_until?: string | null
-          members_only?: boolean
         }
         Relationships: [
           {
             foreignKeyName: "knowledge_index_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_server: {
+        Row: {
+          api_key: string | null
+          auth: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          name: string
+          store_id: string
+          url: string
+        }
+        Insert: {
+          api_key?: string | null
+          auth?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name: string
+          store_id: string
+          url: string
+        }
+        Update: {
+          api_key?: string | null
+          auth?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name?: string
+          store_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_server_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_tool: {
+        Row: {
+          action_policy: string
+          created_at: string
+          description: string
+          enabled: boolean
+          id: string
+          input_schema: Json
+          name: string
+          remote_name: string
+          server_id: string
+          side_effect: boolean
+          store_id: string
+        }
+        Insert: {
+          action_policy?: string
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          id?: string
+          input_schema?: Json
+          name: string
+          remote_name: string
+          server_id: string
+          side_effect?: boolean
+          store_id: string
+        }
+        Update: {
+          action_policy?: string
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          id?: string
+          input_schema?: Json
+          name?: string
+          remote_name?: string
+          server_id?: string
+          side_effect?: boolean
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_tool_server_id_fkey"
+            columns: ["server_id"]
+            isOneToOne: false
+            referencedRelation: "mcp_server"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_tool_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
@@ -488,6 +1048,101 @@ export type Database = {
           },
           {
             foreignKeyName: "member_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_social_handles: {
+        Row: {
+          created_at: string
+          handle: string
+          id: string
+          member_id: string
+          platform: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          handle: string
+          id?: string
+          member_id: string
+          platform: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          handle?: string
+          id?: string
+          member_id?: string
+          platform?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_social_handles_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "store_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_social_handles_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oauth_connection: {
+        Row: {
+          access_token: string
+          account_label: string | null
+          connected_by: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          provider: string
+          refresh_token: string | null
+          scope: string | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          account_label?: string | null
+          connected_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          provider: string
+          refresh_token?: string | null
+          scope?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          account_label?: string | null
+          connected_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          scope?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_connection_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
@@ -672,6 +1327,44 @@ export type Database = {
           },
         ]
       }
+      phone_verification_codes: {
+        Row: {
+          attempts: number
+          code: string
+          created_at: string
+          expires_at: string
+          phone: string
+          session_id: string
+          store_id: string
+        }
+        Insert: {
+          attempts?: number
+          code: string
+          created_at?: string
+          expires_at: string
+          phone: string
+          session_id: string
+          store_id: string
+        }
+        Update: {
+          attempts?: number
+          code?: string
+          created_at?: string
+          expires_at?: string
+          phone?: string
+          session_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_verification_codes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_admins: {
         Row: {
           created_at: string
@@ -686,6 +1379,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      pos_item_map: {
+        Row: {
+          external_id: string
+          external_name: string | null
+          provider: string
+          sku: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          external_id: string
+          external_name?: string | null
+          provider: string
+          sku: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          external_id?: string
+          external_name?: string | null
+          provider?: string
+          sku?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_item_map_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -890,276 +1618,6 @@ export type Database = {
             columns: ["initiator_member_id"]
             isOneToOne: false
             referencedRelation: "store_members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      http_tool: {
-        Row: {
-          api_key: string | null
-          auth: Json
-          base_url: string
-          created_at: string
-          description: string
-          enabled: boolean
-          id: string
-          method: string
-          name: string
-          params: Json
-          path: string
-          request_map: Json
-          side_effect: boolean
-          store_id: string
-          timeout_ms: number
-          action_policy: string
-        }
-        Insert: {
-          api_key?: string | null
-          auth?: Json
-          base_url: string
-          created_at?: string
-          description: string
-          enabled?: boolean
-          id?: string
-          method?: string
-          name: string
-          params?: Json
-          path: string
-          request_map?: Json
-          side_effect?: boolean
-          store_id: string
-          timeout_ms?: number
-          action_policy?: string
-        }
-        Update: {
-          api_key?: string | null
-          auth?: Json
-          base_url?: string
-          created_at?: string
-          description?: string
-          enabled?: boolean
-          id?: string
-          method?: string
-          name?: string
-          params?: Json
-          path?: string
-          request_map?: Json
-          side_effect?: boolean
-          store_id?: string
-          timeout_ms?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "http_tool_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      action_request: {
-        Row: {
-          acted_as: string | null
-          created_at: string
-          decided_at: string | null
-          decided_by: string | null
-          detail: string
-          id: string
-          kind: string
-          session_id: string | null
-          status: string
-          store_id: string
-          tool: string
-        }
-        Insert: {
-          acted_as?: string | null
-          created_at?: string
-          decided_at?: string | null
-          decided_by?: string | null
-          detail?: string
-          id?: string
-          kind: string
-          session_id?: string | null
-          status?: string
-          store_id: string
-          tool: string
-        }
-        Update: {
-          acted_as?: string | null
-          created_at?: string
-          decided_at?: string | null
-          decided_by?: string | null
-          detail?: string
-          id?: string
-          kind?: string
-          session_id?: string | null
-          status?: string
-          store_id?: string
-          tool?: string
-        }
-        Relationships: []
-      }
-      agent_action_log: {
-        Row: {
-          acted_as: string | null
-          id: string
-          kind: string
-          session_id: string | null
-          side_effect: boolean
-          status: string
-          store_id: string
-          tool: string
-          ts: string
-        }
-        Insert: {
-          acted_as?: string | null
-          id?: string
-          kind: string
-          session_id?: string | null
-          side_effect?: boolean
-          status?: string
-          store_id: string
-          tool: string
-          ts?: string
-        }
-        Update: {
-          acted_as?: string | null
-          id?: string
-          kind?: string
-          session_id?: string | null
-          side_effect?: boolean
-          status?: string
-          store_id?: string
-          tool?: string
-          ts?: string
-        }
-        Relationships: []
-      }
-      mcp_server: {
-        Row: {
-          api_key: string | null
-          auth: Json
-          created_at: string
-          enabled: boolean
-          id: string
-          name: string
-          store_id: string
-          url: string
-        }
-        Insert: {
-          api_key?: string | null
-          auth?: Json
-          created_at?: string
-          enabled?: boolean
-          id?: string
-          name: string
-          store_id: string
-          url: string
-        }
-        Update: {
-          api_key?: string | null
-          auth?: Json
-          created_at?: string
-          enabled?: boolean
-          id?: string
-          name?: string
-          store_id?: string
-          url?: string
-        }
-        Relationships: []
-      }
-      mcp_tool: {
-        Row: {
-          created_at: string
-          description: string
-          enabled: boolean
-          id: string
-          input_schema: Json
-          name: string
-          remote_name: string
-          server_id: string
-          side_effect: boolean
-          store_id: string
-          action_policy: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string
-          enabled?: boolean
-          id?: string
-          input_schema?: Json
-          name: string
-          remote_name: string
-          server_id: string
-          side_effect?: boolean
-          store_id: string
-          action_policy?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          enabled?: boolean
-          id?: string
-          input_schema?: Json
-          name?: string
-          remote_name?: string
-          server_id?: string
-          side_effect?: boolean
-          store_id?: string
-          action_policy?: string
-        }
-        Relationships: []
-      }
-      oauth_connection: {
-        Row: {
-          access_token: string
-          account_label: string | null
-          connected_by: string | null
-          created_at: string
-          expires_at: string | null
-          id: string
-          provider: string
-          refresh_token: string | null
-          scope: string | null
-          status: string
-          store_id: string
-          updated_at: string
-        }
-        Insert: {
-          access_token: string
-          account_label?: string | null
-          connected_by?: string | null
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          provider: string
-          refresh_token?: string | null
-          scope?: string | null
-          status?: string
-          store_id: string
-          updated_at?: string
-        }
-        Update: {
-          access_token?: string
-          account_label?: string | null
-          connected_by?: string | null
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          provider?: string
-          refresh_token?: string | null
-          scope?: string | null
-          status?: string
-          store_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "oauth_connection_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -1641,6 +2099,65 @@ export type Database = {
           },
         ]
       }
+      slack_events: {
+        Row: {
+          event_id: string
+          seen_at: string
+        }
+        Insert: {
+          event_id: string
+          seen_at?: string
+        }
+        Update: {
+          event_id?: string
+          seen_at?: string
+        }
+        Relationships: []
+      }
+      slack_installs: {
+        Row: {
+          active: boolean
+          approvals_channel: string | null
+          bot_token: string
+          bot_user_id: string | null
+          created_at: string
+          installed_by: string | null
+          store_id: string
+          team_id: string
+          team_name: string | null
+        }
+        Insert: {
+          active?: boolean
+          approvals_channel?: string | null
+          bot_token: string
+          bot_user_id?: string | null
+          created_at?: string
+          installed_by?: string | null
+          store_id: string
+          team_id: string
+          team_name?: string | null
+        }
+        Update: {
+          active?: boolean
+          approvals_channel?: string | null
+          bot_token?: string
+          bot_user_id?: string | null
+          created_at?: string
+          installed_by?: string | null
+          store_id?: string
+          team_id?: string
+          team_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slack_installs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_submissions: {
         Row: {
           campaign_id: string
@@ -1893,6 +2410,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          identity_source: string | null
           ig_handle: string | null
           metadata: Json
           phone: string | null
@@ -1911,6 +2429,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          identity_source?: string | null
           ig_handle?: string | null
           metadata?: Json
           phone?: string | null
@@ -1929,6 +2448,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          identity_source?: string | null
           ig_handle?: string | null
           metadata?: Json
           phone?: string | null
@@ -1950,41 +2470,6 @@ export type Database = {
           },
           {
             foreignKeyName: "store_members_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pos_item_map: {
-        Row: {
-          external_id: string
-          external_name: string | null
-          provider: string
-          sku: string
-          store_id: string
-          updated_at: string
-        }
-        Insert: {
-          external_id: string
-          external_name?: string | null
-          provider: string
-          sku: string
-          store_id: string
-          updated_at?: string
-        }
-        Update: {
-          external_id?: string
-          external_name?: string | null
-          provider?: string
-          sku?: string
-          store_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pos_item_map_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
@@ -2109,179 +2594,6 @@ export type Database = {
           },
         ]
       }
-      wallet: {
-        Row: {
-          created_at: string
-          plan: string
-          plan_credits: number
-          status: string
-          store_id: string
-          topup_credits: number
-          total_cost_usd: number
-          total_spent: number
-          trial_granted: boolean
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          plan?: string
-          plan_credits?: number
-          status?: string
-          store_id: string
-          topup_credits?: number
-          total_cost_usd?: number
-          total_spent?: number
-          trial_granted?: boolean
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          plan?: string
-          plan_credits?: number
-          status?: string
-          store_id?: string
-          topup_credits?: number
-          total_cost_usd?: number
-          total_spent?: number
-          trial_granted?: boolean
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wallet_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: true
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wallet_ledger: {
-        Row: {
-          bucket: string
-          cost_usd: number | null
-          delta: number
-          id: number
-          reason: string
-          ref: Json | null
-          store_id: string
-          ts: string
-        }
-        Insert: {
-          bucket: string
-          cost_usd?: number | null
-          delta: number
-          id?: number
-          reason: string
-          ref?: Json | null
-          store_id: string
-          ts?: string
-        }
-        Update: {
-          bucket?: string
-          cost_usd?: number | null
-          delta?: number
-          id?: number
-          reason?: string
-          ref?: Json | null
-          store_id?: string
-          ts?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wallet_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      billing_events: {
-        Row: {
-          created_at: string
-          credits: number | null
-          event_id: string
-          kind: string | null
-          store_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          credits?: number | null
-          event_id: string
-          kind?: string | null
-          store_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          credits?: number | null
-          event_id?: string
-          kind?: string | null
-          store_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "billing_events_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      answer_proofs: {
-        Row: {
-          answer_text: string | null
-          answered: boolean
-          checked_at: string
-          citations: Json
-          cited: boolean
-          competitors: Json
-          engine: string
-          id: string
-          kind: string
-          phase: string
-          question: string
-          store_id: string
-        }
-        Insert: {
-          answer_text?: string | null
-          answered?: boolean
-          checked_at?: string
-          citations?: Json
-          cited?: boolean
-          competitors?: Json
-          engine?: string
-          id?: string
-          kind?: string
-          phase: string
-          question: string
-          store_id: string
-        }
-        Update: {
-          answer_text?: string | null
-          answered?: boolean
-          checked_at?: string
-          citations?: Json
-          cited?: boolean
-          competitors?: Json
-          engine?: string
-          id?: string
-          kind?: string
-          phase?: string
-          question?: string
-          store_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "answer_proofs_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       store_tokens: {
         Row: {
           active: boolean
@@ -2336,6 +2648,7 @@ export type Database = {
           analytics_sheet_id: string | null
           business_modes: string | null
           business_type: string | null
+          company_id: string | null
           created_at: string
           current_cache_expires_at: string | null
           current_cache_name: string | null
@@ -2343,23 +2656,24 @@ export type Database = {
           id: string
           identity_secret: string | null
           insights_enabled: boolean
+          is_demo: boolean
+          last_embed_at: string | null
           location_folder_id: string | null
           logo_url: string | null
-          last_embed_at: string | null
+          model_name: string | null
+          model_provider: string | null
           pricing_file_id: string | null
           pricing_folder_id: string | null
           product_source: string | null
           prompt_file_id: string | null
           redemption_rules: Json
           session_minutes: number
-          model_name: string | null
-          model_provider: string | null
+          slug: string
           sso_audience: string | null
           sso_email_claim: string | null
           sso_issuer: string | null
           sso_jwks_url: string | null
           sso_name_claim: string | null
-          slug: string
           store_display_name: string | null
           store_folder_id: string | null
           updated_at: string
@@ -2377,6 +2691,7 @@ export type Database = {
           analytics_sheet_id?: string | null
           business_modes?: string | null
           business_type?: string | null
+          company_id?: string | null
           created_at?: string
           current_cache_expires_at?: string | null
           current_cache_name?: string | null
@@ -2384,23 +2699,24 @@ export type Database = {
           id?: string
           identity_secret?: string | null
           insights_enabled?: boolean
+          is_demo?: boolean
+          last_embed_at?: string | null
           location_folder_id?: string | null
           logo_url?: string | null
-          last_embed_at?: string | null
+          model_name?: string | null
+          model_provider?: string | null
           pricing_file_id?: string | null
           pricing_folder_id?: string | null
           product_source?: string | null
           prompt_file_id?: string | null
           redemption_rules?: Json
           session_minutes?: number
-          model_name?: string | null
-          model_provider?: string | null
+          slug: string
           sso_audience?: string | null
           sso_email_claim?: string | null
           sso_issuer?: string | null
           sso_jwks_url?: string | null
           sso_name_claim?: string | null
-          slug: string
           store_display_name?: string | null
           store_folder_id?: string | null
           updated_at?: string
@@ -2418,6 +2734,7 @@ export type Database = {
           analytics_sheet_id?: string | null
           business_modes?: string | null
           business_type?: string | null
+          company_id?: string | null
           created_at?: string
           current_cache_expires_at?: string | null
           current_cache_name?: string | null
@@ -2425,23 +2742,24 @@ export type Database = {
           id?: string
           identity_secret?: string | null
           insights_enabled?: boolean
+          is_demo?: boolean
+          last_embed_at?: string | null
           location_folder_id?: string | null
           logo_url?: string | null
-          last_embed_at?: string | null
+          model_name?: string | null
+          model_provider?: string | null
           pricing_file_id?: string | null
           pricing_folder_id?: string | null
           product_source?: string | null
           prompt_file_id?: string | null
           redemption_rules?: Json
           session_minutes?: number
-          model_name?: string | null
-          model_provider?: string | null
+          slug?: string
           sso_audience?: string | null
           sso_email_claim?: string | null
           sso_issuer?: string | null
           sso_jwks_url?: string | null
           sso_name_claim?: string | null
-          slug?: string
           store_display_name?: string | null
           store_folder_id?: string | null
           updated_at?: string
@@ -2453,7 +2771,62 @@ export type Database = {
           whatsapp_status?: string | null
           whatsapp_waba_id?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "stores_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams_events: {
+        Row: {
+          activity_id: string
+          seen_at: string
+        }
+        Insert: {
+          activity_id: string
+          seen_at?: string
+        }
+        Update: {
+          activity_id?: string
+          seen_at?: string
+        }
         Relationships: []
+      }
+      teams_installs: {
+        Row: {
+          active: boolean
+          created_at: string
+          store_id: string
+          team_name: string | null
+          tenant_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          store_id: string
+          team_name?: string | null
+          tenant_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          store_id?: string
+          team_name?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_installs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       thread_messages: {
         Row: {
@@ -2642,6 +3015,53 @@ export type Database = {
           },
         ]
       }
+      usage_event: {
+        Row: {
+          cost_usd: number
+          credits: number
+          id: number
+          kind: string
+          model: string | null
+          provider: string | null
+          ref: Json | null
+          store_id: string
+          ts: string
+          units: Json
+        }
+        Insert: {
+          cost_usd?: number
+          credits?: number
+          id?: never
+          kind: string
+          model?: string | null
+          provider?: string | null
+          ref?: Json | null
+          store_id: string
+          ts?: string
+          units?: Json
+        }
+        Update: {
+          cost_usd?: number
+          credits?: number
+          id?: never
+          kind?: string
+          model?: string | null
+          provider?: string | null
+          ref?: Json | null
+          store_id?: string
+          ts?: string
+          units?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_event_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       waitlist: {
         Row: {
           business_name: string
@@ -2686,6 +3106,94 @@ export type Database = {
           state?: string | null
         }
         Relationships: []
+      }
+      wallet: {
+        Row: {
+          created_at: string
+          plan: string
+          plan_credits: number
+          status: string
+          store_id: string
+          topup_credits: number
+          total_cost_usd: number
+          total_spent: number
+          trial_granted: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          plan?: string
+          plan_credits?: number
+          status?: string
+          store_id: string
+          topup_credits?: number
+          total_cost_usd?: number
+          total_spent?: number
+          trial_granted?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          plan?: string
+          plan_credits?: number
+          status?: string
+          store_id?: string
+          topup_credits?: number
+          total_cost_usd?: number
+          total_spent?: number
+          trial_granted?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_ledger: {
+        Row: {
+          bucket: string
+          cost_usd: number | null
+          delta: number
+          id: number
+          reason: string
+          ref: Json | null
+          store_id: string
+          ts: string
+        }
+        Insert: {
+          bucket: string
+          cost_usd?: number | null
+          delta: number
+          id?: never
+          reason: string
+          ref?: Json | null
+          store_id: string
+          ts?: string
+        }
+        Update: {
+          bucket?: string
+          cost_usd?: number | null
+          delta?: number
+          id?: never
+          reason?: string
+          ref?: Json | null
+          store_id?: string
+          ts?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       web_verification_codes: {
         Row: {
@@ -2734,6 +3242,9 @@ export type Database = {
         Args: {
           p_brands?: string[]
           p_categories?: string[]
+          p_dietary?: string[]
+          p_exclude_allergens?: string[]
+          p_heat?: string[]
           p_in_stock?: boolean
           p_limit?: number
           p_offset?: number
@@ -2744,6 +3255,16 @@ export type Database = {
           p_show_prices?: boolean
           p_skus?: string[]
           p_store_id: string
+        }
+        Returns: Json
+      }
+      company_alert_target: { Args: { p_store_id: string }; Returns: Json }
+      company_grant_credits: {
+        Args: {
+          p_company_id: string
+          p_credits: number
+          p_reason?: string
+          p_ref?: Json
         }
         Returns: Json
       }
@@ -2758,19 +3279,61 @@ export type Database = {
         Returns: Json
       }
       expire_due_credits: { Args: never; Returns: number }
+      get_chat_history: {
+        Args: { p_limit?: number; p_session_id: string; p_token: string }
+        Returns: Json
+      }
       get_public_store: { Args: { p_slug: string }; Returns: Json }
       is_platform_admin: { Args: never; Returns: boolean }
+      mark_embed_seen: { Args: { p_token: string }; Returns: undefined }
+      meter_record: {
+        Args: {
+          p_cost_usd: number
+          p_credits: number
+          p_kind: string
+          p_model: string
+          p_provider: string
+          p_ref: Json
+          p_store_id: string
+          p_units: Json
+        }
+        Returns: Json
+      }
       next_order_seq: {
         Args: { p_store_slug: string; p_year: number }
         Returns: number
       }
+      popular_products: {
+        Args: { p_limit?: number; p_show_prices?: boolean; p_store_id: string }
+        Returns: Json
+      }
+      popular_products_daypart: {
+        Args: {
+          p_daypart?: string
+          p_limit?: number
+          p_offset_min?: number
+          p_show_prices?: boolean
+          p_store_id: string
+        }
+        Returns: Json
+      }
+      public_answers: { Args: { p_slug: string }; Returns: Json }
+      published_answer_slugs: {
+        Args: never
+        Returns: {
+          slug: string
+          updated_at: string
+        }[]
+      }
       release_due_holds: { Args: never; Returns: number }
+      resolve_store_by_key: { Args: { p_token: string }; Returns: Json }
       reward_balance: {
         Args: { p_member_id: string; p_store_id: string }
         Returns: number
       }
       search_knowledge: {
         Args: {
+          p_is_member?: boolean
           p_limit?: number
           p_query_embedding: string
           p_store_id: string
@@ -2795,13 +3358,17 @@ export type Database = {
           p_store_id: string
         }
         Returns: {
+          allergens: string[]
           brand: string
           category: string
           currency: string
           description: string
+          dietary: string[]
+          heat: string
           id: string
           image_url: string
           in_stock: boolean
+          modifiers: Json
           name: string
           price: number
           score: number
@@ -2810,6 +3377,7 @@ export type Database = {
           unit: string
         }[]
       }
+      store_slug_for_owner_email: { Args: { p_email: string }; Returns: string }
       sweep_expired_member_sessions: { Args: never; Returns: number }
       sweep_idle_carts: { Args: { p_days?: number }; Returns: number }
       user_is_owner: { Args: { p_store_id: string }; Returns: boolean }
@@ -2821,11 +3389,11 @@ export type Database = {
       }
       wallet_topup: {
         Args: {
-          p_store_id: string
           p_credits: number
-          p_reason: string
           p_event_id: string
+          p_reason: string
           p_ref: Json
+          p_store_id: string
         }
         Returns: boolean
       }
@@ -2916,12 +3484,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2945,11 +3513,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2970,11 +3538,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2995,11 +3563,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3012,11 +3580,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

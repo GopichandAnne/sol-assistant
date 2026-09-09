@@ -1,172 +1,246 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Coins, TriangleAlert, Bot, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Coins, Loader2, TrendingUp } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
-  createTopupCheckout,
-  setCreditsEnforced,
-  type BillingConfig,
+  setThreshold,
+  setBillingEmail,
+  type CompanyView,
+  type CreditsView,
   type LedgerRow,
-  type WalletView,
+  type AssistantSpend,
 } from "@/app/(app)/billing/actions";
 
-function fmt(n: number): string {
-  return n.toLocaleString();
-}
-
+/**
+ * Credits for the account. One pool shared by every assistant the account owns.
+ *
+ * There is no checkout here on purpose — credits are granted, not bought in-product.
+ * What the owner controls is the level at which they want warning, and who hears it.
+ */
 export function BillingView({
-  storeId,
-  wallet,
+  company,
+  credits,
   ledger,
-  config,
-  isPlatformAdmin = false,
-  enforced = false,
+  spend,
 }: {
-  storeId: string;
-  wallet: WalletView;
+  company: CompanyView | null;
+  credits: CreditsView | null;
   ledger: LedgerRow[];
-  config: BillingConfig;
-  isPlatformAdmin?: boolean;
-  enforced?: boolean;
+  spend: AssistantSpend[];
 }) {
-  const [busy, setBusy] = useState<string | null>(null);
-  const [enforce, setEnforce] = useState(enforced);
+  if (!company || !credits) return <Unassigned />;
 
-  async function toggleEnforce(next: boolean) {
-    setEnforce(next); // optimistic
-    const res = await setCreditsEnforced(storeId, next);
-    if (!res.ok) {
-      setEnforce(!next);
-      toast.error("Couldn't update", { description: res.error });
-    } else {
-      toast.success(next ? "Enforcement enrolled for this store" : "Enforcement removed");
-    }
-  }
-
-  // Toast the outcome after returning from Stripe.
-  useEffect(() => {
-    try {
-      const p = new URLSearchParams(window.location.search).get("purchase");
-      if (p === "success") toast.success("Payment received — credits are on the way.");
-      else if (p === "cancelled") toast.message("Checkout cancelled — no charge.");
-      if (p) window.history.replaceState({}, "", window.location.pathname);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  async function buy(key: string) {
-    setBusy(key);
-    const res = await createTopupCheckout(storeId, key);
-    if (res.ok) {
-      window.location.href = res.url;
-    } else {
-      setBusy(null);
-      toast.error("Couldn't start checkout", { description: res.error });
-    }
-  }
-
-  const empty = wallet.balance <= 0;
-  const low = !empty && wallet.balance <= 50;
+  const low = credits.remaining <= credits.threshold;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6">
+    <div className="mx-auto max-w-3xl space-y-6 p-6">
       <header>
-        <h1 className="font-display text-2xl italic">Credits &amp; billing</h1>
-        <p className="text-muted-foreground text-sm">Rani runs on credits — top up any time, pay as you go.</p>
+        <h1 className="font-display text-2xl italic">Credits</h1>
+        <p className="text-muted-foreground text-sm">
+          {company.name} — one balance across every assistant on this account.
+        </p>
       </header>
 
-      {/* Balance */}
-      <div className="bg-card rounded-xl border p-5">
-        <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-          <Coins className="size-4" /> Balance
-        </div>
-        <div className="mt-1 flex items-end gap-2">
-          <span className="font-display text-4xl font-extrabold" style={empty ? { color: "#e5484d" } : undefined}>
-            {fmt(wallet.balance)}
-          </span>
-          <span className="text-muted-foreground mb-1 text-sm">credits</span>
-        </div>
-        <div className="text-muted-foreground mt-1 flex items-center gap-1.5 text-xs">
-          <TrendingUp className="size-3.5" /> {fmt(wallet.totalSpent)} used all-time
-        </div>
-        {empty && (
-          <p className="mt-3 rounded-lg px-3 py-2 text-sm" style={{ color: "#b42318", background: "#fef3f2" }}>
-            You&apos;re out of credits. Rani keeps answering for a short grace period — top up to avoid interruption.
-          </p>
-        )}
-        {low && (
-          <p className="mt-3 rounded-lg px-3 py-2 text-sm" style={{ color: "#b54708", background: "#fffaeb" }}>
-            Running low — {fmt(wallet.balance)} credits left.
-          </p>
-        )}
-      </div>
-
-      {/* Buy */}
-      <div className="bg-card rounded-xl border p-5">
-        <h2 className="font-display mb-1 font-bold">Buy credits</h2>
-        {config.configured && config.packs.length > 0 ? (
-          <>
-            <p className="text-muted-foreground mb-4 text-sm">Credits never expire. Bigger packs cost less per credit.</p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {config.packs.map((p) => (
-                <div key={p.key} className="flex flex-col rounded-lg border p-4 text-center">
-                  <div className="font-display text-xl font-extrabold">{fmt(p.credits)}</div>
-                  <div className="text-muted-foreground text-xs">credits</div>
-                  <div className="mt-2 text-sm font-semibold">${p.priceUsd}</div>
-                  <Button size="sm" className="mt-3" onClick={() => buy(p.key)} disabled={busy !== null}>
-                    {busy === p.key ? <Loader2 className="size-4 animate-spin" /> : "Buy"}
-                  </Button>
-                </div>
-              ))}
+      <div className="bg-card rounded-xl border p-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
+              <Coins className="size-4" /> Remaining
             </div>
-          </>
+            <div className="font-display mt-1 text-4xl font-extrabold tabular-nums">
+              {credits.remaining.toLocaleString()}
+            </div>
+          </div>
+          <dl className="text-muted-foreground flex gap-6 text-sm">
+            <div>
+              <dt className="text-xs">Granted</dt>
+              <dd className="text-foreground tabular-nums">{credits.granted.toLocaleString()}</dd>
+            </div>
+            <div>
+              <dt className="text-xs">Used</dt>
+              <dd className="text-foreground tabular-nums">{credits.spent.toLocaleString()}</dd>
+            </div>
+          </dl>
+        </div>
+
+        {low ? (
+          <div className="mt-4 flex gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-900/60 dark:bg-amber-950/40">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-500" />
+            <p className="text-amber-900 dark:text-amber-200">
+              You&apos;re at or below your warning level of {credits.threshold.toLocaleString()} credits.
+              Your assistants are still running and will keep answering — nothing has been switched off.
+              Ask us to top up when you&apos;re ready.
+            </p>
+          </div>
         ) : (
-          <p className="text-muted-foreground text-sm">
-            Buying credits isn&apos;t enabled yet. (Set the Stripe env vars to turn it on.)
+          <p className="text-muted-foreground mt-4 text-sm">
+            We&apos;ll email you when this drops to {credits.threshold.toLocaleString()}.
           </p>
         )}
       </div>
 
-      {/* History */}
-      <div className="bg-card rounded-xl border p-5">
-        <h2 className="font-display mb-3 font-bold">Recent activity</h2>
-        {ledger.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No activity yet.</p>
-        ) : (
-          <ul className="divide-y">
-            {ledger.map((r, i) => (
-              <li key={i} className="flex items-center justify-between gap-3 py-2 text-sm">
-                <span className="min-w-0">
-                  <span className="capitalize">{r.reason.replace(/_/g, " ")}</span>
-                  <span className="text-muted-foreground ml-2 text-xs">{new Date(r.ts).toLocaleDateString()}</span>
-                </span>
-                <span className="shrink-0 font-medium" style={{ color: r.delta >= 0 ? "#0d9488" : "#8a8f98" }}>
-                  {r.delta >= 0 ? "+" : ""}
-                  {fmt(r.delta)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <Settings company={company} credits={credits} />
 
-      {isPlatformAdmin && (
-        <div className="bg-card rounded-xl border p-5">
-          <label className="flex items-center justify-between gap-3">
-            <span>
-              <span className="block text-sm font-medium">Enforce credits on this store</span>
-              <span className="text-muted-foreground text-xs">
-                Admin · grace-then-stop. Only bites when the platform master switch (<code className="bg-muted rounded px-1">CREDITS_ENFORCED</code>) is on and the balance runs past the grace buffer.
-              </span>
-            </span>
-            <Switch checked={enforce} onCheckedChange={toggleEnforce} />
-          </label>
-        </div>
+      {spend.length > 0 && (
+        <section className="bg-card rounded-xl border p-5">
+          <h2 className="font-display font-bold">Where credits went</h2>
+          <p className="text-muted-foreground mb-3 text-xs">Last 30 days, by assistant</p>
+          <ul className="space-y-2">
+            {spend.map((s) => {
+              const top = spend[0].credits || 1;
+              return (
+                <li key={s.assistant} className="flex items-center gap-3 text-sm">
+                  <Bot className="text-muted-foreground size-3.5 shrink-0" />
+                  <span className="w-40 shrink-0 truncate">{s.assistant}</span>
+                  <span className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
+                    <span
+                      className="block h-full rounded-full"
+                      style={{ width: `${Math.max(2, (s.credits / top) * 100)}%`, background: "#0d9488" }}
+                    />
+                  </span>
+                  <span className="text-muted-foreground w-16 shrink-0 text-right tabular-nums">
+                    {s.credits.toLocaleString()}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
+
+      <section className="bg-card rounded-xl border p-5">
+        <h2 className="font-display font-bold">Activity</h2>
+        {ledger.length === 0 ? (
+          <p className="text-muted-foreground mt-3 text-sm">Nothing yet.</p>
+        ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-muted-foreground text-left text-xs">
+                  <th className="pb-2 font-medium">When</th>
+                  <th className="pb-2 font-medium">What</th>
+                  <th className="pb-2 font-medium">Assistant</th>
+                  <th className="pb-2 text-right font-medium">Credits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ledger.map((r, i) => (
+                  <tr key={i} className="border-t">
+                    <td className="text-muted-foreground py-2 whitespace-nowrap">
+                      {new Date(r.ts).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                    </td>
+                    <td className="py-2">{r.reason}</td>
+                    <td className="text-muted-foreground py-2">{r.assistant ?? "—"}</td>
+                    <td
+                      className={`py-2 text-right tabular-nums ${r.delta > 0 ? "text-teal-deep font-medium" : ""}`}
+                    >
+                      {r.delta > 0 ? `+${r.delta.toLocaleString()}` : r.delta.toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function Settings({ company, credits }: { company: CompanyView; credits: CreditsView }) {
+  const router = useRouter();
+  const [threshold, setThresholdValue] = useState(String(credits.threshold));
+  const [email, setEmail] = useState(company.billingEmail ?? "");
+  const [pending, start] = useTransition();
+
+  function saveThreshold() {
+    const n = parseInt(threshold, 10);
+    start(async () => {
+      const res = await setThreshold(company.id, n);
+      if (res.ok) {
+        toast.success(`We'll warn you at ${n.toLocaleString()} credits`);
+        router.refresh();
+      } else toast.error("Couldn't save", { description: res.error });
+    });
+  }
+
+  function saveEmail() {
+    start(async () => {
+      const res = await setBillingEmail(company.id, email);
+      if (res.ok) {
+        toast.success(email.trim() ? `Warnings will go to ${email.trim()}` : "Warnings will go to account owners");
+        router.refresh();
+      } else toast.error("Couldn't save", { description: res.error });
+    });
+  }
+
+  return (
+    <section className="bg-card rounded-xl border p-5">
+      <h2 className="font-display font-bold">Warn me early</h2>
+      <p className="text-muted-foreground mb-4 text-sm">
+        A warning is a heads-up, not a cut-off — your assistants keep answering either way.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="threshold" className="mb-1.5 block text-sm font-medium">
+            Warn me below
+          </label>
+          <div className="flex gap-2">
+            <Input
+              id="threshold"
+              type="number"
+              min={0}
+              value={threshold}
+              onChange={(e) => setThresholdValue(e.target.value)}
+              className="max-w-32"
+            />
+            <Button variant="outline" size="sm" disabled={pending} onClick={saveThreshold}>
+              <Check className="size-4" /> Save
+            </Button>
+          </div>
+          <p className="text-muted-foreground mt-1.5 text-xs">credits remaining</p>
+        </div>
+        <div>
+          <label htmlFor="billing-email" className="mb-1.5 block text-sm font-medium">
+            Send warnings to
+          </label>
+          <div className="flex gap-2">
+            <Input
+              id="billing-email"
+              type="email"
+              placeholder="Account owners"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Button variant="outline" size="sm" disabled={pending} onClick={saveEmail}>
+              <Check className="size-4" /> Save
+            </Button>
+          </div>
+          <p className="text-muted-foreground mt-1.5 text-xs">
+            Leave blank to email everyone who owns this account.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Unassigned() {
+  return (
+    <div className="mx-auto max-w-3xl p-6">
+      <h1 className="font-display text-2xl italic">Credits</h1>
+      <div className="bg-card mt-4 rounded-xl border p-8 text-center">
+        <Coins className="mx-auto size-8" style={{ color: "#0d9488" }} />
+        <h2 className="font-display mt-3 text-xl font-bold">This assistant isn&apos;t on an account yet</h2>
+        <p className="text-muted-foreground mx-auto mt-1 max-w-md text-sm">
+          Its usage is being recorded, but there&apos;s no credit balance to show until it&apos;s attached
+          to an account. Get in touch and we&apos;ll set that up.
+        </p>
+      </div>
     </div>
   );
 }

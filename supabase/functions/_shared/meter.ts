@@ -1,19 +1,23 @@
-// Usage metering — records real COGS per AI action and debits the store's credit
-// wallet (migration 0080). This is the ONE choke point: every cost-bearing call
+// Usage metering — records real COGS per AI action and debits the COMPANY's credit
+// pool (migrations 0110/0111). This is the ONE choke point: every cost-bearing call
 // (Gemini chat, embeddings, vision, OpenAI TTS) routes its cost through here.
 //
-// Design, mirroring Ask Rani Insights:
+// Design:
 //   • Record the RAW UNITS (tokens / chars) in usage_event.units — cost is derived
 //     from a CENTRAL pricing table below, so we can re-price history later.
-//   • Map cost → credits with the SAME cap as Insights (1 credit ≈ $0.02 COGS),
-//     because it's one shared wallet across both products.
+//   • usage_event stays keyed by STORE, so per-assistant burn is still answerable
+//     even though the balance is shared across the account's assistants.
+//   • Map cost → credits at 1 credit ≈ $0.02 COGS.
+//   • Credits are GRANTED, never purchased in-product — there is no processor here.
+//     Crossing the warning threshold emails the account; it never stops a reply.
 //   • FAIL-OPEN: metering never throws into the caller. A billing hiccup must not
-//     block a customer's reply. Phase 1 is record-only (no gating).
+//     block a customer's reply.
 //
 // Rates are calibration PLACEHOLDERS, env-overridable, and only affect the derived
 // cost — the stored units are ground truth. Update the table, not the call sites.
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { sendEmail } from "./email.ts";
 
 /** Where a metered call attributes its cost. Pass this into the provider client;
  *  omit it (e.g. health probes, no store) to skip metering entirely. */
@@ -111,7 +115,7 @@ export async function recordUsage(
 ): Promise<void> {
   try {
     const credits = creditsForCost(costUsd);
-    await ctx.svc.rpc("meter_record", {
+    const { data } = await ctx.svc.rpc("meter_record", {
       p_store_id: ctx.storeId,
       p_kind: ctx.kind,
       p_provider: provider,
@@ -121,8 +125,76 @@ export async function recordUsage(
       p_credits: credits,
       p_ref: ctx.ref ?? null,
     });
+    // meter_record returns { remaining, threshold, crossed } — or null for an
+    // assistant not yet attached to a company (recorded, not billed).
+    const res = data as MeterResult | null;
+    if (res?.crossed) {
+      // Off the critical path: the customer is waiting on a reply, and SMTP is
+      // slow. waitUntil keeps the send alive after the response is returned.
+      background(notifyThresholdCrossed(ctx.svc, ctx.storeId, res.remaining ?? 0, res.threshold ?? 0));
+    }
   } catch (e) {
     console.warn(`[meter] record failed (non-fatal): ${(e as Error)?.message ?? e}`);
+  }
+}
+
+interface MeterResult {
+  remaining?: number;
+  threshold?: number;
+  crossed?: boolean;
+}
+
+/** Run work after the response is sent. Supabase's runtime exposes waitUntil;
+ *  without it, a detached promise is still better than blocking the reply. */
+function background(p: Promise<unknown>): void {
+  const rt = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+  try {
+    if (rt?.waitUntil) {
+      rt.waitUntil(p);
+      return;
+    }
+  } catch {
+    /* fall through to detached */
+  }
+  p.catch(() => {});
+}
+
+/**
+ * Warn the account that its credit balance just fell to/below its threshold.
+ *
+ * Fires ONCE per crossing — meter_record only reports `crossed` on the debit that
+ * takes the balance from above the threshold to at or below it, and a grant that
+ * lifts it back re-arms. So a company sitting under its threshold gets one email,
+ * not one per conversation.
+ *
+ * Recipients are the account's own billing address or its owners/admins, resolved
+ * server-side by company_alert_target. Best-effort throughout: this is a courtesy,
+ * and nothing here may ever surface to a customer mid-chat.
+ */
+async function notifyThresholdCrossed(
+  svc: SupabaseClient,
+  storeId: string,
+  remaining: number,
+  threshold: number,
+): Promise<void> {
+  try {
+    const { data } = await svc.rpc("company_alert_target", { p_store_id: storeId });
+    const target = data as { company_name?: string; emails?: string[] } | null;
+    const emails = (target?.emails ?? []).filter((e) => typeof e === "string" && e.includes("@"));
+    if (!emails.length) return;
+
+    const name = target?.company_name || "your account";
+    const subject = `Credits running low — ${name}`;
+    const body =
+      `${name} has ${remaining.toLocaleString()} credits left, which is at or below ` +
+      `the ${threshold.toLocaleString()}-credit warning level set on the account.\n\n` +
+      `Your assistant is still running and will keep answering — nothing has been ` +
+      `switched off. This is a heads-up so you can top up before it becomes urgent.\n\n` +
+      `You can see usage and adjust the warning level under Credits in your console.`;
+
+    for (const to of emails) await sendEmail(to, subject, body, name);
+  } catch (e) {
+    console.warn(`[meter] threshold notify failed (non-fatal): ${(e as Error)?.message ?? e}`);
   }
 }
 
@@ -151,14 +223,23 @@ export async function creditGateOpen(svc: SupabaseClient, storeId: string): Prom
         .maybeSingle();
       if (String(cfg?.value ?? "").toLowerCase() !== "true") return true; // store not enrolled
     }
+    // Company pool, not the retired per-store wallet (see migration 0111).
+    const { data: s } = await svc
+      .from("stores")
+      .select("company_id")
+      .eq("id", storeId)
+      .maybeSingle();
+    const companyId = (s as { company_id?: string } | null)?.company_id;
+    if (!companyId) return true; // assistant not on an account → never block
+
     const { data } = await svc
-      .from("wallet")
-      .select("plan_credits, topup_credits")
-      .eq("store_id", storeId)
+      .from("company_wallet")
+      .select("granted_credits, spent_credits")
+      .eq("company_id", companyId)
       .maybeSingle();
     if (!data) return true; // no wallet row → never block
-    // NB: balances can be negative (record-only overrun) — don't clamp with num().
-    const balance = (Number(data.plan_credits) || 0) + (Number(data.topup_credits) || 0);
+    // NB: the balance can go negative (record-only overrun) — don't clamp with num().
+    const balance = (Number(data.granted_credits) || 0) - (Number(data.spent_credits) || 0);
     return balance > -grace;
   } catch {
     return true; // fail-open

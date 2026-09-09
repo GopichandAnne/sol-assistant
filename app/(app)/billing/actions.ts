@@ -1,145 +1,219 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { availablePacks, isBillingConfigured, packByKey, priceIdFor } from "@/lib/billing/topups";
 
-const CONSOLE = (process.env.CONSOLE_URL || "https://app.askrani.ai").replace(/\/$/, "");
+/**
+ * Credits, at the ACCOUNT level.
+ *
+ * An account (company) holds one pool of credits shared by every assistant it
+ * owns. Credits are GRANTED — there is no payment processor in this product —
+ * so the owner-facing job here is: show the balance, show where it went, and let
+ * them set the level at which they want warning. Crossing that level emails the
+ * account; it never stops an assistant.
+ *
+ * Balance is derived (granted - spent) rather than stored, so it cannot drift
+ * from company_ledger. See migrations 0110/0111.
+ */
 
 async function requireStoreAccess(storeId: string) {
   const ctx = await getSessionContext();
   const allowed =
     !!ctx && (ctx.isPlatformAdmin || ctx.stores.some((s) => s.id === storeId && s.role === "owner"));
   if (!allowed) throw new Error("Not authorized");
+  return ctx!;
 }
 
-export type WalletView = {
-  balance: number;
-  planCredits: number;
-  topupCredits: number;
-  plan: string;
-  status: string;
-  totalSpent: number;
-};
-
-export async function getWallet(storeId: string): Promise<WalletView> {
-  await requireStoreAccess(storeId);
+/** Owner-or-admin access to a company, verified through a store they own. */
+async function requireCompanyAccess(companyId: string) {
+  const ctx = await getSessionContext();
+  if (!ctx) throw new Error("Not authorized");
+  if (ctx.isPlatformAdmin) return ctx;
   const db = createAdminClient();
   const { data } = await db
-    .from("wallet")
-    .select("plan, plan_credits, topup_credits, status, total_spent")
-    .eq("store_id", storeId)
+    .from("company_member")
+    .select("role")
+    .eq("company_id", companyId)
+    .eq("user_id", ctx.user.id)
     .maybeSingle();
-  const w = data ?? { plan: "free", plan_credits: 0, topup_credits: 0, status: "active", total_spent: 0 };
+  const role = (data as { role?: string } | null)?.role;
+  if (role !== "owner" && role !== "admin") throw new Error("Not authorized");
+  return ctx;
+}
+
+export type CompanyView = {
+  id: string;
+  name: string;
+  billingEmail: string | null;
+};
+
+/** The account an assistant belongs to. Null while it is unassigned — usage is
+ *  still recorded for it, just not billed to anyone. */
+export async function getCompanyForStore(storeId: string): Promise<CompanyView | null> {
+  await requireStoreAccess(storeId);
+  const db = createAdminClient();
+  const { data: store } = await db
+    .from("stores")
+    .select("company_id")
+    .eq("id", storeId)
+    .maybeSingle();
+  const companyId = (store as { company_id?: string } | null)?.company_id;
+  if (!companyId) return null;
+
+  const { data } = await db
+    .from("company")
+    .select("id, name, billing_email")
+    .eq("id", companyId)
+    .maybeSingle();
+  if (!data) return null;
   return {
-    balance: (w.plan_credits ?? 0) + (w.topup_credits ?? 0),
-    planCredits: w.plan_credits ?? 0,
-    topupCredits: w.topup_credits ?? 0,
-    plan: w.plan ?? "free",
-    status: w.status ?? "active",
-    totalSpent: Number(w.total_spent ?? 0),
+    id: data.id as string,
+    name: (data.name as string) ?? "",
+    billingEmail: (data.billing_email as string | null) ?? null,
   };
 }
 
-export type LedgerRow = { ts: string; delta: number; bucket: string; reason: string };
+export type CreditsView = {
+  granted: number;
+  spent: number;
+  remaining: number;
+  threshold: number;
+  /** Set when the low-credit warning has fired and not yet been re-armed by a grant. */
+  warned: boolean;
+  totalCostUsd: number;
+};
 
-export async function getLedger(storeId: string): Promise<LedgerRow[]> {
-  await requireStoreAccess(storeId);
+export async function getCredits(companyId: string): Promise<CreditsView> {
+  await requireCompanyAccess(companyId);
   const db = createAdminClient();
   const { data } = await db
-    .from("wallet_ledger")
-    .select("ts, delta, bucket, reason")
-    .eq("store_id", storeId)
+    .from("company_wallet")
+    .select("granted_credits, spent_credits, threshold_credits, threshold_fired_at, total_cost_usd")
+    .eq("company_id", companyId)
+    .maybeSingle();
+  const w = data ?? {
+    granted_credits: 0, spent_credits: 0, threshold_credits: 0,
+    threshold_fired_at: null, total_cost_usd: 0,
+  };
+  const granted = Number(w.granted_credits ?? 0);
+  const spent = Number(w.spent_credits ?? 0);
+  return {
+    granted,
+    spent,
+    remaining: granted - spent,
+    threshold: Number(w.threshold_credits ?? 0),
+    warned: !!w.threshold_fired_at,
+    totalCostUsd: Number(w.total_cost_usd ?? 0),
+  };
+}
+
+export type LedgerRow = {
+  ts: string;
+  delta: number;
+  reason: string;
+  /** Which assistant spent it — null for account-level movements like a grant. */
+  assistant: string | null;
+};
+
+export async function getLedger(companyId: string): Promise<LedgerRow[]> {
+  await requireCompanyAccess(companyId);
+  const db = createAdminClient();
+  const { data } = await db
+    .from("company_ledger")
+    .select("ts, delta, reason, store_id")
+    .eq("company_id", companyId)
     .order("ts", { ascending: false })
-    .limit(40);
-  return (data ?? []).map((r) => ({
-    ts: r.ts as string,
+    .limit(50);
+  const rows = (data ?? []) as { ts: string; delta: number; reason: string; store_id: string | null }[];
+
+  // Resolve the handful of assistant names in one round-trip rather than per row.
+  const ids = [...new Set(rows.map((r) => r.store_id).filter((v): v is string => !!v))];
+  const names = new Map<string, string>();
+  if (ids.length) {
+    const { data: stores } = await db
+      .from("stores")
+      .select("id, slug, store_display_name")
+      .in("id", ids);
+    for (const s of (stores ?? []) as { id: string; slug: string; store_display_name: string | null }[]) {
+      names.set(s.id, s.store_display_name || s.slug);
+    }
+  }
+
+  return rows.map((r) => ({
+    ts: r.ts,
     delta: Number(r.delta),
-    bucket: (r.bucket as string) ?? "",
-    reason: (r.reason as string) ?? "",
+    reason: r.reason ?? "",
+    assistant: r.store_id ? names.get(r.store_id) ?? null : null,
   }));
 }
 
-/** Whether grace-then-stop enforcement is enrolled for this store (per-store
- *  opt-in; only bites when CREDITS_ENFORCED=true and the wallet is past grace). */
-export async function getCreditsEnforced(storeId: string): Promise<boolean> {
-  await requireStoreAccess(storeId);
+export type AssistantSpend = { assistant: string; credits: number };
+
+/** Where the pool went, per assistant, over the last 30 days. This is why
+ *  usage_event stayed keyed by store when the balance moved up to the account. */
+export async function getSpendByAssistant(companyId: string): Promise<AssistantSpend[]> {
+  await requireCompanyAccess(companyId);
   const db = createAdminClient();
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const { data } = await db
-    .from("agent_config")
-    .select("value")
-    .eq("store_id", storeId)
-    .eq("key", "credits_enforced")
-    .maybeSingle();
-  return String(data?.value ?? "").toLowerCase() === "true";
+    .from("company_ledger")
+    .select("delta, store_id")
+    .eq("company_id", companyId)
+    .lt("delta", 0)
+    .gte("ts", since);
+  const rows = (data ?? []) as { delta: number; store_id: string | null }[];
+  if (!rows.length) return [];
+
+  const byStore = new Map<string, number>();
+  for (const r of rows) {
+    if (!r.store_id) continue;
+    byStore.set(r.store_id, (byStore.get(r.store_id) ?? 0) + Math.abs(Number(r.delta)));
+  }
+  if (!byStore.size) return [];
+
+  const { data: stores } = await db
+    .from("stores")
+    .select("id, slug, store_display_name")
+    .in("id", [...byStore.keys()]);
+  const names = new Map<string, string>();
+  for (const s of (stores ?? []) as { id: string; slug: string; store_display_name: string | null }[]) {
+    names.set(s.id, s.store_display_name || s.slug);
+  }
+
+  return [...byStore.entries()]
+    .map(([id, credits]) => ({ assistant: names.get(id) ?? "Unknown", credits }))
+    .sort((a, b) => b.credits - a.credits);
 }
 
-export async function setCreditsEnforced(
-  storeId: string,
-  on: boolean,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  await requireStoreAccess(storeId);
+export type Result = { ok: true } | { ok: false; error: string };
+
+/** The level at which the account wants warning. Nothing stops at zero. */
+export async function setThreshold(companyId: string, credits: number): Promise<Result> {
+  await requireCompanyAccess(companyId);
+  if (!Number.isFinite(credits) || credits < 0) return { ok: false, error: "Enter a number of credits, 0 or more." };
   const db = createAdminClient();
   const { error } = await db
-    .from("agent_config")
-    .upsert({ store_id: storeId, key: "credits_enforced", value: on ? "true" : "false" }, { onConflict: "store_id,key" });
+    .from("company_wallet")
+    .update({ threshold_credits: Math.floor(credits), updated_at: new Date().toISOString() })
+    .eq("company_id", companyId);
   if (error) return { ok: false, error: error.message };
+  revalidatePath("/billing");
   return { ok: true };
 }
 
-export type BillingConfig = {
-  configured: boolean;
-  packs: { key: string; label: string; credits: number; priceUsd: number }[];
-};
-
-export async function getBillingConfig(): Promise<BillingConfig> {
-  return {
-    configured: isBillingConfigured(),
-    packs: availablePacks().map((p) => ({ key: p.key, label: p.label, credits: p.credits, priceUsd: p.priceUsd })),
-  };
-}
-
-/** Create a Stripe Checkout Session for a top-up pack; returns the hosted URL.
- *  Raw REST (no SDK dep) — mirrors the store-order connector's posture. */
-export async function createTopupCheckout(
-  storeId: string,
-  key: string,
-): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  await requireStoreAccess(storeId);
-  if (!isBillingConfigured()) return { ok: false, error: "Billing isn't set up yet." };
-  const pack = packByKey(key);
-  if (!pack) return { ok: false, error: "Unknown pack." };
-  const priceId = priceIdFor(pack);
-  if (!priceId) return { ok: false, error: "That pack isn't configured in Stripe yet." };
-
-  const params = new URLSearchParams();
-  params.set("mode", "payment");
-  params.set("line_items[0][price]", priceId);
-  params.set("line_items[0][quantity]", "1");
-  params.set("client_reference_id", storeId);
-  params.set("metadata[storeId]", storeId);
-  params.set("metadata[key]", pack.key);
-  params.set("metadata[credits]", String(pack.credits));
-  params.set("success_url", `${CONSOLE}/billing?purchase=success`);
-  params.set("cancel_url", `${CONSOLE}/billing?purchase=cancelled`);
-  params.set("allow_promotion_codes", "true");
-  params.set("billing_address_collection", "required");
-  params.set("invoice_creation[enabled]", "true");
-
-  try {
-    const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
-        "content-type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
-    const data = await res.json();
-    if (!res.ok) return { ok: false, error: data?.error?.message ?? "Checkout failed." };
-    if (!data?.url) return { ok: false, error: "Stripe did not return a checkout URL." };
-    return { ok: true, url: data.url as string };
-  } catch (e) {
-    return { ok: false, error: (e as Error).message };
+export async function setBillingEmail(companyId: string, email: string): Promise<Result> {
+  await requireCompanyAccess(companyId);
+  const clean = email.trim();
+  if (clean && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) {
+    return { ok: false, error: "That doesn't look like an email address." };
   }
+  const db = createAdminClient();
+  const { error } = await db
+    .from("company")
+    .update({ billing_email: clean || null, updated_at: new Date().toISOString() })
+    .eq("id", companyId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/billing");
+  return { ok: true };
 }
