@@ -30,20 +30,14 @@ export async function SetupChecklist() {
   const described = (cfg.data ?? []).some((r) => (r.value ?? "").trim().length > 20);
   const hasKnowledge = (know.count ?? 0) > 0;
 
-  const steps =
-    profileFor(store.businessType) === "saas"
-      ? [
+  // One profile, one checklist. The local-business branch that used to sit here
+  // pointed at /inventory, a route that no longer exists.
+  const steps = [
           { done: described, label: "Set up your assistant", desc: "Tell the assistant about your product and how to sound.", href: "/agent" },
           { done: hasKnowledge, label: "Connect your docs", desc: "Point the assistant at your docs or help centre so it answers from them.", href: "/knowledge" },
           { done: !!embedSeen.data?.last_embed_at, label: "Install the assistant on your site", desc: "Copy your embed snippet and add it to your site — this ticks once the assistant loads there.", href: "/link" },
           { done: String(ansPub.data?.value ?? "").toLowerCase() === "true", label: "Publish your Answers page", desc: "A crawlable page so Google & AI can answer about you.", href: "/link" },
-        ]
-      : [
-          { done: described, label: "Describe your business", desc: "Tell the assistant who you are, what you sell, and how to sound.", href: "/agent" },
-          { done: (prod.count ?? 0) > 0 || hasKnowledge, label: vocab.checklistCatalogLabel, desc: vocab.checklistCatalogDesc, href: "/inventory" },
-          { done: (tok.count ?? 0) > 0, label: "Create your chat link", desc: "Generate the web link / QR code to share with customers.", href: "/link" },
-          { done: (resp.count ?? 0) > 0, label: "Add a responder", desc: "So questions and new orders reach a real person.", href: "/agent" },
-        ];
+  ];
   const doneCount = steps.filter((s) => s.done).length;
   if (doneCount === steps.length) return null;
 

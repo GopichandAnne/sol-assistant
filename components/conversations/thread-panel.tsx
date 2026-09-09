@@ -174,7 +174,7 @@ export function ThreadPanel({
               }
             }}
             rows={1}
-            placeholder="Message the customer as the assistant…  (Enter to send, Shift+Enter for a new line)"
+            placeholder="Reply as the assistant…  (Enter to send, Shift+Enter for a new line)"
             className="max-h-32 min-h-9 flex-1 resize-none"
             disabled={sending}
           />

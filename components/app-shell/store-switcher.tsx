@@ -56,7 +56,7 @@ export function StoreSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[240px]">
-        <DropdownMenuLabel>Switch store</DropdownMenuLabel>
+        <DropdownMenuLabel>Switch assistant</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {stores.map((s) => (
           <DropdownMenuItem

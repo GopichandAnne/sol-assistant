@@ -28,7 +28,7 @@ export function WelcomeForm({ email }: { email: string | null }) {
     });
     if (!res.ok) {
       setBusy(false);
-      toast.error("Couldn't set up your store", { description: res.error });
+      toast.error("Couldn't set up your assistant", { description: res.error });
       return;
     }
     // Full navigation so the server re-reads the new active-store cookie + staff link.

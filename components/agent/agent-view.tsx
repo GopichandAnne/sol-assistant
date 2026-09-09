@@ -22,7 +22,7 @@ const SECTIONS: Section[] = [
   { key: "store_prompt", label: "Store info", hint: "Address, hours, what you sell, anything about the store.", essential: true,
     saas: { label: "Product & company info", hint: "What your product does, key features, plans & pricing, and policies — anything the assistant should know to answer prospects and users." } },
   { key: "language_handling", label: "Language handling", hint: "Which languages to mirror, regional product-name mappings, how to handle mixed languages." },
-  { key: "engage_info", label: "Behavior & engagement", hint: "How the assistant helps — navigation, escalation, feedback, interaction style, store layout. Tip: to trigger a connected tool, describe the situation (e.g. “when a customer asks about their order, look it up”) — not the tool name.",
+  { key: "engage_info", label: "Behavior & engagement", hint: "How the assistant helps — guiding people, when to escalate to a human, and interaction style. Tip: to trigger a connected tool, describe the situation (e.g. “when someone asks about their access request, look it up”) — not the tool name.",
     saas: { hint: "How the assistant helps — guiding users, when to escalate to a human, and interaction style. Tip: to trigger a connected tool or MCP, describe the situation (e.g. “when a customer asks about their invoice or usage, look it up and answer with their real data”) — the assistant maps it to the right tool." } },
   { key: "off_topic_handling", label: "Off-topic handling", hint: "How to gracefully redirect non-shopping questions.",
     saas: { hint: "How to gracefully redirect questions outside what your product covers." } },

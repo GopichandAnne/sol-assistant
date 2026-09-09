@@ -69,7 +69,7 @@ export default async function ActivityPage() {
         <div className="text-sm">
           <p className="font-medium">You can see exactly what the agent did — and who it acted as.</p>
           <p className="text-muted-foreground mt-1">
-            When a tool acts as a signed-in customer, it forwards only that customer&apos;s verified identity —
+            When a tool acts as a signed-in user, it forwards only that person&apos;s verified identity —
             The assistant (and the model) never see your credentials or their token. Reads and writes are labeled; writes
             require the customer&apos;s confirmation first.
           </p>
@@ -80,7 +80,7 @@ export default async function ActivityPage() {
 
       <div className="grid grid-cols-3 gap-3">
         <Stat label="Actions logged" value={total} />
-        <Stat label="As a signed-in customer" value={asCustomer} />
+        <Stat label="As the signed-in user" value={asCustomer} />
         <Stat label="Writes (actions taken)" value={writes} />
       </div>
 

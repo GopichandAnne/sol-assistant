@@ -73,7 +73,7 @@ export function QuickTool({ isOwner }: { isOwner: boolean }) {
             <Input
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
-              placeholder="Look up an order's status when a customer asks where their order is."
+              placeholder="Look up a ticket's status when someone asks about their request."
               disabled={!isOwner}
             />
           </div>
@@ -118,7 +118,7 @@ export function QuickTool({ isOwner }: { isOwner: boolean }) {
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="radio" name="qt-auth" className="accent-teal size-4" checked={auth === "identity"} onChange={() => setAuth("identity")} disabled={!isOwner} />
-              Act as the signed-in customer <span className="text-muted-foreground text-xs">(forwards their verified identity — needs embedded sign-in on)</span>
+              Act as the signed-in user <span className="text-muted-foreground text-xs">(forwards their verified identity — needs embedded sign-in on)</span>
             </label>
             <p className="text-muted-foreground text-xs">
               Needs an API key? Use <span className="font-medium">Connect a custom API</span> below instead — keys are encrypted there.

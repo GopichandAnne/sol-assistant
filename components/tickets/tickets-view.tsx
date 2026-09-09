@@ -99,7 +99,7 @@ export function TicketsView({
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search ticket #, customer, or question"
+          placeholder="Search ticket #, person, or question"
           className="pl-8"
         />
       </div>
@@ -134,7 +134,7 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
   const [answer, setAnswer] = useState("");
   const [sending, startSend] = useTransition();
   const customer =
-    ticket.customer_name?.trim() || ticket.customer_phone || "Unknown customer";
+    ticket.customer_name?.trim() || ticket.customer_phone || "Unknown";
   const isOpen = ticket.status === "created" || ticket.status === "sent_to_owner";
 
   function send() {
@@ -143,7 +143,7 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
     startSend(async () => {
       const res = await answerTicket(ticket.ticket_id, a);
       if (res.ok) {
-        toast.success("Answer sent to the customer");
+        toast.success("Answer sent");
         setAnswer("");
         router.refresh();
       } else {
@@ -199,7 +199,7 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             rows={2}
-            placeholder="Type your answer — the assistant sends it to the customer as you…"
+            placeholder="Type your answer — the assistant sends it to them as you…"
             disabled={sending}
           />
           <div className="flex justify-end">

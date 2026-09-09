@@ -242,12 +242,12 @@ function OnboardDialog({ onDone }: { onDone: () => void }) {
     });
     setPending(false);
     if (res.ok) {
-      toast.success("Store created", { description: `Slug: ${res.slug}` });
+      toast.success("Assistant created", { description: `Slug: ${res.slug}` });
       reset();
       setOpen(false);
       onDone();
     } else {
-      toast.error("Couldn't create store", { description: res.error });
+      toast.error("Couldn't create the assistant", { description: res.error });
     }
   }
 
@@ -260,7 +260,7 @@ function OnboardDialog({ onDone }: { onDone: () => void }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Onboard a new store</DialogTitle>
+          <DialogTitle>Create a new assistant</DialogTitle>
           <DialogDescription>
             Creates the store. Assign an owner and connect WhatsApp afterward.
           </DialogDescription>
@@ -313,7 +313,7 @@ function OnboardDialog({ onDone }: { onDone: () => void }) {
 
         <DialogFooter>
           <Button onClick={submit} disabled={pending}>
-            {pending ? "Creating…" : "Create store"}
+            {pending ? "Creating…" : "Create assistant"}
           </Button>
         </DialogFooter>
       </DialogContent>

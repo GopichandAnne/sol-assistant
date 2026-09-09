@@ -57,7 +57,7 @@ export function TeamManager({ storeId }: { storeId: string; storeName?: string }
     if (res.ok) {
       toast.success(res.invited ? "Invitation sent" : `${role === "owner" ? "Owner" : "Staff"} added`, {
         description: res.invited
-          ? "We emailed them a sign-in link — they'll see this store the first time they log in."
+          ? "We emailed them a sign-in link — they'll see this assistant the first time they sign in."
           : undefined,
       });
       setEmail("");
@@ -87,7 +87,7 @@ export function TeamManager({ storeId }: { storeId: string; storeName?: string }
     const res = await removeTeamMember({ storeId, userId: m.userId });
     setBusy(false);
     if (res.ok) {
-      toast.success("Removed from the store");
+      toast.success("Removed");
       refresh();
     } else {
       toast.error("Couldn't remove", { description: res.error });

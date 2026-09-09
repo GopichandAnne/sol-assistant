@@ -7,7 +7,7 @@ export function NoAccess({ email }: { email: string | null }) {
     <div className="bg-background flex min-h-dvh items-center justify-center p-6">
       <div className="max-w-sm space-y-4 text-center">
         <Wordmark className="justify-center" />
-        <h1 className="text-lg font-semibold">No store access yet</h1>
+        <h1 className="text-lg font-semibold">No access yet</h1>
         <p className="text-muted-foreground text-sm">
           You&apos;re signed in as{" "}
           <span className="text-foreground font-medium">{email ?? "unknown"}</span>

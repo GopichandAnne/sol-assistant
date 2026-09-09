@@ -100,7 +100,7 @@ export function MessageList({
                   inbound ? "text-muted-foreground" : "text-teal-deep/70 dark:text-muted-foreground",
                 )}
               >
-                {m.sender ?? (inbound ? "customer" : "agent")} ·{" "}
+                {m.sender ?? (inbound ? "user" : "assistant")} ·{" "}
                 {formatDateTime(m.created_at)}
               </p>
             </div>

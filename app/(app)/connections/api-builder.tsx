@@ -48,7 +48,7 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
   }
 
   async function build() {
-    if (!isOwner) { toast.error("Only the store owner can add tools."); return; }
+    if (!isOwner) { toast.error("Only the account owner can add tools."); return; }
     if (!url.trim()) { toast.error("Paste your API's OpenAPI URL."); return; }
     setBusy(true);
     const supabase = createClient();
@@ -78,10 +78,10 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
     if (isIdentity) {
       if (!identityReady) {
         toast.warning(`Added ${created.length} tool${created.length === 1 ? "" : "s"} — sign-in setup needed`, {
-          description: "These answer as the signed-in customer, but this store doesn't have embedded sign-in turned on yet. Set your Embed Secret and require sign-in, then they'll work on your site.",
+          description: "These answer as the signed-in user, but this assistant doesn't have signed-in access turned on yet. Set your Embed Secret and require sign-in, then they'll work on your site.",
         });
       } else {
-        toast.success(`Added ${created.length} tool${created.length === 1 ? "" : "s"} — answers as the signed-in customer`, {
+        toast.success(`Added ${created.length} tool${created.length === 1 ? "" : "s"} — answers as the signed-in user`, {
           description: created.map((t) => t.name).join(", "),
         });
       }
@@ -154,7 +154,7 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
         <label className="flex items-start gap-2 rounded-lg bg-muted/50 p-2.5 text-sm">
           <input type="checkbox" className="mt-0.5 size-4" checked={asCustomer} onChange={(e) => setAsCustomer(e.target.checked)} disabled={!isOwner || busy || authProvider !== "none"} />
           <span>
-            <span className="font-medium">This is my own app — answer as the signed-in customer</span>
+            <span className="font-medium">This is my own app — answer as the signed-in user</span>
             <span className="text-muted-foreground block text-xs">
               The assistant calls your API as whoever is logged in on your site (their orders, their account), using the sign-in they already have — no API key, and it never sees their password. Needs embedded sign-in turned on.
             </span>
@@ -194,7 +194,7 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
             <p className="text-muted-foreground text-xs">
               {identityClaim === "token"
                 ? "Sent as Authorization: Bearer <token>. Best when the API is yours and checks the token itself."
-                : "Sent to a trusted API that just needs to know which customer is asking — the value is the one you verified at sign-in, never something the model made up."}
+                : "Sent to a trusted API that just needs to know which user is asking — the value is the one you verified at sign-in, never something the model made up."}
             </p>
           </div>
         )}
@@ -225,7 +225,7 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
                   size="sm"
                   disabled={!isOwner}
                   onClick={() => setPolicy(t.id, policies[t.id] !== "hold")}
-                  title={policies[t.id] === "hold" ? "Held — the assistant flags this for a person instead of running it. Click to allow." : "Auto — the assistant can run this after the customer confirms. Click to require a person."}
+                  title={policies[t.id] === "hold" ? "Held — the assistant flags this for a person instead of running it. Click to allow." : "Auto — the assistant can run this after the user confirms. Click to require a person."}
                 >
                   {policies[t.id] === "hold" ? <><Lock className="size-3.5" /> Hold</> : "Auto"}
                 </Button>

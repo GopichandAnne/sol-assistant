@@ -171,7 +171,7 @@ export function McpServers({
               <SelectItem value="none">No auth</SelectItem>
               <SelectItem value="apikey">API key</SelectItem>
               <SelectItem value="oauth" disabled={connectedProviders.length === 0}>Connected app (OAuth)</SelectItem>
-              <SelectItem value="identity">Signed-in customer</SelectItem>
+              <SelectItem value="identity">Signed-in user</SelectItem>
             </SelectContent>
           </Select>
           {authType === "apikey" && (
@@ -203,7 +203,7 @@ export function McpServers({
         </div>
         {authType === "identity" && (
           <p className="text-muted-foreground text-xs">
-            These tools run <span className="font-medium">as the signed-in customer</span> — turn on sign-in in Members &amp; access.
+            These tools run <span className="font-medium">as the signed-in user</span> — turn on sign-in in Members &amp; access.
             Tool discovery runs without sign-in, so the server must let you list its tools unauthenticated.
           </p>
         )}

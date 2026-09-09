@@ -6,7 +6,7 @@ import { WelcomeChat } from "./welcome-chat";
 import { Wordmark } from "@/components/app-shell/wordmark";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const metadata: Metadata = { title: "Set up your store · The Assistant" };
+export const metadata: Metadata = { title: "Set up your assistant · The Assistant" };
 export const dynamic = "force-dynamic";
 
 /**

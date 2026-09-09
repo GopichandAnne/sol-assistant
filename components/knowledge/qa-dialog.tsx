@@ -87,7 +87,7 @@ export function QADialog({
               rows={2}
               required
               autoFocus
-              placeholder="What do customers ask?"
+              placeholder="What do people ask?"
             />
           </div>
           <div className="space-y-1.5">

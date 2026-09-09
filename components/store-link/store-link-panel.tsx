@@ -299,7 +299,7 @@ export function StoreLinkPanel({
       setChips(res.chips.join("\n"));
       toast.success("Drafted from your site — review and Save");
     } else if (res.ok) {
-      toast.error("Couldn't compose questions — add more store info first.");
+      toast.error("Couldn't compose questions — add more information first.");
     } else {
       toast.error("Couldn't generate", { description: res.error });
     }
@@ -501,7 +501,7 @@ export function StoreLinkPanel({
           <div className="bg-muted flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full border">
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt="Store logo" className="size-full object-cover" />
+              <img src={logoUrl} alt="Logo" className="size-full object-cover" />
             ) : (
               <ImagePlus className="text-muted-foreground size-5" />
             )}

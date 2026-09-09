@@ -50,7 +50,7 @@ export function ConnectionsClient({
   }, []);
 
   async function connect(provider: string) {
-    if (!isOwner) { toast.error("Only the store owner can connect accounts."); return; }
+    if (!isOwner) { toast.error("Only the account owner can connect accounts."); return; }
     setBusy(provider);
     const supabase = createClient();
     const { data, error } = await supabase.functions.invoke("oauth-start", { body: { storeSlug, provider } });
@@ -113,7 +113,7 @@ export function ConnectionsClient({
         );
       })}
       {!isOwner && (
-        <p className="text-muted-foreground text-xs">Only the store owner can add or remove connections.</p>
+        <p className="text-muted-foreground text-xs">Only the account owner can add or remove connections.</p>
       )}
     </div>
   );

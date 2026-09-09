@@ -26,7 +26,7 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "The Assistant",
-  description: "Console for The Assistant, the AI agent that answers your customers and acts in your product. By Sol Consulting.",
+  description: "Console for The Assistant, the AI agent that answers questions and takes action in the systems your team already uses. By Sol Consulting.",
 };
 
 export default function RootLayout({

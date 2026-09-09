@@ -28,7 +28,7 @@ export async function saveQuickTool(input: QuickToolInput): Promise<{ ok: boolea
   const ctx = await getActiveStore();
   if (!ctx?.active) return { ok: false, error: "You're not signed in." };
   if (ctx.active.role !== "owner" && !ctx.isPlatformAdmin) {
-    return { ok: false, error: "Only the store owner can add tools." };
+    return { ok: false, error: "Only the account owner can add tools." };
   }
 
   const name = input.name.trim().toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
