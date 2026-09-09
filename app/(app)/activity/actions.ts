@@ -1,41 +1,48 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getActiveStore } from "@/lib/store/active-store";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { callBotAdmin } from "@/lib/knowledge/bot-admin";
+
+export type DecideResult =
+  | { ok: true; completed: boolean; told: boolean; note?: string }
+  | { ok: false; error: string };
 
 /**
- * Resolve a held action request — the owner-side of the hold → ticket → notify
- * loop. Marks the pending request approved or declined and records who decided.
+ * Resolve a held action — the owner's side of the hold → approve → act loop.
  *
- * v1 records the DECISION; it does not re-run the held tool. Approving is the
- * owner's sign-off — the write is then completed in their system (the same manual
- * step "a person approves" has always meant). This keeps a held action from ever
- * executing without an explicit human in the loop.
+ * Approving is not a note in a log: it runs the call it approved, as the person it
+ * was raised for, and tells them the outcome. That work happens in the edge
+ * function, which owns the tool executors and the credentials they decrypt; this
+ * action does the authorization and hands it over.
+ *
+ * The two facts it returns are separate on purpose. `completed` is whether the
+ * action actually ran — an approved-but-failed action must never read as done, or
+ * an owner will believe a change landed that did not.
  */
 export async function decideActionRequest(
   id: string,
   decision: "approved" | "declined",
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<DecideResult> {
   const ctx = await getActiveStore();
   if (!ctx?.active) return { ok: false, error: "Not signed in." };
   const isOwner = ctx.isPlatformAdmin || ctx.active.role === "owner";
   if (!isOwner) return { ok: false, error: "Only an owner can resolve approvals." };
 
-  const db = createAdminClient();
-  // Scope the update to THIS store + still-pending, so a stale click can't flip a
-  // request that belongs to another store or was already decided.
-  const { data, error } = await db
-    .from("action_request")
-    .update({
-      status: decision,
-      decided_by: ctx.user.email ?? "an owner",
-      decided_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .eq("store_id", ctx.active.id)
-    .eq("status", "pending")
-    .select("id");
-  if (error) return { ok: false, error: error.message };
-  if (!data || data.length === 0) return { ok: false, error: "Already resolved." };
-  return { ok: true };
+  const res = await callBotAdmin({
+    action: "resolve_action",
+    store_slug: ctx.active.slug,
+    request_id: id,
+    decision,
+    by: ctx.user.email ?? "an owner",
+  });
+  if (!res.ok) return { ok: false, error: res.error };
+
+  const data = res.data as { ok?: boolean; completed?: boolean; told?: boolean; note?: string; error?: string };
+  if (!data.ok) {
+    return { ok: false, error: data.error === "already resolved" ? "Someone already resolved that one." : (data.error ?? "Couldn't resolve it.") };
+  }
+
+  revalidatePath("/activity");
+  return { ok: true, completed: !!data.completed, told: !!data.told, note: data.note };
 }

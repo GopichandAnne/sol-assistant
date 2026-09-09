@@ -29,3 +29,36 @@ export async function loadHistory(
   const rows = (data ?? []).slice().reverse();
   return shapeHistory(rows);
 }
+
+/**
+ * Record something the assistant said OUTSIDE a turn, so the next turn knows it.
+ *
+ * The history the model sees is the turn log, which only has rows for
+ * question-and-answer pairs. Everything the assistant says between turns — a
+ * colleague's answer relayed back to whoever asked, the outcome of an action a
+ * person approved — was invisible to it. So it would re-check a system it had
+ * already reported on, and contradict a message it had just sent.
+ *
+ * A row with no user message is exactly that: the assistant spoke, unprompted.
+ * shapeHistory folds it into the preceding model turn.
+ */
+export async function noteAssistantMessage(
+  db: SupabaseClient,
+  storeSlug: string,
+  sessionId: string,
+  text: string,
+): Promise<void> {
+  if (!sessionId || !text) return;
+  try {
+    await db.from("conversations").insert({
+      conversation_id: `oob_${crypto.randomUUID()}`,
+      store_slug: storeSlug,
+      session_id: sessionId,
+      timestamp: new Date().toISOString(),
+      user_message: null,
+      assistant_response: text.slice(0, 4000),
+    });
+  } catch (e) {
+    console.warn(`[history] note out-of-band: ${(e as Error)?.message ?? e}`);
+  }
+}

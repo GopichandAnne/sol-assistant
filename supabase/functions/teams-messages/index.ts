@@ -10,12 +10,13 @@
 //   • Map the tenant to a store: a teams_installs row { tenant_id, store_id } (set from
 //     the console's Teams card).
 import { serviceClient } from "../_shared/supabase.ts";
-import { getStoreById } from "../_shared/config.ts";
+import { getStoreById, getStoreBySlug } from "../_shared/config.ts";
 import { generateTurnReply } from "../_shared/conversation.ts";
 import { resolveIdentity } from "../_shared/identity.ts";
 import { splitBubbles } from "../_shared/prompt.ts";
 import { buildTeamsRawIdentity, classifyActivity, teamsSessionId } from "../_shared/teams.ts";
 import { rememberChannel, resolveStoreForChannel } from "../_shared/routing.ts";
+import { resolveActionRequest } from "../_shared/resolve.ts";
 import { graphEmail, postTeamsReply, verifyBotFrameworkToken } from "../_shared/teams-auth.ts";
 
 // deno-lint-ignore no-explicit-any
@@ -176,8 +177,9 @@ async function handleActivity(activity: Record<string, unknown>, appId: string, 
  *
  *  Scoped to a still-pending row so a stale card cannot flip a decision that was
  *  already made in the console or in Slack, and so a second tap says so plainly
- *  rather than silently doing nothing. Same contract as slack-interactions:
- *  recording the decision is the whole action; nothing is re-run. */
+ *  rather than silently doing nothing. Same contract as slack-interactions and the
+ *  console: approving RUNS the approved call, as the person it was raised for, and
+ *  tells them the outcome. */
 async function handleApproval(
   activity: Record<string, unknown>,
   val: Record<string, unknown>,
@@ -193,17 +195,27 @@ async function handleApproval(
   if (!id || !serviceUrl || !conversationId) return;
 
   const db = serviceClient();
-  const { data, error } = await db
+  const { data: reqRow } = await db
     .from("action_request")
-    .update({ status: decision, decided_by: `${who} (Teams)`, decided_at: new Date().toISOString() })
+    .select("store_id")
     .eq("id", id)
-    .eq("status", "pending")
-    .select("id");
+    .maybeSingle();
+  const storeId = (reqRow as { store_id?: string } | null)?.store_id;
+  const { data: storeRow } = storeId
+    ? await db.from("stores").select("slug").eq("id", storeId).maybeSingle()
+    : { data: null };
+  const slug = (storeRow as { slug?: string } | null)?.slug;
+  const store = slug ? await getStoreBySlug(db, slug) : null;
+  const outcome = store
+    ? await resolveActionRequest(db, store, id, decision as "approved" | "declined", `${who} (Teams)`)
+    : { ok: false as const };
 
-  const note = error
-    ? "Couldn't record that, sorry. Try the Activity page in the console."
-    : !data || data.length === 0
-      ? "That one was already resolved."
-      : `${decision === "approved" ? "Approved" : "Declined"} by ${who}. Nothing was re-run automatically — action it in your systems as usual.`;
+  const note = !outcome.ok
+    ? "That one was already resolved, or I couldn't find it. The Activity page in the console has the current state."
+    : decision === "declined"
+      ? `Declined by ${who}. Nothing ran.`
+      : (outcome as { completed?: boolean }).completed
+        ? `Approved by ${who} — and it's done.`
+        : `Approved by ${who}, but it didn't go through: ${(outcome as { note?: string }).note ?? "the call failed"}. Someone will need to look at it.`;
   await postTeamsReply(appId, appPassword, serviceUrl, conversationId, note);
 }

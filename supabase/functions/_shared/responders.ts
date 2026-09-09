@@ -11,6 +11,7 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import type { Store } from "./types.ts";
 import { deliverToPeople } from "./notify.ts";
 import { learnFromAnswer } from "./learn.ts";
+import { noteAssistantMessage } from "./history.ts";
 import { slackPostMessage } from "./slack-api.ts";
 import { postTeamsReply } from "./teams-auth.ts";
 
@@ -139,6 +140,10 @@ async function deliverTicketAnswer(
     text: `${by} answered: ${ticket.question}`, event_payload_json: { ticket_id: ticket.ticket_id, by, relayed },
   });
 
+  // The assistant just delivered someone else's answer. Put it in the turn log so
+  // it knows that on the next message rather than escalating the same thing again.
+  await noteAssistantMessage(db, store.slug, session, answerText);
+
   // Learn from this answer so the next person gets it straight away. Best-effort;
   // never blocks the relay.
   try {
@@ -173,10 +178,11 @@ async function deliverTicketAnswer(
   return { handled: true, relayed };
 }
 
-/** Push the answer back to the person on the channel they asked from. Returns
- *  false when we could not reach them there, which for web is the normal case:
- *  the widget picks the answer up from the thread over Realtime instead. */
-async function relayToAsker(
+/** Push a message back to the person on the channel they asked from — a colleague's
+ *  answer to their escalation, or the outcome of an action their request triggered.
+ *  Returns false when we could not reach them there, which for web is the normal
+ *  case: the widget picks messages up from the thread over Realtime instead. */
+export async function relayToAsker(
   db: SupabaseClient,
   store: Store,
   session: string,

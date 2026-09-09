@@ -32,7 +32,19 @@ export function Approvals({ initial }: { initial: Approval[] }) {
       setBusy(null);
       if (res.ok) {
         setRows((r) => r.filter((x) => x.id !== id));
-        toast.success(decision === "approved" ? "Approved — complete it in your system" : "Declined");
+        if (decision === "declined") {
+          toast.success("Declined", { description: res.told ? "They've been told." : "Nothing ran." });
+        } else if (res.completed) {
+          toast.success("Approved and done", {
+            description: res.told ? "It ran, and they've been told." : "It ran. They'll see it next time they ask.",
+          });
+        } else {
+          // Approved but it did not run. Say so loudly: believing an action
+          // happened when it did not is worse than knowing it failed.
+          toast.error("Approved, but it didn't go through", {
+            description: res.note ?? "Check the system and try again.",
+          });
+        }
         router.refresh();
       } else {
         toast.error("Couldn't update", { description: res.error });
@@ -50,8 +62,8 @@ export function Approvals({ initial }: { initial: Approval[] }) {
         </span>
       </div>
       <p className="text-muted-foreground -mt-1 text-sm">
-        The assistant held these writes because their tool is set to require approval. Nothing ran — review and
-        decide. Approving records your sign-off; you then complete the action in your system.
+        The assistant held these writes because their tool is set to require approval. Nothing has run. Approving
+        runs it now, as the person who asked, and tells them the outcome.
       </p>
 
       <div className="space-y-2">

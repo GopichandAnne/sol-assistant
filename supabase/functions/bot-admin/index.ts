@@ -833,6 +833,18 @@ Deno.serve(async (req) => {
         } catch { /* leave empty */ }
         return json({ store: store.slug, chips });
       }
+      // Resolving a held action runs the approved call, which needs the tool
+      // executors and the credentials they decrypt — both of which live here, not
+      // in the console. The console does the authorization and calls this.
+      case "resolve_action": {
+        const reqId = String(body.request_id ?? "").trim();
+        const decision = String(body.decision ?? "") === "declined" ? "declined" : "approved";
+        const by = (String(body.by ?? "").trim()) || "an owner";
+        if (!reqId) return json({ error: "request_id required" }, 400);
+        const { resolveActionRequest } = await import("../_shared/resolve.ts");
+        const res = await resolveActionRequest(db, store, reqId, decision as "approved" | "declined", by);
+        return json(res);
+      }
       case "answer_ticket": {
         const ticketId = String(body.ticket_id ?? "").trim();
         const answer = String(body.answer ?? "").trim();

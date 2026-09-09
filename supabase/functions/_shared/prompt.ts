@@ -378,7 +378,16 @@ export function shapeHistory(
   for (const r of rows) {
     if (r.user_message) out.push({ role: "user", parts: [{ text: r.user_message }] });
     if (r.assistant_response) {
-      out.push({ role: "model", parts: [{ text: r.assistant_response }] });
+      // Coalesce, never append a second model turn. A row with no user message is
+      // something the assistant said between turns — a colleague's answer relayed
+      // back, or the outcome of an approved action — and two model turns in a row
+      // is rejected outright by some providers and merely confusing to the rest.
+      const prev = out[out.length - 1];
+      if (prev?.role === "model") {
+        prev.parts.push({ text: r.assistant_response });
+      } else {
+        out.push({ role: "model", parts: [{ text: r.assistant_response }] });
+      }
     }
   }
   return out;

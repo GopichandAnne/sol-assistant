@@ -158,6 +158,9 @@ export async function routeHeldAction(
         kind: h.kind,
         acted_as: h.actedAs ? h.actedAs.slice(0, 160) : null,
         detail: detail.slice(0, 600),
+        // The call itself, so approving can run it. `detail` is a summary for
+        // human eyes and is lossy by design; replaying from it would guess.
+        args: h.args ?? {},
       })
       .select("id")
       .single();
