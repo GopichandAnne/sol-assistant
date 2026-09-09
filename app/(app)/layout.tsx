@@ -22,14 +22,12 @@ export default async function AppLayout({
     redirect("/welcome");
   }
 
-  // A phone on every account: the number that unifies a person's WhatsApp and
-  // console identities. Catches BOTH new accounts (right after store creation) and
-  // existing ones (backfill). /account/phone lives OUTSIDE this layout group so the
-  // gate can't loop. Platform admins are exempt (internal accounts). phoneCaptured
-  // releases the gate even if the number couldn't be claimed as the auth identity.
-  if (!ctx.isPlatformAdmin && !ctx.user.phone && !ctx.user.phoneCaptured) {
-    redirect("/account/phone");
-  }
+  // No phone gate here. Upstream, every account had to capture a phone number,
+  // because that number was what tied a person's WhatsApp identity to their console
+  // identity. This product has no WhatsApp channel: people arrive by email, and
+  // later by Microsoft sign-in. Demanding a phone would have bounced every new
+  // owner to /account/phone immediately after creating their assistant, in service
+  // of a link that does not exist here. The route itself stays on disk, unreachable.
 
   const capabilities = await getStoreCapabilities(ctx.active.id);
 
