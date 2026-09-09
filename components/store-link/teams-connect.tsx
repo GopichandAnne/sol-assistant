@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getTeamsStatus, setTeamsApprover, setTeamsTenant, type TeamsStatus } from "@/app/(app)/link/teams-actions";
+import { getTeamsStatus, linkPendingTenant, setTeamsApprover, setTeamsTenant, type TeamsStatus } from "@/app/(app)/link/teams-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
   const [saving, setSaving] = useState(false);
   const [approver, setApprover] = useState("");
   const [savingApprover, setSavingApprover] = useState(false);
+  const [linking, setLinking] = useState<string | null>(null);
 
   useEffect(() => {
     getTeamsStatus(storeId)
@@ -27,6 +28,16 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
     setSaving(false);
     if (res.ok) { toast.success(tenant.trim() ? "Teams tenant linked" : "Teams tenant cleared"); getTeamsStatus(storeId).then(setStatus).catch(() => {}); }
     else toast.error("Couldn't save", { description: res.error });
+  }
+
+  async function link(tenantId: string) {
+    setLinking(tenantId);
+    const res = await linkPendingTenant(storeId, tenantId);
+    setLinking(null);
+    if (res.ok) {
+      toast.success("Connected to Teams");
+      getTeamsStatus(storeId).then(setStatus).catch(() => {});
+    } else toast.error("Couldn't connect", { description: res.error });
   }
 
   async function saveApprover() {
@@ -44,8 +55,9 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
       <div>
         <h2 className="flex items-center gap-2 text-base font-semibold"><Users className="text-teal-deep size-4" /> Microsoft Teams</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Add the assistant to Teams as a teammate — it answers DMs and @mentions and recognizes each person by
-          their Microsoft (Azure AD) identity.
+          Your team chats with it in Teams, in a normal 1:1 chat or by @mentioning it in a
+          channel. It is an app, not a user account: no licence, no mailbox, no seat.
+          Install it, message it once, then connect it here in a click.
         </p>
       </div>
 
@@ -53,14 +65,52 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
 
       {status && !status.configured && (
         <p className="text-muted-foreground rounded-md border border-dashed p-3 text-xs">
-          Teams isn&apos;t set up on this deployment yet. It needs an Azure Bot + app registration and{" "}
-          <code className="bg-muted rounded px-1">MICROSOFT_APP_ID</code> /{" "}
-          <code className="bg-muted rounded px-1">MICROSOFT_APP_PASSWORD</code> on the function.
+          Teams isn&apos;t switched on for this deployment yet. That&apos;s a one-time job on our
+          side (an Azure bot and its credentials), not something you set up per organisation.
+          Ask us and it applies to everyone.
         </p>
       )}
 
+      {status?.configured && !status.connected && (
+        <ol className="text-muted-foreground list-decimal space-y-1 rounded-md border border-dashed p-3 pl-7 text-xs">
+          <li>Your Teams admin installs the app for your organisation.</li>
+          <li>Anyone opens it in Teams and sends it one message. It will say it isn&apos;t
+            connected yet, which is expected.</li>
+          <li>Their organisation appears above. Click Connect.</li>
+        </ol>
+      )}
+
+      {status?.configured && !status.connected && (status.pending ?? []).length > 0 && (
+        <div className="space-y-2 rounded-md border p-3">
+          <Label className="text-xs">Waiting to connect</Label>
+          <p className="text-muted-foreground text-xs">
+            Someone messaged the assistant in Teams from here. Connect it and they can
+            carry on where they left off.
+          </p>
+          <ul className="space-y-2">
+            {(status.pending ?? []).map((t) => (
+              <li key={t.tenantId} className="flex items-center gap-2">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{t.teamName ?? "Microsoft 365 organisation"}</span>
+                  <span className="text-muted-foreground block truncate font-mono text-[11px]">
+                    {t.tenantId}{t.sampleUser ? ` · ${t.sampleUser} messaged it` : ""}
+                  </span>
+                </span>
+                <Button size="sm" onClick={() => link(t.tenantId)} disabled={linking === t.tenantId}>
+                  {linking === t.tenantId ? <Loader2 className="size-4 animate-spin" /> : null} Connect
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {status?.configured && (
-        <div className="space-y-1.5 rounded-md border p-3">
+        <details className="rounded-md border p-3 [&_summary]:cursor-pointer">
+          <summary className="text-xs font-medium">
+            {status.connected ? "Azure tenant" : "Or paste your tenant ID manually"}
+          </summary>
+          <div className="mt-2 space-y-1.5">
           <Label className="text-xs">Your Azure tenant (directory) ID</Label>
           <p className="text-muted-foreground text-xs">
             {status.connected ? (
@@ -73,7 +123,8 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
               {saving ? <Loader2 className="size-4 animate-spin" /> : null} Save
             </Button>
           </div>
-        </div>
+          </div>
+        </details>
       )}
 
       {status?.connected && (

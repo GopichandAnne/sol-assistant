@@ -81,7 +81,24 @@ async function handleActivity(activity: Record<string, unknown>, appId: string, 
     .maybeSingle();
   const storeId = (install as { store_id?: string } | null)?.store_id;
   if (!storeId) {
-    console.warn(`[teams] no install for tenant ${ev.tenantId}`);
+    // Not linked yet. Dropping this silently is why Teams used to look broken
+    // before setup: someone messages the app, nothing happens, no explanation.
+    // Record the tenant so the console can offer a one-click link, and TELL the
+    // person, so the identifier reaches us without anyone visiting Azure.
+    try {
+      await db.from("teams_pending_tenant").upsert({
+        tenant_id: ev.tenantId,
+        sample_user: ev.name || null,
+        last_seen: new Date().toISOString(),
+      }, { onConflict: "tenant_id" });
+    } catch (e) {
+      console.warn(`[teams] record pending tenant: ${(e as Error)?.message ?? e}`);
+    }
+    console.warn(`[teams] no install for tenant ${ev.tenantId} — told the user`);
+    await postTeamsReply(
+      appId, appPassword, ev.serviceUrl, ev.conversationId,
+      "I'm installed here but not connected to an assistant yet. Whoever set me up can finish it in one click: I've told them this workspace is waiting. Nothing you need to do.",
+    );
     return;
   }
   const store = await getStoreById(db, storeId);

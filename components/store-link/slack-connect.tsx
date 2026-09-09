@@ -88,12 +88,9 @@ export function SlackConnect({ storeId }: { storeId: string }) {
 
       {status && !status.connected && !status.configured && (
         <p className="text-muted-foreground rounded-md border border-dashed p-3 text-xs">
-          Slack isn&apos;t set up on this deployment yet. It needs a Slack app plus{" "}
-          <code className="bg-muted rounded px-1">SLACK_CLIENT_ID</code>,{" "}
-          <code className="bg-muted rounded px-1">SLACK_CLIENT_SECRET</code>,{" "}
-          <code className="bg-muted rounded px-1">SLACK_STATE_SECRET</code>,{" "}
-          <code className="bg-muted rounded px-1">SLACK_SIGNING_SECRET</code>, and{" "}
-          <code className="bg-muted rounded px-1">SLACK_REDIRECT_URL</code>.
+          Slack isn&apos;t switched on for this deployment yet. That&apos;s a one-time job on our
+          side (a Slack app and its credentials), not something you set up per workspace.
+          Ask us and it applies to everyone.
         </p>
       )}
     </div>

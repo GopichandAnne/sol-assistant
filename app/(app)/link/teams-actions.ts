@@ -4,6 +4,8 @@ import { getActiveStore } from "@/lib/store/active-store";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export type PendingTenant = { tenantId: string; teamName: string | null; sampleUser: string | null; lastSeen: string };
+
 export type TeamsStatus = {
   configured: boolean;
   connected: boolean;
@@ -12,6 +14,9 @@ export type TeamsStatus = {
   /** People who have messaged the bot, so we have a conversation to reach them on.
    *  Only these can receive approval cards. */
   reachable?: { email: string; name: string | null }[];
+  /** Tenants that installed the app and messaged it, but aren't linked yet. The
+   *  identifier arrives on its own, so nobody has to fetch it from Azure. */
+  pending?: PendingTenant[];
 };
 
 async function requireOwner(storeId: string) {
@@ -40,12 +45,25 @@ export async function getTeamsStatus(storeId: string): Promise<TeamsStatus> {
       .order("last_seen", { ascending: false }).limit(50);
     reachable = (users ?? []).map((u: { email: string; name: string | null }) => ({ email: u.email, name: u.name }));
   }
+  // Anyone waiting to be linked. Only shown when this assistant isn't already
+  // connected, so an established install doesn't nag about other orgs.
+  let pending: PendingTenant[] = [];
+  if (!data) {
+    const { data: rows } = await from("teams_pending_tenant")
+      .select("tenant_id, team_name, sample_user, last_seen")
+      .order("last_seen", { ascending: false }).limit(10);
+    pending = (rows ?? []).map((r: { tenant_id: string; team_name: string | null; sample_user: string | null; last_seen: string }) => ({
+      tenantId: r.tenant_id, teamName: r.team_name, sampleUser: r.sample_user, lastSeen: r.last_seen,
+    }));
+  }
+
   return {
     configured,
     connected: !!data,
     tenantId: data?.tenant_id ?? null,
     approvalsEmail: data?.approvals_email ?? null,
     reachable,
+    pending,
   };
 }
 
@@ -83,5 +101,21 @@ export async function setTeamsApprover(storeId: string, email: string): Promise<
   const { error } = await from("teams_installs")
     .update({ approvals_email: e || null }).eq("store_id", storeId).eq("active", true);
   if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Link a waiting tenant to this assistant. The whole point of the pending queue:
+ *  the owner never types a GUID, they confirm an org that already showed up. */
+export async function linkPendingTenant(storeId: string, tenantId: string): Promise<{ ok: boolean; error?: string }> {
+  await requireOwner(storeId);
+  const t = tenantId.trim();
+  if (!t) return { ok: false, error: "No tenant given." };
+  const db = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const from = db.from as unknown as (t: string) => any;
+  const { error } = await from("teams_installs")
+    .upsert({ tenant_id: t, store_id: storeId, active: true }, { onConflict: "tenant_id" });
+  if (error) return { ok: false, error: error.message };
+  await from("teams_pending_tenant").delete().eq("tenant_id", t);
   return { ok: true };
 }

@@ -2872,6 +2872,33 @@ export type Database = {
           },
         ]
       }
+      teams_pending_tenant: {
+        Row: {
+          first_seen: string
+          last_seen: string
+          message_count: number
+          sample_user: string | null
+          team_name: string | null
+          tenant_id: string
+        }
+        Insert: {
+          first_seen?: string
+          last_seen?: string
+          message_count?: number
+          sample_user?: string | null
+          team_name?: string | null
+          tenant_id: string
+        }
+        Update: {
+          first_seen?: string
+          last_seen?: string
+          message_count?: number
+          sample_user?: string | null
+          team_name?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       teams_user: {
         Row: {
           aad_object_id: string | null

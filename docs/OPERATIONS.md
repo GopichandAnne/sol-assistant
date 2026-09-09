@@ -92,6 +92,36 @@ otherwise, which would authenticate a user the rest of the app cannot place.
 paste its Value into Supabase, then delete the old one. Doing it in that order
 means no sign-in outage.
 
+## Channels: what is one-time, and what is per organisation
+
+The split matters, because it is the difference between "connect Teams in a click"
+and "spend an afternoon in the Azure portal". Everything in the first list is done
+ONCE by us and then applies to every organisation.
+
+**One-time, ours (platform)**
+- Slack: create the Slack app, set `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET`,
+  `SLACK_STATE_SECRET`, `SLACK_SIGNING_SECRET`, `SLACK_REDIRECT_URL`.
+- Teams: create the Azure bot + app registration, set `MICROSOFT_APP_ID` and
+  `MICROSOFT_APP_PASSWORD`, point the messaging endpoint at the `teams-messages`
+  function, and publish a Teams app manifest that references the bot.
+- Teams, for identity: grant Microsoft Graph `User.Read.All` WITH admin consent.
+  Without it the bot cannot resolve anyone's email, so every Teams user is
+  anonymous, members-only knowledge returns nothing, and identity-forwarding
+  tools decline. It looks like a bug and is a missing consent.
+
+**Per organisation (the customer, or SOL for itself)**
+- Slack: click "Add to Slack". That is the whole thing.
+- Teams: an admin installs the app, someone sends it one message, then the owner
+  clicks Connect on the organisation that appears. No GUID to find: the first
+  message registers the tenant and the bot replies saying it is not connected
+  yet, so nobody is left staring at silence.
+
+**Naming and branding.** One Azure bot serves many tenants, so the name and icon
+every organisation sees come from the single Teams app manifest, not from anything
+in the console. The white-label fields only affect the web embed. Giving a client
+their own name and icon means a separate Azure bot registration and manifest for
+them; the tenant-to-assistant mapping already supports either choice.
+
 ## Known follow-ups (not yet done)
 
 - Rotate the WhatsApp access token that was once exposed (do it in Meta).
