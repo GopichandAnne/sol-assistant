@@ -9,6 +9,7 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import type { Store } from "./types.ts";
 import type { FunctionDeclaration } from "./tools.ts";
 import { decrypt, getAccessToken, type ProviderId } from "./connections.ts";
+import { mintAssertion } from "./assertion.ts";
 
 export interface HttpTool {
   id: string;
@@ -29,7 +30,9 @@ export interface HttpTool {
     name?: string;
     prefix?: string;
     provider?: string;
-    claim?: "token" | "email" | "phone" | "sub";
+    // "assertion" is the only one that works in every channel AND can be checked
+    // by the receiving API. "token" is web-embed only; email/sub are unverifiable.
+    claim?: "assertion" | "token" | "email" | "phone" | "sub";
   };
   api_key: string | null;
   side_effect: boolean;
@@ -105,7 +108,8 @@ export async function executeHttpTool(
       // from the server-verified identity token (never the model). Absent it (no
       // sign-in, or on WhatsApp), degrade to a soft note instead of calling.
       const claim = auth.claim ?? "token";
-      const value = claim === "email" ? visitor?.email
+      const value = claim === "assertion" ? await mintAssertion(db, store, visitor)
+        : claim === "email" ? visitor?.email
         : claim === "phone" ? visitor?.phone
         : claim === "sub" ? visitor?.sub
         : visitor?.token;
@@ -118,6 +122,9 @@ export async function executeHttpTool(
         if (claim === "token" && (ch === "teams" || ch === "slack")) {
           console.warn(`[httptool] ${t.name}: claim "token" is web-embed only; this account is on ${ch}`);
           return { ok: false, note: `This tool is set up to pass a sign-in token, which only exists on the web. In ${ch === "teams" ? "Teams" : "Slack"} it should identify people by email instead — ask whoever set it up to change it.` };
+        }
+        if (claim === "assertion") {
+          return { ok: false, note: "I can't confirm who you are here, and this tool only runs for someone signed in." };
         }
         return { ok: false, note: "I can't tell who you are here, and this needs a verified sign-in." };
       }

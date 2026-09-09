@@ -2743,6 +2743,7 @@ export type Database = {
           access_control: string
           active: boolean
           analytics_sheet_id: string | null
+          assertion_secret: string | null
           business_modes: string | null
           business_type: string | null
           company_id: string | null
@@ -2786,6 +2787,7 @@ export type Database = {
           access_control?: string
           active?: boolean
           analytics_sheet_id?: string | null
+          assertion_secret?: string | null
           business_modes?: string | null
           business_type?: string | null
           company_id?: string | null
@@ -2829,6 +2831,7 @@ export type Database = {
           access_control?: string
           active?: boolean
           analytics_sheet_id?: string | null
+          assertion_secret?: string | null
           business_modes?: string | null
           business_type?: string | null
           company_id?: string | null

@@ -1,5 +1,6 @@
 "use server";
 
+import { Buffer } from "node:buffer";
 import { revalidatePath } from "next/cache";
 import { getActiveStore } from "@/lib/store/active-store";
 import { createClient } from "@/lib/supabase/server";
@@ -113,4 +114,42 @@ export async function routeChannel(
   if (error) return { ok: false, error: error.message };
   revalidatePath("/link");
   return { ok: true };
+}
+
+/**
+ * The key a downstream API uses to verify identity assertions from this
+ * assistant. Created on first read so nobody has to think about generating one,
+ * and rotatable when it leaks.
+ *
+ * Owner-only, and deliberately readable rather than write-only: unlike a password,
+ * the person integrating has to put this exact value into their own API, and a
+ * key you cannot read is a key you cannot use.
+ */
+export async function getAssertionKey(storeId: string): Promise<{ key: string } | { error: string }> {
+  await requireOwner(storeId);
+  const db = createAdminClient();
+  const { data } = await db.from("stores").select("assertion_secret").eq("id", storeId).maybeSingle();
+  const existing = (data as { assertion_secret?: string | null } | null)?.assertion_secret;
+  if (existing) return { key: existing };
+
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  const key = Buffer.from(bytes).toString("base64url");
+  const { error } = await db.from("stores").update({ assertion_secret: key }).eq("id", storeId);
+  if (error) return { error: error.message };
+  return { key };
+}
+
+/** Replace the key. Anything already verifying with the old one stops working, so
+ *  the console says that plainly before this runs. */
+export async function rotateAssertionKey(storeId: string): Promise<{ key: string } | { error: string }> {
+  await requireOwner(storeId);
+  const db = createAdminClient();
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  const key = Buffer.from(bytes).toString("base64url");
+  const { error } = await db.from("stores").update({ assertion_secret: key }).eq("id", storeId);
+  if (error) return { error: error.message };
+  revalidatePath("/link");
+  return { key };
 }

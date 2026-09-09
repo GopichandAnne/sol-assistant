@@ -4,6 +4,7 @@ import { getActiveStore } from "@/lib/store/active-store";
 import { createClient } from "@/lib/supabase/server";
 import { profileFor, homeHrefFor } from "@/lib/console-profile";
 import { StoreLinkPanel } from "@/components/store-link/store-link-panel";
+import { AssertionKey } from "@/components/store-link/assertion-key";
 import { SignedInEmbedGuide } from "@/components/store-link/signed-in-embed-guide";
 import { IdentityProviders } from "@/components/store-link/identity-providers";
 import { SsoDevTools } from "@/components/members/sso-dev-tools";
@@ -47,6 +48,7 @@ export default async function LinkPage() {
       {isSaas && <TeamsConnect storeId={store.id} />}
       {isSaas && <SignedInEmbedGuide pubKey={pubKey} />}
       {isSaas && <IdentityProviders storeId={store.id} />}
+      {isSaas && <AssertionKey storeId={store.id} />}
       {isSaas && <SsoDevTools storeId={store.id} />}
     </div>
   );
