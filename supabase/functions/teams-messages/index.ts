@@ -46,6 +46,15 @@ Deno.serve(async (req) => {
 });
 
 async function handleActivity(activity: Record<string, unknown>, appId: string, appPassword: string): Promise<void> {
+  // An Approve / Decline tap on an approval card comes back as an ordinary message
+  // activity carrying `value` (Action.Submit), NOT as text. Handle it before the
+  // normal classify, which would otherwise ignore a message with no text.
+  const val = activity.value as Record<string, unknown> | undefined;
+  if (val && val.kind === "approval") {
+    await handleApproval(activity, val, appId, appPassword);
+    return;
+  }
+
   const c = classifyActivity(activity);
   if (!c.act || !c.event) {
     console.log(`[teams] ignore: ${c.reason}`);
@@ -79,9 +88,30 @@ async function handleActivity(activity: Record<string, unknown>, appId: string, 
   if (!store) return;
 
   const sessionId = teamsSessionId(ev.tenantId, ev.aadObjectId, ev.userId);
+
+  // Remember how to reach this person. Bot Framework only hands you a conversation
+  // when someone messages the bot, so an approver who has never used it cannot be
+  // sent an approval card. Recording it on every inbound is what makes nominating
+  // them later possible at all. Best-effort: never block a reply for it.
+  let email: string | null = null;
+  try {
+    email = await graphEmail(appId, appPassword, ev.tenantId, ev.aadObjectId);
+    await db.from("teams_user").upsert({
+      tenant_id: ev.tenantId,
+      teams_user_id: ev.userId,
+      aad_object_id: ev.aadObjectId,
+      email,
+      name: ev.name ?? null,
+      service_url: ev.serviceUrl,
+      conversation_id: ev.conversationId,
+      last_seen: new Date().toISOString(),
+    }, { onConflict: "tenant_id,teams_user_id" });
+  } catch (e) {
+    console.warn(`[teams] remember user: ${(e as Error)?.message ?? e}`);
+  }
+
   let visitor;
   if (store.access_control) {
-    const email = await graphEmail(appId, appPassword, ev.tenantId, ev.aadObjectId);
     const raw = buildTeamsRawIdentity(ev.aadObjectId, ev.userId, ev.name, email);
     const resolved = await resolveIdentity(db, store, sessionId, { channel: "teams", raw });
     if (resolved) visitor = resolved.visitor;
@@ -118,4 +148,40 @@ async function handleActivity(activity: Record<string, unknown>, appId: string, 
       created_at: new Date().toISOString(),
     });
   }
+}
+
+/** Resolve a held action from an Approve / Decline tap in Teams.
+ *
+ *  Scoped to a still-pending row so a stale card cannot flip a decision that was
+ *  already made in the console or in Slack, and so a second tap says so plainly
+ *  rather than silently doing nothing. Same contract as slack-interactions:
+ *  recording the decision is the whole action; nothing is re-run. */
+async function handleApproval(
+  activity: Record<string, unknown>,
+  val: Record<string, unknown>,
+  appId: string,
+  appPassword: string,
+): Promise<void> {
+  const id = String(val.id ?? "");
+  const decision = val.decision === "approved" ? "approved" : "declined";
+  const from = (activity.from ?? {}) as Record<string, unknown>;
+  const who = String(from.name ?? "someone");
+  const serviceUrl = String(activity.serviceUrl ?? "");
+  const conversationId = String((activity.conversation as Record<string, unknown> | undefined)?.id ?? "");
+  if (!id || !serviceUrl || !conversationId) return;
+
+  const db = serviceClient();
+  const { data, error } = await db
+    .from("action_request")
+    .update({ status: decision, decided_by: `${who} (Teams)`, decided_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("status", "pending")
+    .select("id");
+
+  const note = error
+    ? "Couldn't record that, sorry. Try the Activity page in the console."
+    : !data || data.length === 0
+      ? "That one was already resolved."
+      : `${decision === "approved" ? "Approved" : "Declined"} by ${who}. Nothing was re-run automatically — action it in your systems as usual.`;
+  await postTeamsReply(appId, appPassword, serviceUrl, conversationId, note);
 }

@@ -2840,6 +2840,7 @@ export type Database = {
       teams_installs: {
         Row: {
           active: boolean
+          approvals_email: string | null
           created_at: string
           store_id: string
           team_name: string | null
@@ -2847,6 +2848,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          approvals_email?: string | null
           created_at?: string
           store_id: string
           team_name?: string | null
@@ -2854,6 +2856,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          approvals_email?: string | null
           created_at?: string
           store_id?: string
           team_name?: string | null
@@ -2868,6 +2871,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      teams_user: {
+        Row: {
+          aad_object_id: string | null
+          conversation_id: string
+          email: string | null
+          last_seen: string
+          name: string | null
+          service_url: string
+          teams_user_id: string
+          tenant_id: string
+        }
+        Insert: {
+          aad_object_id?: string | null
+          conversation_id: string
+          email?: string | null
+          last_seen?: string
+          name?: string | null
+          service_url: string
+          teams_user_id: string
+          tenant_id: string
+        }
+        Update: {
+          aad_object_id?: string | null
+          conversation_id?: string
+          email?: string | null
+          last_seen?: string
+          name?: string | null
+          service_url?: string
+          teams_user_id?: string
+          tenant_id?: string
+        }
+        Relationships: []
       }
       thread_messages: {
         Row: {

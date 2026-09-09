@@ -54,3 +54,33 @@ export function teamsSessionId(tenantId: string, aadObjectId: string, userId: st
 export function buildTeamsRawIdentity(aadObjectId: string, userId: string, name?: string | null, email?: string | null): RawIdentity {
   return { email: email ?? null, phone: null, name: name ?? null, sub: aadObjectId || userId, rawToken: null };
 }
+
+/** Approve / Decline as an Adaptive Card. Mirrors slack.ts buildApprovalBlocks so
+ *  both channels say the same thing: what was asked, who it was acting as, and
+ *  that nothing has happened yet. Action.Submit posts `data` straight back to the
+ *  bot as activity.value, which teams-messages routes to the approval handler. */
+export function buildApprovalCard(req: { id: string; detail: string; orgName: string; actedAs: string | null }) {
+  const facts = [{ title: "Account", value: req.orgName }];
+  if (req.actedAs) facts.push({ title: "Acting as", value: req.actedAs });
+  return {
+    type: "message",
+    attachments: [{
+      contentType: "application/vnd.microsoft.card.adaptive",
+      content: {
+        $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+        type: "AdaptiveCard",
+        version: "1.4",
+        body: [
+          { type: "TextBlock", text: "Approval needed", weight: "Bolder", size: "Medium", wrap: true },
+          { type: "TextBlock", text: req.detail, wrap: true },
+          { type: "FactSet", facts },
+          { type: "TextBlock", text: "Nothing has happened yet. Approving records your decision; complete the action in your systems as usual.", wrap: true, isSubtle: true, size: "Small" },
+        ],
+        actions: [
+          { type: "Action.Submit", title: "Approve", data: { kind: "approval", id: req.id, decision: "approved" } },
+          { type: "Action.Submit", title: "Decline", data: { kind: "approval", id: req.id, decision: "declined" } },
+        ],
+      },
+    }],
+  };
+}

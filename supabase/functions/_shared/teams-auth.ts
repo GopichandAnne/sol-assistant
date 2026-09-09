@@ -110,6 +110,26 @@ export async function postTeamsReply(appId: string, appPassword: string, service
   }
 }
 
+/** Post any activity (used for Adaptive Cards). postTeamsReply is the text case. */
+// deno-lint-ignore no-explicit-any
+export async function postTeamsActivity(appId: string, appPassword: string, serviceUrl: string, conversationId: string, activity: any): Promise<boolean> {
+  const tok = await appToken(appId, appPassword, "https://api.botframework.com/.default");
+  if (!tok) return false;
+  try {
+    const url = `${serviceUrl.replace(/\/$/, "")}/v3/conversations/${encodeURIComponent(conversationId)}/activities`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${tok}` },
+      body: JSON.stringify(activity),
+    });
+    if (!res.ok) console.warn(`[teams] post activity ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    return res.ok;
+  } catch (e) {
+    console.warn(`[teams] post activity: ${(e as Error)?.message ?? e}`);
+    return false;
+  }
+}
+
 /** Best-effort email for a Teams user via Graph (needs User.Read.All app permission). */
 export async function graphEmail(appId: string, appPassword: string, tenantId: string, aadObjectId: string): Promise<string | null> {
   if (!tenantId || !aadObjectId) return null;

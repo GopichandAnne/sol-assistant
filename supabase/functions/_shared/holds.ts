@@ -14,6 +14,8 @@ import type { Store } from "./types.ts";
 import { notifyResponders } from "./responders.ts";
 import { buildApprovalBlocks } from "./slack.ts";
 import { slackPostMessage } from "./slack-api.ts";
+import { buildApprovalCard } from "./teams.ts";
+import { postTeamsActivity } from "./teams-auth.ts";
 
 /** If the store connected Slack and set an approvals channel, post Approve/Decline
  *  buttons there for this held action. Best-effort — a Slack failure never matters. */
@@ -37,6 +39,53 @@ async function postSlackApproval(
     await slackPostMessage(install.bot_token, install.approvals_channel, text, blocks);
   } catch (e) {
     console.warn(`[holds] slack approval post: ${(e as Error)?.message ?? e}`);
+  }
+}
+
+/** If the store is installed in Teams and has nominated an approver, send them an
+ *  Approve / Decline card. Best-effort, exactly like the Slack path: the approval
+ *  request already exists in the console, and a messaging failure must never
+ *  matter to the chat that triggered it.
+ *
+ *  Note this targets a PERSON, not a channel. Posting into the conversation where
+ *  the action was raised would let the requester approve their own held action. */
+async function postTeamsApproval(
+  db: SupabaseClient,
+  store: Store,
+  reqId: string,
+  detail: string,
+  actedAs: string | null,
+): Promise<void> {
+  try {
+    const appId = Deno.env.get("MICROSOFT_APP_ID");
+    const appPassword = Deno.env.get("MICROSOFT_APP_PASSWORD");
+    if (!appId || !appPassword) return;
+    // deno-lint-ignore no-explicit-any
+    const from = db.from as unknown as (t: string) => any;
+    const { data: install } = await from("teams_installs")
+      .select("tenant_id, approvals_email")
+      .eq("store_id", store.id)
+      .eq("active", true)
+      .maybeSingle();
+    if (!install?.tenant_id || !install?.approvals_email) return;
+
+    const { data: approver } = await from("teams_user")
+      .select("service_url, conversation_id")
+      .eq("tenant_id", install.tenant_id)
+      .ilike("email", String(install.approvals_email))
+      .maybeSingle();
+    if (!approver?.conversation_id) {
+      // We have never seen them, so there is no conversation to reach them on.
+      console.warn(`[holds] teams approver ${install.approvals_email} hasn't messaged the bot yet — no card sent`);
+      return;
+    }
+
+    const card = buildApprovalCard({
+      id: reqId, detail, orgName: store.store_display_name ?? store.slug, actedAs,
+    });
+    await postTeamsActivity(appId, appPassword, approver.service_url, approver.conversation_id, card);
+  } catch (e) {
+    console.warn(`[holds] teams approval post: ${(e as Error)?.message ?? e}`);
   }
 }
 
@@ -129,7 +178,9 @@ export async function routeHeldAction(
     }
 
     // In-channel approval: Approve/Decline buttons in Slack, if configured.
-    await postSlackApproval(db, store, (inserted as { id: string }).id, detail, h.actedAs);
+    const reqId = (inserted as { id: string }).id;
+    await postSlackApproval(db, store, reqId, detail, h.actedAs);
+    await postTeamsApproval(db, store, reqId, detail, h.actedAs);
 
     return {
       reference: (inserted as { id: string }).id,
