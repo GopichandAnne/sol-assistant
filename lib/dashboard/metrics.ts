@@ -1,14 +1,5 @@
-import type { OrderStatus } from "@/lib/orders/types";
-import { ORDER_STATUSES } from "@/lib/orders/status";
 
 export const DASHBOARD_DAYS = 30;
-
-export type OrderRow = {
-  status: OrderStatus;
-  timestamp: string | null;
-  total: number | null;
-  created_at: string;
-};
 
 export type ConvRow = {
   timestamp: string | null;
@@ -51,17 +42,6 @@ export function inWindow<T extends { timestamp: string | null; created_at: strin
     const k = dayKey(r);
     return k !== null && set.has(k);
   });
-}
-
-export function orderStatusCounts(
-  orders: OrderRow[],
-): { status: OrderStatus; count: number }[] {
-  const c = Object.fromEntries(ORDER_STATUSES.map((s) => [s, 0])) as Record<
-    OrderStatus,
-    number
-  >;
-  for (const o of orders) c[o.status] = (c[o.status] ?? 0) + 1;
-  return ORDER_STATUSES.map((s) => ({ status: s, count: c[s] }));
 }
 
 /** Per-day counts aligned to `days`. */
@@ -213,35 +193,3 @@ export function gapConversationCount(convs: ConvRow[]): number {
 }
 
 /** Everything the dashboard needs, computed over the last DASHBOARD_DAYS. */
-export function computeDashboard(orders: OrderRow[], convs: ConvRow[]) {
-  const days = lastNDays(DASHBOARD_DAYS);
-  const o = inWindow(orders, days);
-  const c = inWindow(convs, days);
-
-  const confirmed = o.filter((x) => x.status === "confirmed").length;
-  const responseTimes = c
-    .map((x) => x.response_time_ms)
-    .filter((n): n is number => typeof n === "number" && n > 0);
-  const avgResponseMs =
-    responseTimes.length > 0
-      ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
-      : null;
-
-  return {
-    days,
-    totalOrders: o.length,
-    confirmedOrders: confirmed,
-    totalConversations: c.length,
-    avgResponseMs,
-    statusCounts: orderStatusCounts(o),
-    ordersPerDay: countPerDay(o, days),
-    convsPerDay: countPerDay(c, days),
-    languages: languageCounts(c),
-    sentiment: sentimentCounts(c),
-    signals: signalCounts(c),
-    requestedItems: topRequested(c),
-    missingItems: topMissing(c),
-  };
-}
-
-export type DashboardMetrics = ReturnType<typeof computeDashboard>;
