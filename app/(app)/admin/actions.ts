@@ -31,8 +31,6 @@ export type OnboardInput = {
   displayName: string;
   slug?: string;
   businessType?: string;
-  ordersEnabled: boolean;
-  catalogEnabled: boolean;
 };
 
 export async function onboardStore(input: OnboardInput): Promise<ActionResult<{ slug: string }>> {
@@ -71,8 +69,6 @@ export async function onboardStore(input: OnboardInput): Promise<ActionResult<{ 
     value,
   }));
   rows.push(
-    { store_id: store.id, key: "orders_enabled", value: input.ordersEnabled ? "true" : "false" },
-    { store_id: store.id, key: "catalog_enabled", value: input.catalogEnabled ? "true" : "false" },
   );
   const { error: cfgErr } = await db.from("agent_config").insert(rows);
   if (cfgErr) console.error("[admin] seed config:", cfgErr.message);

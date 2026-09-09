@@ -19,14 +19,8 @@ const EDITABLE: AgentKey[] = [
   "language_handling",
   "engage_info",
   "off_topic_handling",
-  "promotions",
-  "order_prompt",
-  "order_item_details",
-  "orders_enabled",
-  "catalog_enabled",
   "followup_enabled",
   "followup_minutes",
-  "tax_rate",
   "history_turns",
   "tts_voice",
   "tts_enabled",
@@ -63,17 +57,6 @@ export async function saveAgentConfig(
     if (!editable.has(key)) continue;
     const value = (raw ?? "").toString();
 
-    // Guard settings that are easy to mis-enter. Tax rate is a FRACTION
-    // (0.0825 = 8.25%); a store once saved "8.25" → 825% tax on every order.
-    if (key === "tax_rate" && value.trim() !== "") {
-      const rate = Number(value);
-      if (!Number.isFinite(rate) || rate < 0 || rate > 1) {
-        return {
-          ok: false,
-          error: "Tax rate must be a decimal between 0 and 1 — e.g. 0.0825 for 8.25%. (Not 8.25.)",
-        };
-      }
-    }
     if ((key === "followup_minutes" || key === "history_turns") && value.trim() !== "") {
       const n = Number(value);
       if (!Number.isFinite(n) || n < 0) {
@@ -326,7 +309,6 @@ export async function saveCharge(input: Charge): Promise<SaveResult> {
   const res = await callBotAdmin({ action: "set_charge", store_slug: gate.slug, ...input });
   if (!res.ok) return res;
   revalidatePath("/agent");
-  revalidatePath("/orders");
   return { ok: true };
 }
 
@@ -336,6 +318,5 @@ export async function deleteCharge(id: string): Promise<SaveResult> {
   const res = await callBotAdmin({ action: "delete_charge", store_slug: gate.slug, id });
   if (!res.ok) return res;
   revalidatePath("/agent");
-  revalidatePath("/orders");
   return { ok: true };
 }

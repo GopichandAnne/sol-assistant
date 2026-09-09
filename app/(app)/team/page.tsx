@@ -14,7 +14,7 @@ export default async function TeamPage() {
   // Owner-only screen (nav is owner-gated too; enforce here as well).
   const supabase = await createClient();
   const { data: isOwner } = await supabase.rpc("user_is_owner", { p_store_id: store.id });
-  if (!isOwner && !ctx.isPlatformAdmin) redirect("/orders");
+  if (!isOwner && !ctx.isPlatformAdmin) redirect("/");
 
   return (
     <div className="mx-auto max-w-2xl space-y-5 p-6">

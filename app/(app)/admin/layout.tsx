@@ -8,6 +8,6 @@ import { getSessionContext } from "@/lib/auth/session";
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getSessionContext();
   if (!ctx) redirect("/login");
-  if (!ctx.isPlatformAdmin) redirect("/orders");
+  if (!ctx.isPlatformAdmin) redirect("/");
   return <>{children}</>;
 }

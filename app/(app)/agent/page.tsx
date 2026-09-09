@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getActiveStore } from "@/lib/store/active-store";
 import { createClient } from "@/lib/supabase/server";
 import { AgentView } from "@/components/agent/agent-view";
-import { listCharges, listResponders } from "./actions";
+import {  listResponders } from "./actions";
 import { listRequestTypes } from "@/app/(app)/requests/actions";
 
 export const metadata: Metadata = { title: "Agent · The Assistant" };
@@ -18,13 +18,12 @@ export default async function AgentPage() {
   const { data: isOwner } = await supabase.rpc("user_is_owner", {
     p_store_id: store.id,
   });
-  if (!isOwner) redirect("/orders");
+  if (!isOwner) redirect("/");
 
-  const [{ data: rows }, responders, requestTypes, charges, { data: modelRow }] = await Promise.all([
+  const [{ data: rows }, responders, requestTypes, { data: modelRow }] = await Promise.all([
     supabase.from("agent_config").select("key, value").eq("store_id", store.id),
     listResponders(),
     listRequestTypes(),
-    listCharges(),
     supabase.from("stores").select("model_provider, model_name").eq("id", store.id).maybeSingle(),
   ]);
 
@@ -34,7 +33,6 @@ export default async function AgentPage() {
   // Built-in topics + any request types this store defined (dynamic).
   const topics = [
     { key: "escalation", label: "Escalations" },
-    { key: "order", label: "Orders" },
     ...requestTypes.map((t) => ({ key: t.key, label: t.label })),
   ];
 
@@ -44,7 +42,6 @@ export default async function AgentPage() {
       initialConfig={config}
       initialResponders={responders}
       topics={topics}
-      charges={charges}
       storeName={store.name}
       businessType={store.businessType}
       initialModelProvider={(modelRow as { model_provider?: string | null } | null)?.model_provider ?? "gemini"}

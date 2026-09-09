@@ -2,13 +2,11 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { saveAgentConfig, type Charge, type Responder } from "@/app/(app)/agent/actions";
+import { saveAgentConfig, type Responder } from "@/app/(app)/agent/actions";
 import { VoiceCard } from "@/components/agent/voice-card";
-import { StreakCard } from "@/components/agent/streak-card";
 import { ModelPicker } from "@/components/agent/model-picker";
 import { profileFor } from "@/lib/console-profile";
 import { RespondersSection } from "./responders-section";
-import { ChargesSection } from "./charges-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Bot, Loader2, Save } from "lucide-react";
 
-type Section = { key: string; label: string; hint: string; ordersOnly?: boolean; essential?: boolean; localOnly?: boolean; saas?: { label?: string; hint?: string } };
+type Section = { key: string; label: string; hint: string; essential?: boolean; saas?: { label?: string; hint?: string } };
 
 // Big prompt areas — each maps to an agent_config key (the bot's source of truth).
 const SECTIONS: Section[] = [
@@ -28,16 +26,12 @@ const SECTIONS: Section[] = [
     saas: { hint: "How the assistant helps — guiding users, when to escalate to a human, and interaction style. Tip: to trigger a connected tool or MCP, describe the situation (e.g. “when a customer asks about their invoice or usage, look it up and answer with their real data”) — the assistant maps it to the right tool." } },
   { key: "off_topic_handling", label: "Off-topic handling", hint: "How to gracefully redirect non-shopping questions.",
     saas: { hint: "How to gracefully redirect questions outside what your product covers." } },
-  { key: "promotions", label: "Promotions & offers", hint: "What to promote and when — combos, specials, seasonal offers. The assistant weaves these in naturally and sparingly, and can show a matching product or flyer image from your Knowledge Base. Leave blank for none.", localOnly: true },
-  { key: "order_prompt", label: "Ordering & checkout", hint: "How to take pre-orders: building the cart, confirmation, pickup, weight vs quantity, notes.", ordersOnly: true },
-  { key: "order_item_details", label: "Order details to collect", hint: "Per-item details the assistant should try to gather for each order — e.g. brand, size/pack, weight or count, variant. It asks lightly and never forces it; the store confirms anything missing.", ordersOnly: true },
 ];
 
 export function AgentView({
   initialConfig,
   initialResponders,
   topics,
-  charges,
   storeName,
   businessType,
   initialModelProvider,
@@ -46,7 +40,6 @@ export function AgentView({
   initialConfig: Record<string, string>;
   initialResponders: Responder[];
   topics: { key: string; label: string }[];
-  charges: Charge[];
   storeName: string;
   businessType?: string | null;
   initialModelProvider: string;
@@ -60,8 +53,6 @@ export function AgentView({
     () => Object.keys(values).some((k) => (values[k] ?? "") !== (initialConfig[k] ?? "")),
     [values, initialConfig],
   );
-  const ordersEnabled = (values.orders_enabled ?? "false") === "true";
-  const catalogEnabled = (values.catalog_enabled ?? "false") === "true";
   // Silence check-back is opt-out: absent/blank = on.
   const followupEnabled = (values.followup_enabled ?? "true") !== "false";
 
@@ -102,51 +93,8 @@ export function AgentView({
 
       <ModelPicker initialProvider={initialModelProvider} initialModel={initialModelName} />
 
-      {/* Ordering toggle */}
-      <div className="bg-card flex items-start justify-between gap-4 rounded-lg border p-4">
-        <div className="space-y-0.5">
-          <Label htmlFor="orders-toggle" className="text-sm font-medium">Enable ordering</Label>
-          <p className="text-muted-foreground text-sm">
-            When on, the assistant can build a cart and take pre-orders. When off, it is an
-            info, navigation, and Q&amp;A assistant only.
-          </p>
-        </div>
-        <Switch
-          id="orders-toggle"
-          checked={ordersEnabled}
-          onCheckedChange={(c) => set("orders_enabled", c ? "true" : "false")}
-        />
-      </div>
-
-      {/* Catalogue / pricing mode */}
-      <div className="bg-card flex items-start justify-between gap-4 rounded-lg border p-4">
-        <div className="space-y-0.5">
-          <Label htmlFor="catalog-toggle" className="text-sm font-medium">Structured catalogue (show prices)</Label>
-          <p className="text-muted-foreground text-sm">
-            On: The assistant looks up products and shows prices. Off (request mode): the
-            catalogue lives in your knowledge base, the assistant never quotes a price, and
-            every order is a request your team prices at confirmation.
-          </p>
-        </div>
-        <Switch
-          id="catalog-toggle"
-          checked={catalogEnabled}
-          onCheckedChange={(c) => set("catalog_enabled", c ? "true" : "false")}
-        />
-      </div>
-
       {/* Premium diner voice — self-contained (loads + saves on its own). */}
       <VoiceCard />
-
-      {/* Share-streak bonus (co-marketing) — a loyalty lever for local businesses;
-          not relevant to SaaS/product accounts, so hide it there. */}
-      {profile === "local" && (
-        <StreakCard
-          initialGoal={initialConfig.streak_goal ?? ""}
-          initialBonusCents={initialConfig.streak_bonus_cents ?? ""}
-          initialCapCents={initialConfig.streak_cap_cents ?? ""}
-        />
-      )}
 
       {/* Silence check-back */}
       <div className="bg-card flex items-start justify-between gap-4 rounded-lg border p-4">
@@ -168,8 +116,6 @@ export function AgentView({
       {/* Prompt sections — essentials first, then optional fine-tuning. */}
       {(() => {
         const renderSection = (s: Section, rows: number) => {
-          if (s.ordersOnly && !ordersEnabled) return null;
-          if (s.localOnly && profile !== "local") return null;
           const label = (profile === "saas" && s.saas?.label) || s.label;
           const hint = (profile === "saas" && s.saas?.hint) || s.hint;
           return (
@@ -241,7 +187,6 @@ export function AgentView({
         </div>
       </div>
 
-      {ordersEnabled && <ChargesSection initial={charges} />}
 
       <RespondersSection initial={initialResponders} topics={topics} />
     </div>

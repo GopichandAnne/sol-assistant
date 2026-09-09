@@ -221,16 +221,12 @@ function OnboardDialog({ onDone }: { onDone: () => void }) {
   const [displayName, setDisplayName] = useState("");
   const [slug, setSlug] = useState("");
   const [businessType, setBusinessType] = useState("");
-  const [ordersEnabled, setOrdersEnabled] = useState(false);
-  const [catalogEnabled, setCatalogEnabled] = useState(false);
   const [pending, setPending] = useState(false);
 
   function reset() {
     setDisplayName("");
     setSlug("");
     setBusinessType("");
-    setOrdersEnabled(false);
-    setCatalogEnabled(false);
   }
 
   async function submit() {
@@ -243,8 +239,6 @@ function OnboardDialog({ onDone }: { onDone: () => void }) {
       displayName,
       slug: slug || undefined,
       businessType: businessType || undefined,
-      ordersEnabled,
-      catalogEnabled,
     });
     setPending(false);
     if (res.ok) {
@@ -297,11 +291,6 @@ function OnboardDialog({ onDone }: { onDone: () => void }) {
               value={businessType}
               onValueChange={(v) => {
                 setBusinessType(v);
-                const p = presetFor(v);
-                if (p) {
-                  setOrdersEnabled(p.ordersDefault);
-                  setCatalogEnabled(p.catalogDefault);
-                }
               }}
             >
               <SelectTrigger>
@@ -319,22 +308,6 @@ function OnboardDialog({ onDone }: { onDone: () => void }) {
               Presets the assistant&apos;s behaviour for this type — you can fine-tune it later in
               Agent Setup.
             </p>
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div>
-              <Label htmlFor="orders">Enable ordering</Label>
-              <p className="text-muted-foreground text-xs">Customers can build carts / requests.</p>
-            </div>
-            <Switch id="orders" checked={ordersEnabled} onCheckedChange={setOrdersEnabled} />
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div>
-              <Label htmlFor="catalog">Structured catalogue (show prices)</Label>
-              <p className="text-muted-foreground text-xs">
-                Off = request mode; the bot never quotes prices.
-              </p>
-            </div>
-            <Switch id="catalog" checked={catalogEnabled} onCheckedChange={setCatalogEnabled} />
           </div>
         </div>
 
