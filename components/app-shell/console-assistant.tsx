@@ -3,19 +3,22 @@
 import { useState } from "react";
 import { MessageSquare } from "lucide-react";
 
-// The customer-facing assistant, embedded in the console as a floating bubble —
-// exactly how it appears on a real website. Because you're already signed in here,
-// the console minted your identity server-side (no separate chat login), so it acts
-// AS you: it can read your account, unlock members-only knowledge, and hold risky
-// actions. Cross-origin iframe to the embed on the web app.
-const EMBED_ORIGIN = process.env.NEXT_PUBLIC_AGENT_URL || "https://agent.askrani.ai";
+// The assistant itself, embedded in the console as a floating bubble \u2014 exactly how
+// it appears on a real website. Because you are already signed in here, the console
+// minted your identity server-side (no separate chat login), so it acts AS you: it
+// can read your account, reach members-only knowledge, and hold risky actions for
+// approval.
+//
+// Same origin, because this app now serves /embed itself. It used to iframe another
+// deployment, which resolved publishable keys against a different database and so
+// could never find an assistant created here.
 
-export function ConsoleAssistant({ token, publishableKey }: { token: string; publishableKey: string }) {
+export function ConsoleAssistant({ token, publishableKey }: { token: string | null; publishableKey: string }) {
   const [open, setOpen] = useState(false);
   // Mount the iframe once (on first open) and keep it mounted — just hide it when
   // closed — so the conversation survives close/reopen instead of reloading empty.
   const [mounted, setMounted] = useState(false);
-  const src = `${EMBED_ORIGIN}/embed?k=${encodeURIComponent(publishableKey)}&uid=${encodeURIComponent(token)}`;
+  const src = `/embed?k=${encodeURIComponent(publishableKey)}${token ? `&uid=${encodeURIComponent(token)}` : ""}`;
 
   function toggle() {
     setOpen((o) => {

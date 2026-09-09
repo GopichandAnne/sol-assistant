@@ -32,7 +32,10 @@ function Snippet({ code }: { code: string }) {
 
 export function SignedInEmbedGuide({ pubKey }: { pubKey: string | null }) {
   const [method, setMethod] = useState<Method | null>(null);
-  const k = pubKey || "pk_live_…";
+  const k = pubKey || "pk_live_\u2026";
+  // Same deployment that serves this console serves the widget, so the snippet
+  // always names the host the reader is actually looking at.
+  const site = typeof window !== "undefined" ? window.location.origin : "";
 
   return (
     <div className="bg-card space-y-4 rounded-lg border p-5">
@@ -65,7 +68,7 @@ export function SignedInEmbedGuide({ pubKey }: { pubKey: string | null }) {
             <li>In <span className="font-medium">Identity providers</span> below, add a provider, choose <span className="font-medium">Existing auth (JWKS)</span>, and paste your JWKS URL + issuer.</li>
             <li>Pass the JWT your provider already mints for the logged-in user as <code className="bg-muted rounded px-1">data-user-token</code>. We verify it against your public keys — no shared secret, no signing code.</li>
           </ol>
-          <Snippet code={`<script src="https://app.askrani.ai/embed.js"\n  data-key="${k}"\n  data-user-token="<the JWT you already issue>"\n  async></script>`} />
+          <Snippet code={`<script src="${site}/embed.js"\n  data-key="${k}"\n  data-user-token="<the JWT you already issue>"\n  async></script>`} />
         </div>
       )}
 
@@ -77,7 +80,7 @@ export function SignedInEmbedGuide({ pubKey }: { pubKey: string | null }) {
             <li>Copy the signing code (Node/Python/PHP/Ruby/Go are all in the tools below) and mint a token per logged-in user on your server.</li>
             <li>Pass it as <code className="bg-muted rounded px-1">data-user-token</code>. Use the <span className="font-medium">token tester</span> below to confirm before going live.</li>
           </ol>
-          <Snippet code={`<script src="https://app.askrani.ai/embed.js"\n  data-key="${k}"\n  data-user-token="<raniUserToken(user)>"\n  async></script>`} />
+          <Snippet code={`<script src="${site}/embed.js"\n  data-key="${k}"\n  data-user-token="<assistantUserToken(user)>"\n  async></script>`} />
         </div>
       )}
 
@@ -89,7 +92,7 @@ export function SignedInEmbedGuide({ pubKey }: { pubKey: string | null }) {
             <li>Expose one endpoint on your site (behind your login) that returns the current user&apos;s token — raw text or <code className="bg-muted rounded px-1">{'{ "token": "…" }'}</code>.</li>
             <li>Point the embed at it with <code className="bg-muted rounded px-1">data-token-url</code>. We fetch it with your cookies the first time the chat opens.</li>
           </ol>
-          <Snippet code={`<script src="https://app.askrani.ai/embed.js"\n  data-key="${k}"\n  data-token-url="/api/rani-token"\n  async></script>`} />
+          <Snippet code={`<script src="${site}/embed.js"\n  data-key="${k}"\n  data-token-url="/api/assistant-token"\n  async></script>`} />
         </div>
       )}
 

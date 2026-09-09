@@ -6,7 +6,7 @@ import { StoreSwitcher } from "@/components/app-shell/store-switcher";
 import { ThemeToggle } from "@/components/app-shell/theme-toggle";
 import { UserMenu } from "@/components/app-shell/user-menu";
 import { ConsoleAssistant } from "@/components/app-shell/console-assistant";
-import { getTourStore, TOUR_STORE_KEY } from "@/lib/tour/store";
+import { getOwnAssistant } from "@/lib/preview/own-assistant";
 import { mintTourToken } from "@/lib/tour/token";
 
 export default async function AppLayout({
@@ -31,15 +31,21 @@ export default async function AppLayout({
 
   const capabilities = await getStoreCapabilities(ctx.active.id);
 
-  // Product-tour: on the tour store's own console, embed its customer-facing
-  // assistant as a floating bubble that acts AS the signed-in owner — the identity
-  // token is minted here, server-side, from the session we already have (no separate
-  // chat login). Only for the tour store, and only when authenticated embed is set.
-  let tourToken: string | null = null;
+  // Preview bubble: the owner's OWN assistant, floating in the console exactly as it
+  // appears on a website. Where the assistant has an SSO secret the chat runs AS the
+  // signed-in owner \u2014 minted here, server-side, from the session we already have, so
+  // there is no second login \u2014 which is what makes an identity-forwarding tool
+  // testable without leaving the console.
+  let preview: { key: string; token: string | null } | null = null;
   try {
-    const tour = await getTourStore();
-    if (tour && tour.id === ctx.active.id && tour.identitySecret && ctx.user.email) {
-      tourToken = mintTourToken(tour.identitySecret, { email: ctx.user.email, sub: ctx.user.id, ttlSec: 3600 });
+    const own = await getOwnAssistant(ctx.active.id);
+    if (own) {
+      preview = {
+        key: own.publishableKey,
+        token: own.identitySecret && ctx.user.email
+          ? mintTourToken(own.identitySecret, { email: ctx.user.email, sub: ctx.user.id, ttlSec: 3600 })
+          : null,
+      };
     }
   } catch {
     /* never break the console for the preview bubble */
@@ -66,7 +72,7 @@ export default async function AppLayout({
           <main className="flex-1 overflow-y-auto">{children}</main>
         </div>
       </div>
-      {tourToken ? <ConsoleAssistant token={tourToken} publishableKey={TOUR_STORE_KEY} /> : null}
+      {preview ? <ConsoleAssistant token={preview.token} publishableKey={preview.key} /> : null}
     </StoreProvider>
   );
 }

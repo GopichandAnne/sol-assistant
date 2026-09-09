@@ -18,7 +18,6 @@ import {
   setWhatsappRedirect,
   setSessionMinutes,
   setWhiteLabel,
-  setAnswersPublished,
 } from "@/app/(app)/link/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +32,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Check, Clock, Copy, Download, ImagePlus, Loader2, MessageCircle, QrCode, RefreshCw, Save, Sparkles, Trash2 } from "lucide-react";
-import { ProofPanel } from "@/components/store-link/proof-panel";
 import { ListingQrs } from "@/components/store-link/listing-qrs";
 import { TableQrs } from "@/components/store-link/table-qrs";
 import { DIAL_CODES, combineDial, splitDial } from "@/lib/phone";
@@ -49,7 +47,20 @@ const TIMEOUTS: [number, string][] = [
   [1440, "24 hours"],
 ];
 
-const SITE = "https://askrani.ai";
+/**
+ * Where the web chat is served from: this app.
+ *
+ * It used to be a constant pointing at askrani.ai, which was correct while the
+ * widget lived there. This product hosts its own /embed.js and /embed, and a
+ * snippet aimed at another deployment resolves keys against another database \u2014
+ * so it would simply never find the assistant it names. Read from the browser so
+ * a preview deployment, a custom domain, and localhost each hand out a snippet
+ * that actually works.
+ */
+function siteOrigin(): string {
+  if (typeof window !== "undefined") return window.location.origin;
+  return (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+}
 
 export function StoreLinkPanel({
   storeId,
@@ -75,8 +86,6 @@ export function StoreLinkPanel({
   const [pubKey, setPubKey] = useState<string | null>(null);
   const [rotatingKey, setRotatingKey] = useState(false);
   const [whiteLabel, setWhiteLabelState] = useState(false);
-  const [answersPublished, setAnswersPublishedState] = useState(false);
-  const [answersBusy, setAnswersBusy] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [chips, setChips] = useState("");
   const [businessType, setBusinessType] = useState<string | null>(null);
@@ -85,14 +94,16 @@ export function StoreLinkPanel({
   const qrRef = useRef<HTMLDivElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  const url = token ? `${SITE}/s/${storeSlug}?t=${token}` : "";
+  // A link anyone can open, and the same page the embedded bubble loads in its
+  // iframe. One surface, so what someone tests by link is exactly what a visitor
+  // gets in the widget.
+  const site = siteOrigin();
+  const url = pubKey ? `${site}/embed?k=${pubKey}` : "";
   // One-value publishable key snippet (the developer-friendly form). Falls back to
   // the slug+token form only while the key is still loading.
   const embedSnippet = pubKey
-    ? `<script src="${SITE}/embed.js" data-key="${pubKey}" async></script>`
-    : token
-      ? `<script src="${SITE}/embed.js" data-slug="${storeSlug}" data-token="${token}" async></script>`
-      : "";
+    ? `<script src="${site}/embed.js" data-key="${pubKey}" async></script>`
+    : "";
 
   useEffect(() => {
     let alive = true;
@@ -110,7 +121,6 @@ export function StoreLinkPanel({
         setChips(res.chips);
         setBusinessType(res.businessType);
         setWhiteLabelState(res.whiteLabel);
-        setAnswersPublishedState(res.answersPublished);
       } else {
         toast.error("Couldn't load link", { description: res.error });
       }
@@ -146,19 +156,6 @@ export function StoreLinkPanel({
       toast.success("New publishable key issued");
     } else {
       toast.error("Couldn't rotate key", { description: res.error });
-    }
-  }
-
-  async function toggleAnswers(next: boolean) {
-    setAnswersBusy(true);
-    setAnswersPublishedState(next); // optimistic
-    const res = await setAnswersPublished(storeId, next);
-    setAnswersBusy(false);
-    if (!res.ok) {
-      setAnswersPublishedState(!next);
-      toast.error("Couldn't update", { description: res.error });
-    } else {
-      toast.success(next ? "Answers page published — submitting to search & AI" : "Answers page unpublished");
     }
   }
 
@@ -465,7 +462,7 @@ export function StoreLinkPanel({
       <div className={active ? "" : "pointer-events-none opacity-50"}>
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
           <div ref={qrRef} className="bg-card rounded-xl border p-3">
-            <QRCodeCanvas value={url || SITE} size={168} level="M" includeMargin fgColor="#0f766e" />
+            <QRCodeCanvas value={url || site} size={168} level="M" includeMargin fgColor="#0f766e" />
           </div>
 
           <div className="min-w-0 flex-1 space-y-3">
@@ -593,26 +590,6 @@ export function StoreLinkPanel({
           </span>
           <Switch checked={whiteLabel} onCheckedChange={toggleWhiteLabel} />
         </label>
-        <div className="border-t pt-3">
-          <label className="flex items-center justify-between gap-3">
-            <span className="text-muted-foreground text-xs">
-              <span className="text-foreground font-medium">Public Answers page</span> — a crawlable page of your Q&amp;A so Google &amp; AI (ChatGPT, Perplexity) can answer about you
-            </span>
-            <Switch checked={answersPublished} onCheckedChange={toggleAnswers} disabled={answersBusy} />
-          </label>
-          {answersPublished && (
-            <a
-              href={`${SITE}/a/${storeSlug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1 text-xs font-medium hover:underline"
-              style={{ color: "var(--sol-orange-dark)" }}
-            >
-              View your Answers page → {SITE.replace(/^https?:\/\//, "")}/a/{storeSlug}
-            </a>
-          )}
-        </div>
-        {answersPublished && <ProofPanel storeId={storeId} />}
       </div>
 
       {businessType === "realtor" && <ListingQrs storeId={storeId} storeSlug={storeSlug} />}
