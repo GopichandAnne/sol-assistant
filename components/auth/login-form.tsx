@@ -23,13 +23,12 @@ function MicrosoftMark() {
   );
 }
 
-/** Only render the Microsoft button when the provider is actually configured on
- *  this deployment. The upstream Google button was shown unconditionally against
- *  a provider that was never set up, so it could only ever fail: a sign-in option
- *  that does not work is worse than one that is absent. */
-const MICROSOFT_ENABLED = process.env.NEXT_PUBLIC_MICROSOFT_SSO === "true";
-
-export function LoginForm() {
+/** `microsoftEnabled` is resolved server-side by the login page, at request time.
+ *  The button is shown only where the Azure provider is actually configured: the
+ *  upstream Google button rendered unconditionally against a provider that was
+ *  never set up, so it could only ever fail, and a sign-in option that does not
+ *  work is worse than one that is absent. */
+export function LoginForm({ microsoftEnabled = false }: { microsoftEnabled?: boolean }) {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<"signin" | "signup">(
     searchParams.get("mode") === "signup" ? "signup" : "signin",
@@ -131,7 +130,7 @@ export function LoginForm() {
         </p>
       </div>
 
-      {MICROSOFT_ENABLED && (
+      {microsoftEnabled && (
         <>
           <Button
             type="button"
