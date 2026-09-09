@@ -41,6 +41,10 @@ export interface HttpTool {
 /** The verified, signed-in visitor (from the embed's data-user-token). Never set
  *  by the model — only ever populated from a server-verified identity token. */
 export interface Visitor {
+  /** Where this person is talking to us: "web" | "teams" | "slack" | "whatsapp".
+   *  Only the web embed can produce a forwardable sign-in token, so the channel
+   *  decides whether claim:"token" is even possible. */
+  channel?: string;
   token?: string; // the raw verified identity token, to forward to the host's own API
   email?: string | null;
   phone?: string | null;
@@ -105,7 +109,18 @@ export async function executeHttpTool(
         : claim === "phone" ? visitor?.phone
         : claim === "sub" ? visitor?.sub
         : visitor?.token;
-      if (!value) return { ok: false, note: "I can't tell who you're signed in as here — this needs you to be logged in on the site." };
+      if (!value) {
+        // Be specific about WHY. A sign-in token only exists on the web embed,
+        // where the host site signs one; Teams and Slack identify a person but
+        // have no token to hand on. Saying "log in on the site" to someone in
+        // Teams is both wrong and unactionable.
+        const ch = visitor?.channel ?? "";
+        if (claim === "token" && (ch === "teams" || ch === "slack")) {
+          console.warn(`[httptool] ${t.name}: claim "token" is web-embed only; this account is on ${ch}`);
+          return { ok: false, note: `This tool is set up to pass a sign-in token, which only exists on the web. In ${ch === "teams" ? "Teams" : "Slack"} it should identify people by email instead — ask whoever set it up to change it.` };
+        }
+        return { ok: false, note: "I can't tell who you are here, and this needs a verified sign-in." };
+      }
       if (auth.location === "query" && auth.name) query.set(auth.name, String(value));
       else headers[auth.name || "Authorization"] = `${auth.prefix ?? "Bearer "}${value}`;
     }

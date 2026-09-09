@@ -163,6 +163,7 @@ export async function resolveIdentity(
   const meta = claim.metadata as Record<string, unknown> | undefined;
   const sub = meta ? (meta.sub ?? meta.id) : undefined;
   const visitor: Visitor = {
+    channel: opts.channel,
     token: rawToken,
     email: claim.email ?? null,
     phone: claim.phone ?? null,

@@ -118,7 +118,7 @@ export function QuickTool({ isOwner }: { isOwner: boolean }) {
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="radio" name="qt-auth" className="accent-teal size-4" checked={auth === "identity"} onChange={() => setAuth("identity")} disabled={!isOwner} />
-              Act as the signed-in user <span className="text-muted-foreground text-xs">(forwards their verified identity — needs embedded sign-in on)</span>
+              Act as the signed-in user <span className="text-muted-foreground text-xs">(forwards their verified identity — needs sign-in configured)</span>
             </label>
             <p className="text-muted-foreground text-xs">
               Needs an API key? Use <span className="font-medium">Connect a custom API</span> below instead — keys are encrypted there.

@@ -28,7 +28,10 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
   const [apiKey, setApiKey] = useState("");
   const [authProvider, setAuthProvider] = useState("none");
   const [asCustomer, setAsCustomer] = useState(false);
-  const [identityClaim, setIdentityClaim] = useState("token");
+  // Defaults to email, not token: a token only exists on the web embed, and this
+  // product's primary channels are Teams and Slack. Token remains available and is
+  // stronger where it works, since the downstream API can verify it itself.
+  const [identityClaim, setIdentityClaim] = useState("email");
   const [identityField, setIdentityField] = useState("");
   const [identityIn, setIdentityIn] = useState("query");
   const [busy, setBusy] = useState(false);
@@ -99,7 +102,7 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
       });
     }
     setUrl(""); setGoal(""); setApiKey(""); setAsCustomer(false); setAuthProvider("none");
-    setIdentityClaim("token"); setIdentityField(""); setIdentityIn("query");
+    setIdentityClaim("email"); setIdentityField("email"); setIdentityIn("query");
     router.refresh();
   }
 
@@ -167,18 +170,31 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
               value={identityClaim}
               onValueChange={(v) => {
                 setIdentityClaim(v);
-                if (v !== "token" && !identityField.trim()) setIdentityField(v === "email" ? "email" : v === "phone" ? "phone" : "user_id");
+                if (v !== "token" && !identityField.trim()) setIdentityField(v === "email" ? "email" : "user_id");
               }}
               disabled={!isOwner || busy}
             >
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="token">Their sign-in token — my API verifies it (recommended)</SelectItem>
-                <SelectItem value="email">Their email address</SelectItem>
-                <SelectItem value="phone">Their phone number</SelectItem>
-                <SelectItem value="sub">Their user ID</SelectItem>
+                <SelectItem value="token">Their sign-in token — web only, your API verifies it</SelectItem>
+                <SelectItem value="email">Their email address — works everywhere</SelectItem>
+                <SelectItem value="sub">Their user ID — works everywhere</SelectItem>
               </SelectContent>
             </Select>
+            {identityClaim === "token" ? (
+              <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                <b>Web pages only.</b> A sign-in token exists only where your own site
+                signs one. In Microsoft Teams and Slack there is no token to pass on, so
+                this tool will decline to run there. Pick email or user ID if your team
+                will use it from Teams or Slack.
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-xs">
+                Works in Teams, Slack and on the web. Your API is told who is asking and
+                trusts us to have verified it — it can&apos;t check independently, so only
+                use this for APIs that already trust this service.
+              </p>
+            )}
             {identityClaim !== "token" && (
               <div className="flex gap-2">
                 <Input placeholder="Field name the API expects, e.g. email" value={identityField} onChange={(e) => setIdentityField(e.target.value)} disabled={!isOwner || busy} />

@@ -216,7 +216,14 @@ export async function executeMcpTool(
   try {
     // Delegated-identity servers can only be called for a signed-in visitor.
     if (t.server.auth?.type === "identity" && !identityValue(t.server, visitor)) {
-      return { error: "I can't tell who you're signed in as here — this needs you to be logged in on the site." };
+      // Same trap as httptool: a sign-in token only exists on the web embed, so
+      // an identity server set to claim "token" can never fire from Teams/Slack.
+      const ch = visitor?.channel ?? "";
+      if ((t.server.auth?.claim ?? "token") === "token" && (ch === "teams" || ch === "slack")) {
+        console.warn(`[mcp] ${t.server.name}: claim "token" is web-embed only; this account is on ${ch}`);
+        return { error: `This server is set up to pass a sign-in token, which only exists on the web. In ${ch === "teams" ? "Teams" : "Slack"} it should identify people by email instead.` };
+      }
+      return { error: "I can't tell who you are here, and this needs a verified sign-in." };
     }
     const sess = await openSession(db, store.id, t.server, visitor);
     if (!sess.ok) return { error: `couldn't reach ${t.server.name}`, note: sess.error };
