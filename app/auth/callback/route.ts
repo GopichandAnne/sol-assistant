@@ -2,9 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * OAuth + magic-link callback. @supabase/ssr uses the PKCE flow, so both Google
- * and the email magic link return here with a `?code=` to exchange for a
- * session. On success we redirect to `next` (validated to a relative path).
+ * OAuth + magic-link callback. @supabase/ssr uses the PKCE flow, so Microsoft
+ * (Entra) and the email magic link both return here with a `?code=` to exchange
+ * for a session. Provider-agnostic: nothing here needs to change to add another.
+ * On success we redirect to `next` (validated to a relative path).
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);

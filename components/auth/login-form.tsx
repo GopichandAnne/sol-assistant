@@ -9,6 +9,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Mail } from "lucide-react";
 
+/** Microsoft's four-square mark. A provider logo, not decoration, which is why
+ *  this is an inline SVG rather than a Lucide icon: people look for the actual
+ *  mark when choosing how to sign in. */
+function MicrosoftMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 23 23" aria-hidden="true">
+      <rect x="1" y="1" width="10" height="10" fill="#F25022" />
+      <rect x="12" y="1" width="10" height="10" fill="#7FBA00" />
+      <rect x="1" y="12" width="10" height="10" fill="#00A4EF" />
+      <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
+    </svg>
+  );
+}
+
+/** Only render the Microsoft button when the provider is actually configured on
+ *  this deployment. The upstream Google button was shown unconditionally against
+ *  a provider that was never set up, so it could only ever fail: a sign-in option
+ *  that does not work is worse than one that is absent. */
+const MICROSOFT_ENABLED = process.env.NEXT_PUBLIC_MICROSOFT_SSO === "true";
+
 export function LoginForm() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<"signin" | "signup">(
@@ -22,9 +42,28 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [pwLoading, setPwLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [msLoading, setMsLoading] = useState(false);
 
   const callbackUrl = (path: string) =>
     `${window.location.origin}/auth/callback?next=${encodeURIComponent(path)}`;
+
+  /** Entra ID (Supabase calls the provider "azure"). Work accounts are already
+   *  signed in at the browser level, so this is usually one click and no password.
+   *  `email` must be requested explicitly or Entra returns no email claim, and the
+   *  rest of the app keys people by email. */
+  async function signInWithMicrosoft() {
+    setMsLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "azure",
+      options: { scopes: "openid profile email", redirectTo: callbackUrl(next) },
+    });
+    if (error) {
+      toast.error("Couldn't start Microsoft sign-in", { description: error.message });
+      setMsLoading(false);
+    }
+    // On success the browser leaves for Microsoft; no need to clear loading.
+  }
 
   async function signInWithPassword(e: React.FormEvent) {
     e.preventDefault();
@@ -91,6 +130,26 @@ export function LoginForm() {
             : "For the people who run your assistant."}
         </p>
       </div>
+
+      {MICROSOFT_ENABLED && (
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={signInWithMicrosoft}
+            disabled={msLoading}
+          >
+            {msLoading ? <Loader2 className="size-4 animate-spin" /> : <MicrosoftMark />}
+            Continue with Microsoft
+          </Button>
+          <div className="flex items-center gap-3">
+            <span className="bg-border h-px flex-1" />
+            <span className="text-muted-foreground text-xs">or</span>
+            <span className="bg-border h-px flex-1" />
+          </div>
+        </>
+      )}
 
       {isSignup ? (
         <div className="space-y-3">
