@@ -138,7 +138,7 @@ export function buildApprovalBlocks(a: ApprovalReq): { text: string; blocks: unk
     text, // notification fallback
     blocks: [
       { type: "section", text: { type: "mrkdwn", text: `*Approval needed* — ${a.orgName}\n${a.detail}` } },
-      { type: "context", elements: [{ type: "mrkdwn", text: a.actedAs ? `Requested for: ${a.actedAs}` : "Flagged by Rani" }] },
+      { type: "context", elements: [{ type: "mrkdwn", text: a.actedAs ? `Requested for: ${a.actedAs}` : "Flagged by the assistant" }] },
       {
         type: "actions",
         block_id: `approval_${a.id}`,

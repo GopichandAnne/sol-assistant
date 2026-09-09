@@ -836,7 +836,7 @@ Deno.serve(async (req) => {
       case "answer_ticket": {
         const ticketId = String(body.ticket_id ?? "").trim();
         const answer = String(body.answer ?? "").trim();
-        const by = (String(body.by ?? "").trim()) || "Store team";
+        const by = (String(body.by ?? "").trim()) || "The team";
         if (!ticketId || !answer) return json({ error: "ticket_id and answer required" }, 400);
         const { answerTicket } = await import("../_shared/responders.ts");
         const res = await answerTicket(db, store, ticketId, answer, by);

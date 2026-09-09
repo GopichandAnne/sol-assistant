@@ -25,7 +25,7 @@ async function postSlackApproval(
   reqId: string,
   detail: string,
   actedAs: string | null,
-): Promise<void> {
+): Promise<boolean> {
   try {
     // deno-lint-ignore no-explicit-any
     const from = db.from as unknown as (t: string) => any;
@@ -34,11 +34,12 @@ async function postSlackApproval(
       .eq("store_id", store.id)
       .eq("active", true)
       .maybeSingle();
-    if (!install?.bot_token || !install?.approvals_channel) return;
+    if (!install?.bot_token || !install?.approvals_channel) return false;
     const { text, blocks } = buildApprovalBlocks({ id: reqId, detail, orgName: store.store_display_name ?? store.slug, actedAs });
-    await slackPostMessage(install.bot_token, install.approvals_channel, text, blocks);
+    return await slackPostMessage(install.bot_token, install.approvals_channel, text, blocks);
   } catch (e) {
     console.warn(`[holds] slack approval post: ${(e as Error)?.message ?? e}`);
+    return false;
   }
 }
 
@@ -55,11 +56,11 @@ async function postTeamsApproval(
   reqId: string,
   detail: string,
   actedAs: string | null,
-): Promise<void> {
+): Promise<boolean> {
   try {
     const appId = Deno.env.get("MICROSOFT_APP_ID");
     const appPassword = Deno.env.get("MICROSOFT_APP_PASSWORD");
-    if (!appId || !appPassword) return;
+    if (!appId || !appPassword) return false;
     // deno-lint-ignore no-explicit-any
     const from = db.from as unknown as (t: string) => any;
     const { data: install } = await from("teams_installs")
@@ -67,7 +68,7 @@ async function postTeamsApproval(
       .eq("store_id", store.id)
       .eq("active", true)
       .maybeSingle();
-    if (!install?.tenant_id || !install?.approvals_email) return;
+    if (!install?.tenant_id || !install?.approvals_email) return false;
 
     const { data: approver } = await from("teams_user")
       .select("service_url, conversation_id")
@@ -77,19 +78,20 @@ async function postTeamsApproval(
     if (!approver?.conversation_id) {
       // We have never seen them, so there is no conversation to reach them on.
       console.warn(`[holds] teams approver ${install.approvals_email} hasn't messaged the bot yet — no card sent`);
-      return;
+      return false;
     }
 
     const card = buildApprovalCard({
       id: reqId, detail, orgName: store.store_display_name ?? store.slug, actedAs,
     });
-    await postTeamsActivity(appId, appPassword, approver.service_url, approver.conversation_id, card);
+    return await postTeamsActivity(appId, appPassword, approver.service_url, approver.conversation_id, card);
   } catch (e) {
     console.warn(`[holds] teams approval post: ${(e as Error)?.message ?? e}`);
+    return false;
   }
 }
 
-const PANEL_URL = "https://app.askrani.ai";
+const PANEL_URL = (Deno.env.get("CONSOLE_URL") ?? "https://sol-assistant.vercel.app").replace(/\/$/, "");
 const APPROVAL_TOPIC = "approval";
 
 /** A compact, human-readable summary of what the held tool was asked to do.
@@ -168,8 +170,9 @@ export async function routeHeldAction(
     const orgName = store.store_display_name ?? store.slug;
     const who = h.actedAs ? `\nRequested for: ${h.actedAs}` : "";
     const summary = `Approval needed — ${orgName}\n\n${detail}${who}`;
+    let notified = 0;
     try {
-      await notifyResponders(db, store, APPROVAL_TOPIC, summary, {
+      notified = await notifyResponders(db, store, APPROVAL_TOPIC, summary, {
         subject: `Approval needed — ${orgName}`,
         emailBody: `${summary}\n\nReview and approve or decline: ${PANEL_URL}/activity`,
       });
@@ -179,13 +182,28 @@ export async function routeHeldAction(
 
     // In-channel approval: Approve/Decline buttons in Slack, if configured.
     const reqId = (inserted as { id: string }).id;
-    await postSlackApproval(db, store, reqId, detail, h.actedAs);
-    await postTeamsApproval(db, store, reqId, detail, h.actedAs);
+    if (await postSlackApproval(db, store, reqId, detail, h.actedAs)) notified++;
+    if (await postTeamsApproval(db, store, reqId, detail, h.actedAs)) notified++;
 
+    // Same honesty rule as an escalation: the request is recorded and visible in
+    // the console either way, but telling someone it was "flagged to your team"
+    // when no person was reached leaves them waiting on a queue nobody is watching.
+    // Say which of the two actually happened.
+    if (notified === 0) {
+      console.warn(`[holds] ${reqId}: approval request open but nobody was notified`);
+      return {
+        reference: reqId,
+        note:
+          "I've opened an approval request and nothing has changed in the meantime. Be " +
+          "straight that no one is set up to receive approvals yet, so it is waiting in " +
+          "the console rather than with a named person, and you cannot say when it will " +
+          "be picked up.",
+      };
+    }
     return {
-      reference: (inserted as { id: string }).id,
+      reference: reqId,
       note:
-        "I've opened an approval request for your team and flagged it — they'll review and can approve or decline it. Nothing's changed in the meantime.",
+        "I've opened an approval request for your team and flagged it - they'll review and can approve or decline it. Nothing's changed in the meantime.",
     };
   } catch (e) {
     console.error(`[holds] route: ${e instanceof Error ? e.message : e}`);

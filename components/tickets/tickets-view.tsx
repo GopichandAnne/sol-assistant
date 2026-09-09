@@ -143,7 +143,13 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
     startSend(async () => {
       const res = await answerTicket(ticket.ticket_id, a);
       if (res.ok) {
-        toast.success("Answer sent");
+        // Say where it actually went. "Sent" reads as delivered, and for a web
+        // chat that has since been closed it is picked up next time they open it.
+        toast.success(res.relayed ? "Sent back to them" : "Answered", {
+          description: res.relayed
+            ? undefined
+            : "They'll see it in the chat where they asked.",
+        });
         setAnswer("");
         router.refresh();
       } else {

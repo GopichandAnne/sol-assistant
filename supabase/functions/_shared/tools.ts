@@ -475,18 +475,23 @@ const REPORT_WRONG_DECL: FunctionDeclaration = {
 const ESCALATE_DECL: FunctionDeclaration = {
   name: "escalate_to_owner",
   description:
-    "Route a question or problem to the store team when you genuinely cannot " +
-    "answer it — a store policy/promotion not in the knowledge base, an unusual " +
-    "or non-grocery item, a customer asking you to check with the store/owner, " +
-    "or a reported problem (wrong price, missing item). Try a knowledge search " +
-    "first. After calling this, tell the customer you'll check and get back to " +
-    "them. Do NOT use it for greetings, acknowledgments, or hostile messages.",
+    "Hand a question to a person on the team when you genuinely cannot resolve it " +
+    "yourself — the answer is not in the company's material, it needs a judgement " +
+    "call or an exception to policy, it concerns one specific person's situation, " +
+    "or someone asks outright to speak to a human. Search the company's knowledge " +
+    "first; escalate only when that comes back empty or the question is not one " +
+    "documentation can answer. Do NOT use it for greetings, thanks, or small talk. " +
+    "Read the result before you reply: `notified` tells you how many people were " +
+    "actually reached. If it is 0, say the request has been logged for the team and " +
+    "do NOT claim it was passed to anyone.",
   parameters: {
     type: "object",
     properties: {
       question: {
         type: "string",
-        description: "The customer's question or problem, written in English for the owner.",
+        description:
+          "What they need, written in English for the colleague who will pick it up. " +
+          "Include the detail that person needs to act, not just the topic.",
       },
     },
     required: ["question"],
@@ -547,7 +552,7 @@ async function executeEscalate(
   // Reach the responders wherever they work: Teams, Slack, or email (notify.ts).
   // Written in the assistant's voice, because in a Teams or Slack DM that is who
   // it appears to be from, not a system alert from an address nobody recognises.
-  await notifyResponders(
+  const notified = await notifyResponders(
     db, store, "escalation",
     `Someone asked me something I couldn't answer, and they're waiting:
 
@@ -557,7 +562,23 @@ Can you take it? Answer in the console and I'll pass it back to them.`,
     { subject: `Someone needs a hand — ${store.store_display_name ?? store.slug}` },
   );
 
-  return { escalated: true, ticket_id: ticketId };
+  // The ticket exists either way — it is in the console and nothing is lost. But
+  // whether a PERSON was told is a different fact, and the model must not paper
+  // over it: "I've passed this to the team" when nobody was reached leaves someone
+  // waiting for a reply that is not coming.
+  if (notified === 0) {
+    console.warn(`[tools] escalate ${ticketId}: ticket created but nobody was notified`);
+    return {
+      escalated: true,
+      ticket_id: ticketId,
+      notified: 0,
+      note:
+        "Logged for the team, but nobody was actually notified — no one is set up to " +
+        "receive escalations yet. Tell them it has been logged and that you cannot " +
+        "promise when someone will pick it up. Do not say it was sent to anyone.",
+    };
+  }
+  return { escalated: true, ticket_id: ticketId, notified };
 }
 
 const SEND_IMAGE_DECL: FunctionDeclaration = {

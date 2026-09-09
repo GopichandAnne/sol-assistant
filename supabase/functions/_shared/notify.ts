@@ -24,7 +24,10 @@ import { sendEmail } from "./email.ts";
 import { slackLookupByEmail, slackPostMessage } from "./slack-api.ts";
 import { postTeamsReply } from "./teams-auth.ts";
 
-const PANEL_URL = "https://app.askrani.ai";
+// Where a notified person goes to act on it. Configuration, not a constant: this
+// product has its own console, and pointing people at another product's URL is
+// how a carve-out leaks back into the thing it was carved out of.
+const PANEL_URL = (Deno.env.get("CONSOLE_URL") ?? "https://sol-assistant.vercel.app").replace(/\/$/, "");
 
 export interface Recipient {
   email: string | null;
@@ -100,6 +103,11 @@ async function viaSlack(reach: Reach, email: string, text: string): Promise<bool
  * `text` is written as if the assistant is speaking, because that is what the
  * person sees: a message from the assistant they already know, not a system
  * alert from an address nobody recognises.
+ *
+ * Returns how many people were actually reached. Callers need that number rather
+ * than a promise that resolved: an assistant that says "I've passed this to the
+ * team" when nothing was sent is worse than one that says nobody is set up yet,
+ * because the person stops waiting for a reply that will never come.
  */
 export async function deliverToPeople(
   db: SupabaseClient,
@@ -107,11 +115,11 @@ export async function deliverToPeople(
   recipients: Recipient[],
   text: string,
   opts?: { subject?: string; emailBody?: string },
-): Promise<void> {
+): Promise<number> {
   const people = recipients.filter((r) => r.email);
   if (people.length === 0) {
     console.warn(`[notify] ${store.slug}: nobody reachable — no responder has an email`);
-    return;
+    return 0;
   }
 
   const reach = await loadReach(db, store);
@@ -119,10 +127,18 @@ export async function deliverToPeople(
   const subject = opts?.subject ?? `Someone needs a hand — ${name}`;
   const body = opts?.emailBody ?? `${text}\n\nOpen the console to respond: ${PANEL_URL}/tickets`;
 
+  let reached = 0;
   for (const person of people) {
     const email = person.email!;
-    if (await viaTeams(db, reach, email, text)) continue;
-    if (await viaSlack(reach, email, text)) continue;
-    await sendEmail(email, subject, body, name);
+    if (await viaTeams(db, reach, email, text)) { reached++; continue; }
+    if (await viaSlack(reach, email, text)) { reached++; continue; }
+    if (await sendEmail(email, subject, body, name)) reached++;
   }
+  if (reached === 0) {
+    console.warn(
+      `[notify] ${store.slug}: ${people.length} responder(s) but none reachable — ` +
+      `no Teams or Slack install and no SMTP configured`,
+    );
+  }
+  return reached;
 }

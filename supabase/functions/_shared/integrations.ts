@@ -88,7 +88,7 @@ export async function executeIntegration(
     ts: new Date().toISOString(),
   });
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (integ.auth_secret) headers["X-Rani-Signature"] = await sign(integ.auth_secret, payload);
+  if (integ.auth_secret) headers["X-Assistant-Signature"] = await sign(integ.auth_secret, payload);
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), integ.timeout_ms ?? 4000);

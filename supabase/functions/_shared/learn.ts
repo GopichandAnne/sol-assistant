@@ -33,25 +33,41 @@ async function judge(storeName: string, question: string, answer: string): Promi
   if (!key) return null;
   const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-flash-latest";
 
+  // The rubric decides what an assistant is allowed to remember, so it has to
+  // describe THIS product's world. Written for a retail FAQ ("a customer's
+  // question", "the store's products, hours, locations"), it quietly rejected the
+  // internal questions this product actually gets, and the same question escalated
+  // to a person again the next day \u2014 which is the whole loop failing.
+  //
+  // The keep/drop line is the same shape as before and is the one that matters:
+  // how the organisation works is reusable, one person's own situation is not.
   const sys =
-    `You curate the FAQ knowledge base for ${storeName}. A staff member just answered a ` +
-    "customer's escalated question. Decide whether it should become a reusable FAQ the " +
-    "assistant can answer on its own next time. Return STRICT JSON.\n" +
-    "keep = true ONLY if the question is a general, reusable question about the store (its " +
-    "products, services, policies, hours, locations, offerings) AND the answer is a general " +
-    "fact useful to any customer. keep = false for anything customer-specific or one-off: a " +
-    "particular person's order/delivery/refund/account status ('is my order ready', 'where is " +
-    "my delivery'), a complaint about a specific incident, or an answer that only applies to " +
-    "one customer.\n" +
+    `You curate the internal knowledge base for ${storeName}. A colleague on the ` +
+    "team just answered a question the assistant could not answer on its own. " +
+    "Decide whether it should become reusable knowledge the assistant can answer " +
+    "with next time. Return STRICT JSON.\n" +
+    "keep = true ONLY if the question is a general, reusable question about how " +
+    "this organisation works \u2014 a policy, a process, an entitlement, a system, a " +
+    "tool, who owns what, how to get something done \u2014 AND the answer is a general " +
+    "fact that would help anyone here who asked the same thing.\n" +
+    "keep = false for anything about ONE person's own situation: their leave " +
+    "balance, their access, their pay, their device, the status of their specific " +
+    "request or ticket, a complaint about one incident. Also keep = false if the " +
+    "answer contains anyone's personal details, or any password, key, token or " +
+    "other credential \u2014 those must never be written into the knowledge base.\n" +
     "If keep = true:\n" +
-    "- question: rewrite as a clean, general question ANY customer might ask — remove names, " +
-    "order numbers, phone numbers, and first-person specifics ('my', 'I').\n" +
-    "- answer: rewrite as a concise, friendly, factual answer in the store's voice. Stay " +
-    "accurate to what the staff said; never invent details.\n" +
-    "- contains_price = true if the answer states a specific price, amount, or currency figure.\n" +
-    "- auto_approve = true ONLY if you are highly confident this is a correct, general, " +
-    "unambiguous, non-sensitive FAQ that is safe to publish automatically. Set false when it is " +
-    "borderline, ambiguous, incomplete, sensitive, or you are unsure — those go to human review.\n" +
+    "- question: rewrite as a clean, general question anyone here might ask \u2014 " +
+    "remove names, ticket numbers, and first-person specifics ('my', 'I').\n" +
+    "- answer: rewrite as a concise, factual answer in the organisation's voice. " +
+    "Stay accurate to what the colleague said; never invent detail, and never " +
+    "soften a limit or a condition.\n" +
+    "- contains_price = true if the answer states a specific price, amount, or " +
+    "currency figure.\n" +
+    "- auto_approve = true ONLY if you are highly confident this is correct, " +
+    "general, unambiguous and non-sensitive, and safe to publish automatically. " +
+    "Set false when it is borderline, incomplete, sensitive (anything touching pay, " +
+    "conduct, someone's employment, or security), or you are unsure \u2014 those go to " +
+    "human review.\n" +
     "- reason: one short sentence.\n" +
     "If keep = false, still fill the other fields with best-effort values (they are ignored).";
 
@@ -118,6 +134,11 @@ export async function learnFromAnswer(
 
   // If the judge is unavailable, fall back to the safe old behavior: a raw draft.
   const keep = v ? v.keep : true;
+  if (v) {
+    console.log(`[learn] ${store.slug}: keep=${v.keep} auto=${v.auto_approve} \u2014 ${v.reason}`);
+  } else {
+    console.warn(`[learn] ${store.slug}: judge unavailable, saving a draft for review`);
+  }
   if (!keep) return "skipped";
   const question = (v?.question?.trim()) || q0;
   const answer = (v?.answer?.trim()) || a0;
@@ -134,7 +155,10 @@ export async function learnFromAnswer(
     .eq("store_id", store.id)
     .ilike("question", question)
     .limit(1);
-  if (dupe && dupe.length > 0) return "skipped";
+  if (dupe && dupe.length > 0) {
+    console.log(`[learn] ${store.slug}: already knew "${question}"`);
+    return "skipped";
+  }
 
   const { error } = await db.from("saved_qa").insert({
     store_id: store.id,
