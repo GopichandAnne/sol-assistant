@@ -452,6 +452,26 @@ const CANCEL_PROPOSAL_DECL: FunctionDeclaration = {
   },
 };
 
+const REPORT_WRONG_DECL: FunctionDeclaration = {
+  name: "report_wrong_answer",
+  description:
+    "Record that an answer you gave was wrong, out of date, or misleading, when " +
+    "the person says so. Call this whenever someone pushes back on something you " +
+    "told them: 'that's not right', 'that's out of date', 'no, it's actually X'. " +
+    "Call it BEFORE correcting yourself, then acknowledge briefly and move on. Do " +
+    "NOT use it when someone simply disagrees with a policy, dislikes the answer, " +
+    "or is asking a follow-up question: only when the information itself was wrong.",
+  parameters: {
+    type: "object",
+    properties: {
+      question: { type: "string", description: "What they had asked you." },
+      answer: { type: "string", description: "What you told them that was wrong." },
+      correction: { type: "string", description: "What they said was actually true, in their words." },
+    },
+    required: ["question", "answer"],
+  },
+};
+
 const ESCALATE_DECL: FunctionDeclaration = {
   name: "escalate_to_owner",
   description:
@@ -1519,6 +1539,38 @@ async function executeCalendlyTimes(db: SupabaseClient, store: Store, tz: string
 
 /** Build the toolset bound to a store + session context. Cart/order tools are
  *  attached only when ordering is enabled for the store (Agent Setup). */
+/** Write down that an answer was wrong, with the exchange, so someone can fix the
+ *  knowledge behind it. Never fails the turn: the point is to capture the signal,
+ *  and a person who has just told us we were wrong should not then see an error. */
+async function executeReportWrong(
+  db: SupabaseClient,
+  store: Store,
+  sessionId: string,
+  visitor: Visitor | undefined,
+  args: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const question = String(args.question ?? "").slice(0, 2000);
+  const answer = String(args.answer ?? "").slice(0, 4000);
+  const note = String(args.correction ?? "").slice(0, 2000) || null;
+  try {
+    await db.from("answer_feedback").insert({
+      store_id: store.id,
+      session_id: sessionId,
+      channel: visitor?.channel ?? "web",
+      question,
+      answer,
+      note,
+      reported_by: visitor?.email ?? null,
+    });
+  } catch (e) {
+    console.warn(`[feedback] could not record: ${(e as Error)?.message ?? e}`);
+  }
+  return {
+    recorded: true,
+    note: "Thank the person briefly for the correction and use it for the rest of this conversation. Do not promise it is permanently fixed: a person still has to update the source.",
+  };
+}
+
 export function buildToolset(
   db: SupabaseClient,
   store: Store,
@@ -1560,6 +1612,7 @@ export function buildToolset(
     send_photos: (args) => executeSendPhotos(db, store, sessionId, args),
     send_photo_urls: (args) => executeSendPhotoUrls(db, store, sessionId, args),
     escalate_to_owner: (args) => executeEscalate(db, store, sessionId, args),
+    report_wrong_answer: (args) => executeReportWrong(db, store, sessionId, visitor, args),
     file_request: (args) => executeFileRequest(db, store, sessionId, requestTypes, args),
     add_to_cart: async (args) => {
       const rawMods = Array.isArray(args.modifiers) ? args.modifiers : null;
@@ -1621,6 +1674,7 @@ export function buildToolset(
     SEND_PHOTOS_DECL,
     SEND_PHOTO_URLS_DECL,
     ESCALATE_DECL,
+    REPORT_WRONG_DECL,
   ];
   // Connected-provider tools — attached only when that provider is connected.
   if (calProvider) declarations.push(CHECK_AVAILABILITY_DECL, BOOK_APPOINTMENT_DECL);

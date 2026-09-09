@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { computeSaasHealth } from "@/lib/dashboard/saas-health";
 import type { ConvRow } from "@/lib/dashboard/metrics";
 import { SaasHealthView } from "@/components/dashboard/saas-health";
+import { AnswerFeedback } from "@/components/dashboard/answer-feedback";
+import { listOpenFeedback } from "./feedback-actions";
 import { SetupChecklist } from "@/components/setup/setup-checklist";
 
 export const metadata: Metadata = { title: "Assistant health · The Assistant" };
@@ -32,9 +34,16 @@ export default async function HealthPage() {
   ]);
 
   const health = computeSaasHealth((convsRes.data ?? []) as ConvRow[], leadsRes.count ?? 0);
+  // Answers colleagues said were wrong. Above the metrics on purpose: a known bad
+  // answer is more urgent than a self-serve rate, and it is the thing an owner can
+  // actually act on today. Owner-only, and renders nothing when the queue is empty.
+  const feedback = await listOpenFeedback().catch(() => []);
   return (
     <>
       <SetupChecklist />
+      <div className="mx-auto max-w-4xl px-6 pt-6">
+        <AnswerFeedback initial={feedback} />
+      </div>
       <SaasHealthView health={health} storeName={store.name} />
     </>
   );

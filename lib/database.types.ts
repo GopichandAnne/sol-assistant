@@ -197,6 +197,59 @@ export type Database = {
           },
         ]
       }
+      answer_feedback: {
+        Row: {
+          answer: string | null
+          channel: string | null
+          created_at: string
+          id: string
+          note: string | null
+          question: string | null
+          reported_by: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          session_id: string | null
+          status: string
+          store_id: string
+        }
+        Insert: {
+          answer?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          question?: string | null
+          reported_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id?: string | null
+          status?: string
+          store_id: string
+        }
+        Update: {
+          answer?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          question?: string | null
+          reported_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id?: string | null
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answer_feedback_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       answer_proofs: {
         Row: {
           answer_text: string | null
