@@ -17,6 +17,9 @@ const PUBLIC_PREFIXES = [
   // It is not unauthenticated in the sense that matters: it opens nothing without a
   // valid publishable key, and every turn is validated again server-side.
   "/embed",
+  // The loader script itself. It is a static file, but the middleware matcher runs
+  // on .js paths, so without this the one line a host pastes 307s to /login.
+  "/embed.js",
 ];
 
 function isPublic(pathname: string) {
