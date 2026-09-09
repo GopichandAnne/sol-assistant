@@ -55,7 +55,10 @@ export function LoginForm({ microsoftEnabled = false }: { microsoftEnabled?: boo
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "azure",
-      options: { scopes: "openid profile email", redirectTo: callbackUrl(next) },
+      // Supabase already requests openid; asking again produced a duplicated
+      // scope on the authorize URL ("openid openid profile email"). Harmless, since
+      // scope is a set, but it is noise in something worth being able to read.
+      options: { scopes: "profile email", redirectTo: callbackUrl(next) },
     });
     if (error) {
       toast.error("Couldn't start Microsoft sign-in", { description: error.message });
