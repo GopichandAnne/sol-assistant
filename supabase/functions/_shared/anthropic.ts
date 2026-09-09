@@ -14,6 +14,9 @@ const API = "https://api.anthropic.com/v1/messages";
 const VERSION = "2023-06-01";
 const DEFAULT_MODEL = "claude-sonnet-5";
 const MAX_TOOL_ITERATIONS = 6;
+// Match the Gemini path's ceiling (gemini.ts uses maxOutputTokens 8192). At the
+// previous 1024 the same conversation truncated on Claude but not on Gemini.
+const MAX_OUTPUT_TOKENS = 8192;
 
 // deno-lint-ignore no-explicit-any
 type Blk = Record<string, any>;
@@ -46,13 +49,24 @@ function toMessages(contents: GeminiContent[]): Msg[] {
   return out;
 }
 
+/** USD per 1M tokens, per model family. These feed meter_record, and credits are
+ *  derived from cost, so a stale rate silently over- or under-bills the account.
+ *  Ordered most-specific first: "sonnet-5" must win before the generic "sonnet". */
+const RATES: { match: string; in: number; out: number }[] = [
+  { match: "fable", in: 10, out: 50 },
+  { match: "mythos", in: 10, out: 50 },
+  { match: "opus", in: 5, out: 25 },
+  { match: "sonnet-5", in: 2, out: 10 },   // Sonnet 5
+  { match: "sonnet", in: 3, out: 15 },     // Sonnet 4.6 and earlier
+  { match: "haiku", in: 1, out: 5 },
+];
+
 /** Rough USD for observability/metering — record-only, approximate is fine. */
 function priceUsd(model: string, inTok: number, outTok: number, cacheTok: number): number {
   const m = model.toLowerCase();
-  let pin = 3, pout = 15; // sonnet
-  if (m.includes("opus")) { pin = 5; pout = 25; }
-  else if (m.includes("haiku")) { pin = 1; pout = 5; }
-  return ((inTok * pin) + (outTok * pout) + (cacheTok * pin * 0.1)) / 1_000_000;
+  const r = RATES.find((x) => m.includes(x.match)) ?? { in: 3, out: 15 };
+  // Cache reads are ~0.1x input; cache writes are billed at input rate above.
+  return ((inTok * r.in) + (outTok * r.out) + (cacheTok * r.in * 0.1)) / 1_000_000;
 }
 
 async function post(body: string, key: string): Promise<Response> {
@@ -100,7 +114,7 @@ export async function anthropicReply(
     for (let iter = 0; iter < MAX_TOOL_ITERATIONS; iter++) {
       const body = JSON.stringify({
         model,
-        max_tokens: 1024,
+        max_tokens: MAX_OUTPUT_TOKENS,
         system: systemInstruction,
         messages,
         ...(tools ? { tools } : {}),
@@ -126,6 +140,15 @@ export async function anthropicReply(
       const content: Blk[] = j?.content ?? [];
       const toolUses = content.filter((b) => b.type === "tool_use");
       if (j?.stop_reason !== "tool_use" || toolUses.length === 0) {
+        // Two stop reasons that are NOT ordinary completions, and were previously
+        // indistinguishable from one. Both still fail open (whatever text exists is
+        // returned) but they are now visible in the logs instead of looking like a
+        // normal short answer.
+        if (j?.stop_reason === "refusal") {
+          console.warn(`[anthropic] refused (${j?.stop_details?.category ?? "uncategorized"})`);
+        } else if (j?.stop_reason === "max_tokens") {
+          console.warn(`[anthropic] hit max_tokens (${MAX_OUTPUT_TOKENS}) — reply truncated`);
+        }
         const text = content.filter((b) => b.type === "text").map((b) => b.text ?? "").join("").trim() || null;
         return { text, toolsUsed };
       }
@@ -142,7 +165,7 @@ export async function anthropicReply(
     }
     // Out of tool rounds — final pass with no tools so it answers from what it has.
     const finalRes = await post(
-      JSON.stringify({ model, max_tokens: 1024, system: systemInstruction, messages }),
+      JSON.stringify({ model, max_tokens: MAX_OUTPUT_TOKENS, system: systemInstruction, messages }),
       key,
     );
     if (!finalRes.ok) return { text: null, toolsUsed };
