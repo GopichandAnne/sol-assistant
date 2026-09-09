@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getSlackStatus, setSlackApprovalsChannel, type SlackStatus } from "@/app/(app)/link/slack-actions";
+import { ChannelRouting } from "@/components/store-link/channel-routing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,6 +93,9 @@ export function SlackConnect({ storeId }: { storeId: string }) {
           side (a Slack app and its credentials), not something you set up per workspace.
           Ask us and it applies to everyone.
         </p>
+      )}
+      {status?.connected && status.teamId && (
+        <ChannelRouting storeId={storeId} kind="slack" workspaceId={status.teamId} />
       )}
     </div>
   );

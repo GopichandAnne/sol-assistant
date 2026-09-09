@@ -12,6 +12,11 @@ export interface TeamsInbound {
   conversationId: string;
   tenantId: string;
   activityId?: string;
+  /** True for a channel or group chat, false for a 1:1. Only group conversations
+   *  are routable: a DM is between one person and the organisation. */
+  isGroup: boolean;
+  /** The channel's display name when Teams provides one, for the routing picker. */
+  channelName: string | null;
 }
 
 /** Decide whether a Bot Framework activity is a user message we should answer, and
@@ -40,6 +45,11 @@ export function classifyActivity(a: any): { act: boolean; reason: string; event?
       conversationId,
       tenantId: String(a.channelData?.tenant?.id ?? a.conversation?.tenantId ?? ""),
       activityId: a.id ? String(a.id) : undefined,
+      // conversationType is "personal" for a 1:1, "channel"/"groupChat" otherwise.
+      isGroup: String(a.conversation?.conversationType ?? "personal") !== "personal",
+      channelName: a.channelData?.team?.name
+        ? String(a.channelData.team.name) + (a.channelData?.channel?.name ? ` / ${a.channelData.channel.name}` : "")
+        : (a.channelData?.channel?.name ? String(a.channelData.channel.name) : null),
     },
   };
 }

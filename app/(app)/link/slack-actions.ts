@@ -14,6 +14,8 @@ export type SlackStatus = {
   teamName?: string | null;
   installUrl?: string | null;
   approvalsChannel?: string | null;
+  /** Slack workspace id, needed to route channels to different assistants. */
+  teamId?: string | null;
 };
 
 async function requireOwner(storeId: string) {
@@ -36,7 +38,7 @@ export async function getSlackStatus(storeId: string): Promise<SlackStatus> {
   // slack_installs isn't in the generated types; a scoped cast keeps this query untyped.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const from = db.from as unknown as (t: string) => any;
-  const { data: install } = await from("slack_installs").select("team_name, approvals_channel").eq("store_id", storeId).eq("active", true).maybeSingle();
+  const { data: install } = await from("slack_installs").select("team_id, team_name, approvals_channel").eq("store_id", storeId).eq("active", true).maybeSingle();
 
   const clientId = process.env.SLACK_CLIENT_ID ?? "";
   const stateSecret = process.env.SLACK_STATE_SECRET ?? "";
@@ -52,7 +54,14 @@ export async function getSlackStatus(storeId: string): Promise<SlackStatus> {
     u.searchParams.set("state", signState(stateSecret, storeId));
     installUrl = u.toString();
   }
-  return { configured, connected: !!install, teamName: install?.team_name ?? null, installUrl, approvalsChannel: install?.approvals_channel ?? null };
+  return {
+    configured,
+    connected: !!install,
+    teamName: install?.team_name ?? null,
+    teamId: install?.team_id ?? null,
+    installUrl,
+    approvalsChannel: install?.approvals_channel ?? null,
+  };
 }
 
 /** Set the Slack channel that gets Approve/Decline prompts for held actions. */

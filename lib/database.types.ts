@@ -422,6 +422,62 @@ export type Database = {
           },
         ]
       }
+      channel_route: {
+        Row: {
+          channel_id: string
+          channel_kind: string
+          created_at: string
+          store_id: string
+          workspace_id: string
+        }
+        Insert: {
+          channel_id: string
+          channel_kind: string
+          created_at?: string
+          store_id: string
+          workspace_id: string
+        }
+        Update: {
+          channel_id?: string
+          channel_kind?: string
+          created_at?: string
+          store_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_route_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channel_seen: {
+        Row: {
+          channel_id: string
+          channel_kind: string
+          last_seen: string
+          name: string | null
+          workspace_id: string
+        }
+        Insert: {
+          channel_id: string
+          channel_kind: string
+          last_seen?: string
+          name?: string | null
+          workspace_id: string
+        }
+        Update: {
+          channel_id?: string
+          channel_kind?: string
+          last_seen?: string
+          name?: string | null
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       company: {
         Row: {
           billing_email: string | null

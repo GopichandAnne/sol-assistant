@@ -19,6 +19,7 @@ import { generateTurnReply } from "../_shared/conversation.ts";
 import { resolveIdentity } from "../_shared/identity.ts";
 import { splitBubbles } from "../_shared/prompt.ts";
 import { buildRawIdentity, chunkForSlack, classifyInbound, slackSessionId, verifySlackSignature } from "../_shared/slack.ts";
+import { rememberChannel, resolveStoreForChannel } from "../_shared/routing.ts";
 import { slackPostMessage, slackUserInfo } from "../_shared/slack-api.ts";
 
 // deno-lint-ignore no-explicit-any
@@ -86,7 +87,12 @@ async function handleEvent(body: Record<string, unknown>): Promise<void> {
     console.warn(`[slack] no active install for team ${ev.teamId}`);
     return;
   }
-  const store = await getStoreById(db, inst.store_id);
+  // One workspace can run several assistants. The channel decides which answers;
+  // a DM (channelType "im") takes the workspace default.
+  const isGroup = (ev.channelType ?? "") !== "im";
+  await rememberChannel(db, "slack", ev.teamId, ev.channel, null, isGroup);
+  const routedId = await resolveStoreForChannel(db, "slack", ev.teamId, ev.channel, inst.store_id);
+  const store = await getStoreById(db, routedId ?? inst.store_id);
   if (!store) return;
   const botToken = inst.bot_token;
 

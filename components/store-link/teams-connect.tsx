@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check, Copy, Loader2, Users } from "lucide-react";
+import { ChannelRouting } from "@/components/store-link/channel-routing";
 
 export function TeamsConnect({ storeId }: { storeId: string }) {
   const [status, setStatus] = useState<TeamsStatus | null>(null);
@@ -151,6 +152,10 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
             <Copy className="size-3.5" /> Copy the link to send them
           </Button>
         </div>
+      )}
+
+      {status?.connected && status.tenantId && (
+        <ChannelRouting storeId={storeId} kind="teams" workspaceId={status.tenantId} />
       )}
 
       {status?.connected && (

@@ -15,6 +15,7 @@ import { generateTurnReply } from "../_shared/conversation.ts";
 import { resolveIdentity } from "../_shared/identity.ts";
 import { splitBubbles } from "../_shared/prompt.ts";
 import { buildTeamsRawIdentity, classifyActivity, teamsSessionId } from "../_shared/teams.ts";
+import { rememberChannel, resolveStoreForChannel } from "../_shared/routing.ts";
 import { graphEmail, postTeamsReply, verifyBotFrameworkToken } from "../_shared/teams-auth.ts";
 
 // deno-lint-ignore no-explicit-any
@@ -101,7 +102,11 @@ async function handleActivity(activity: Record<string, unknown>, appId: string, 
     );
     return;
   }
-  const store = await getStoreById(db, storeId);
+  // One org can run several assistants behind one install. Which one answers is
+  // decided by the channel; a direct message takes the workspace default.
+  await rememberChannel(db, "teams", ev.tenantId, ev.conversationId, ev.channelName, ev.isGroup);
+  const routedId = await resolveStoreForChannel(db, "teams", ev.tenantId, ev.conversationId, storeId);
+  const store = await getStoreById(db, routedId ?? storeId);
   if (!store) return;
 
   const sessionId = teamsSessionId(ev.tenantId, ev.aadObjectId, ev.userId);
