@@ -11,7 +11,7 @@ type Method = "jwks" | "secret" | "endpoint";
 
 const METHODS: { id: Method; title: string; when: string }[] = [
   { id: "jwks", title: "I already have login (Auth0, Clerk, Firebase, Cognito, our own JWT)", when: "Easiest — no shared secret, no signing code. Pass the JWT you already issue." },
-  { id: "secret", title: "We have a custom login and can add a little server code", when: "Sign a short token per user with your the assistant secret." },
+  { id: "secret", title: "We have a custom login and can add a little server code", when: "Sign a short token per user with your signing secret." },
   { id: "endpoint", title: "We'd rather not put a token in every page", when: "Expose one endpoint that returns the current user's token; the embed fetches it." },
 ];
 

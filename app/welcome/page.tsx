@@ -1,36 +1,30 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getSessionContext } from "@/lib/auth/session";
-import { WelcomeChat } from "./welcome-chat";
+import { WelcomeStart } from "./welcome-start";
 import { Wordmark } from "@/components/app-shell/wordmark";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export const metadata: Metadata = { title: "Set up your assistant · The Assistant" };
 export const dynamic = "force-dynamic";
 
 /**
- * First-run store creation. The app layout routes any signed-in user with no store
- * here (phone or email signup). Anyone who already has a store is sent into it.
+ * First run. The app layout sends any signed-in user with no assistant here, and
+ * anyone who already has one straight into it.
  */
 export default async function WelcomePage() {
   const ctx = await getSessionContext();
   if (!ctx) redirect("/login");
   if (ctx.stores.length > 0) redirect("/");
 
-
   return (
     <div className="flex min-h-dvh items-center justify-center p-6">
       <Card className="w-full max-w-lg">
         <CardHeader className="space-y-3 text-center">
           <Wordmark className="justify-center text-2xl" />
-          <div className="space-y-1">
-            <CardTitle className="text-lg">Let&apos;s set up your the assistant</CardTitle>
-            <CardDescription>Tell me what you want it to handle. A few questions, then I&apos;ll make you a checklist.</CardDescription>
-          </div>
         </CardHeader>
         <CardContent>
-          <WelcomeChat email={ctx.user.email} />
+          <WelcomeStart email={ctx.user.email} />
         </CardContent>
       </Card>
     </div>

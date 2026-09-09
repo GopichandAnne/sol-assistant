@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { presetConfig } from "@/lib/business-presets";
 import { callBotAdmin } from "@/lib/knowledge/bot-admin";
 import { ACTIVE_STORE_COOKIE } from "@/lib/store/active-store";
+import { templateByKey } from "@/lib/assistant-templates";
 import type { Database } from "@/lib/database.types";
 
 type AgentKey = Database["public"]["Enums"]["agent_config_key"];
@@ -228,4 +229,33 @@ export async function createMyStore(input: {
   cookieStore.set(ACTIVE_STORE_COOKIE, store.slug, { path: "/", sameSite: "lax" });
   cookieStore.set("ar_intent_site", "", { path: "/", maxAge: 0 });
   return { ok: true, slug: store.slug };
+}
+
+/**
+ * Create an assistant from a blueprint, in one action.
+ *
+ * The setup conversation exists for people who want to describe the job in their
+ * own words. Most do not: they recognise it in a list. This path skips the
+ * interview entirely and produces exactly what the conversation would have
+ * produced, including the approvals, so governance is on by default rather than
+ * something an owner has to think to switch on.
+ */
+export async function createFromTemplate(templateKey: string, name?: string): Promise<CreateResult> {
+  const t = templateByKey(templateKey);
+  if (!t) return { ok: false, error: "Unknown template." };
+  return await createMyStore({
+    businessName: (name ?? "").trim() || t.name,
+    agent: {
+      personality: t.personality,
+      storePrompt: t.assistantPrompt,
+      greeting: t.greeting,
+      suggestionChips: t.suggestionChips,
+    },
+    setup: {
+      job: t.job,
+      systems: t.systems,
+      approvals: t.approvals,
+      serves: t.serves,
+    },
+  });
 }
