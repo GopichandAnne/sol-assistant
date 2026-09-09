@@ -6,7 +6,7 @@ import { getTeamsStatus, linkPendingTenant, setTeamsApprover, setTeamsTenant, ty
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, Loader2, Users } from "lucide-react";
+import { Check, Copy, Loader2, Users } from "lucide-react";
 
 export function TeamsConnect({ storeId }: { storeId: string }) {
   const [status, setStatus] = useState<TeamsStatus | null>(null);
@@ -15,6 +15,13 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
   const [approver, setApprover] = useState("");
   const [savingApprover, setSavingApprover] = useState(false);
   const [linking, setLinking] = useState<string | null>(null);
+
+  function copyConsent(url: string) {
+    navigator.clipboard.writeText(url).then(
+      () => toast.success("Consent link copied", { description: "Send it to whoever administers Microsoft 365 there." }),
+      () => toast.error("Couldn't copy"),
+    );
+  }
 
   useEffect(() => {
     getTeamsStatus(storeId)
@@ -96,6 +103,11 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
                     {t.tenantId}{t.sampleUser ? ` · ${t.sampleUser} messaged it` : ""}
                   </span>
                 </span>
+                {t.consentUrl && (
+                  <Button size="sm" variant="ghost" onClick={() => copyConsent(t.consentUrl!)} title="Copy the admin-consent link for this organisation">
+                    <Copy className="size-3.5" /> Consent link
+                  </Button>
+                )}
                 <Button size="sm" onClick={() => link(t.tenantId)} disabled={linking === t.tenantId}>
                   {linking === t.tenantId ? <Loader2 className="size-4 animate-spin" /> : null} Connect
                 </Button>
@@ -125,6 +137,20 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
           </div>
           </div>
         </details>
+      )}
+
+      {status?.connected && status.consentUrl && (status.reachable ?? []).length === 0 && (
+        <div className="space-y-1.5 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
+          <Label className="text-xs">One admin step left</Label>
+          <p className="text-muted-foreground text-xs">
+            Until an administrator there approves it, the assistant can chat but cannot tell
+            who anyone is. Everyone shows up anonymous, so private knowledge stays hidden and
+            tools that act as the signed-in person will decline. One click, once, by an admin.
+          </p>
+          <Button size="sm" variant="outline" onClick={() => copyConsent(status.consentUrl!)}>
+            <Copy className="size-3.5" /> Copy the link to send them
+          </Button>
+        </div>
       )}
 
       {status?.connected && (

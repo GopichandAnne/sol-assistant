@@ -4,13 +4,33 @@ import { getActiveStore } from "@/lib/store/active-store";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export type PendingTenant = { tenantId: string; teamName: string | null; sampleUser: string | null; lastSeen: string };
+export type PendingTenant = {
+  tenantId: string;
+  teamName: string | null;
+  sampleUser: string | null;
+  lastSeen: string;
+  /** One-click admin-consent URL for THIS tenant. Application permissions on a
+   *  multi-tenant app must be consented per organisation, so without this the bot
+   *  can talk but cannot resolve anyone's email, and every user is anonymous. */
+  consentUrl: string | null;
+};
+
+/** The per-tenant admin-consent URL. Formulaic, so the console builds it rather
+ *  than sending someone to read Microsoft's docs. */
+function consentUrlFor(tenantId: string): string | null {
+  const appId = process.env.MICROSOFT_APP_ID;
+  if (!appId || !tenantId) return null;
+  return `https://login.microsoftonline.com/${encodeURIComponent(tenantId)}/adminconsent?client_id=${encodeURIComponent(appId)}`;
+}
 
 export type TeamsStatus = {
   configured: boolean;
   connected: boolean;
   tenantId?: string | null;
   approvalsEmail?: string | null;
+  /** Consent URL for the CONNECTED tenant, so it can be re-sent if identity
+   *  isn't resolving (the usual cause of everyone showing up anonymous). */
+  consentUrl?: string | null;
   /** People who have messaged the bot, so we have a conversation to reach them on.
    *  Only these can receive approval cards. */
   reachable?: { email: string; name: string | null }[];
@@ -54,6 +74,7 @@ export async function getTeamsStatus(storeId: string): Promise<TeamsStatus> {
       .order("last_seen", { ascending: false }).limit(10);
     pending = (rows ?? []).map((r: { tenant_id: string; team_name: string | null; sample_user: string | null; last_seen: string }) => ({
       tenantId: r.tenant_id, teamName: r.team_name, sampleUser: r.sample_user, lastSeen: r.last_seen,
+      consentUrl: consentUrlFor(r.tenant_id),
     }));
   }
 
@@ -62,6 +83,7 @@ export async function getTeamsStatus(storeId: string): Promise<TeamsStatus> {
     connected: !!data,
     tenantId: data?.tenant_id ?? null,
     approvalsEmail: data?.approvals_email ?? null,
+    consentUrl: data?.tenant_id ? consentUrlFor(data.tenant_id) : null,
     reachable,
     pending,
   };
