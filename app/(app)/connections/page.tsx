@@ -22,15 +22,32 @@ export default async function ConnectionsPage() {
   if (!ctx.active) redirect("/welcome");
 
   const db = createAdminClient();
+  // The ORGANISATION's connections only. People connect their own accounts too —
+  // for their mail, calendar and tasks — and showing one of those here would tell
+  // an owner the assistant is connected when in fact only a colleague is.
   const { data } = await db
     .from("oauth_connection")
     .select("provider, account_label, status")
     .eq("store_id", ctx.active.id)
-    .eq("status", "connected");
+    .eq("status", "connected")
+    .eq("user_key", "");
 
   const connected: Record<string, ConnStatus> = {};
   for (const r of (data ?? []) as { provider: string; account_label: string | null; status: string }[]) {
     connected[r.provider] = { label: r.account_label };
+  }
+
+  // How many people have connected their own — worth knowing, because it is the
+  // number that decides whether the personal tools do anything for the team.
+  const { data: personalRows } = await db
+    .from("oauth_connection")
+    .select("provider")
+    .eq("store_id", ctx.active.id)
+    .eq("status", "connected")
+    .neq("user_key", "");
+  const personalCounts: Record<string, number> = {};
+  for (const r of (personalRows ?? []) as { provider: string }[]) {
+    personalCounts[r.provider] = (personalCounts[r.provider] ?? 0) + 1;
   }
 
   const { data: toolRows } = await db
@@ -70,6 +87,7 @@ export default async function ConnectionsPage() {
         storeSlug={ctx.active.slug}
         isOwner={ctx.active.role === "owner"}
         connected={connected}
+        personalCounts={personalCounts}
       />
       <div className="mt-6">
         <QuickTool isOwner={ctx.active.role === "owner" || ctx.isPlatformAdmin} />

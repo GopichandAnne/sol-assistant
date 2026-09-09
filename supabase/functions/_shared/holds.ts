@@ -120,7 +120,7 @@ export async function routeHeldAction(
   db: SupabaseClient,
   store: Store,
   sessionId: string,
-  h: { tool: string; kind: "http" | "mcp"; actedAs: string | null; args: Record<string, unknown> },
+  h: { tool: string; kind: "http" | "mcp" | "m365"; actedAs: string | null; args: Record<string, unknown> },
 ): Promise<{ reference?: string; note: string }> {
   const argSummary = summarizeArgs(h.args);
   const detail = argSummary ? `${h.tool} — ${argSummary}` : h.tool;

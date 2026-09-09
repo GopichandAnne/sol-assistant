@@ -20,6 +20,11 @@ const PUBLIC_PREFIXES = [
   // The loader script itself. It is a static file, but the middleware matcher runs
   // on .js paths, so without this the one line a host pastes 307s to /login.
   "/embed.js",
+  // Where someone lands after connecting their own account from a chat. They are a
+  // colleague, not an administrator, and often have no console account at all —
+  // bouncing them to a sign-in page after a successful connection would read as a
+  // failure.
+  "/connected",
 ];
 
 function isPublic(pathname: string) {

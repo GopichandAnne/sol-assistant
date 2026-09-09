@@ -38,6 +38,15 @@ import {
   placeOrder,
 } from "./order.ts";
 import { notifyResponders } from "./responders.ts";
+import {
+  addTask as m365AddTask,
+  findDocument as m365FindDocument,
+  findPerson as m365FindPerson,
+  mySchedule as m365MySchedule,
+  myTasks as m365MyTasks,
+  searchMyMail as m365SearchMyMail,
+  sendMail as m365SendMail,
+} from "./graph.ts";
 import { getStoreAccessToken } from "./config.ts";
 import { sendImage } from "./wa.ts";
 import {
@@ -1502,6 +1511,127 @@ const CALENDLY_TIMES_DECL: FunctionDeclaration = {
   },
 };
 
+
+/* ── Microsoft 365 ─────────────────────────────────────────────────────────────
+ * The connector that carries the "stop opening ten applications" claim. Two
+ * groups, and the split is about whose account a call goes out as: the shared
+ * ones read organisational content, the personal ones only ever touch the asking
+ * person's own account (graph.ts explains why there is no fallback between them).
+ * ---------------------------------------------------------------------------- */
+
+const M365_FIND_DOC_DECL: FunctionDeclaration = {
+  name: "find_document",
+  description:
+    "Find a document in the organisation's Microsoft 365 - SharePoint, OneDrive or Teams files. " +
+    "Use it whenever someone is looking for a file, a policy, a template, a deck, a report or " +
+    "'the thing we wrote about X'. Pass what they are looking for in their own words. Returns up " +
+    "to five documents with a link, when each was last changed and by whom. Always share the link. " +
+    "If it returns found:0, say nothing matched rather than guessing at a filename.",
+  parameters: {
+    type: "object",
+    properties: { query: { type: "string", description: "What they are looking for, e.g. 'expenses policy' or 'Q3 board deck'." } },
+    required: ["query"],
+  },
+};
+
+const M365_FIND_PERSON_DECL: FunctionDeclaration = {
+  name: "find_person",
+  description:
+    "Look someone up in the staff directory by name or email. Use it for 'who is X', 'what's X's " +
+    "email', or as a step before doing something that needs their address. Returns name, email and " +
+    "- where the organisation allows it - job title and department. If it returns found:0, say so; " +
+    "do not guess at an address.",
+  parameters: {
+    type: "object",
+    properties: { query: { type: "string", description: "A name or email to look up." } },
+    required: ["query"],
+  },
+};
+
+const M365_MY_SCHEDULE_DECL: FunctionDeclaration = {
+  name: "my_schedule",
+  description:
+    "What is on the asking person's OWN calendar for a day. Use it for 'what's on today', 'am I " +
+    "free this afternoon', 'when is my next meeting'. Pass `date` as YYYY-MM-DD, or leave it out " +
+    "for today. This reads only their own calendar, never anyone else's. If the result says " +
+    "needs_connection, give them the connect_url and do not claim to have looked.",
+  parameters: {
+    type: "object",
+    properties: { date: { type: "string", description: "The day, as YYYY-MM-DD. Omit for today." } },
+    required: [],
+  },
+};
+
+const M365_MY_MAIL_DECL: FunctionDeclaration = {
+  name: "search_my_mail",
+  description:
+    "Search the asking person's OWN mailbox. Use it for 'did I get anything from Finance', 'find " +
+    "the email about the renewal', 'what did X send me'. Pass what to search for. Returns up to " +
+    "five messages with sender, date, a preview and a link. This reads only their own mail. If the " +
+    "result says needs_connection, give them the connect_url and do not claim to have looked.",
+  parameters: {
+    type: "object",
+    properties: { query: { type: "string", description: "What to search their mail for." } },
+    required: ["query"],
+  },
+};
+
+const M365_MY_TASKS_DECL: FunctionDeclaration = {
+  name: "my_tasks",
+  description:
+    "The asking person's own open tasks in Microsoft To Do. Use it for 'what's outstanding for me', " +
+    "'what am I meant to be doing'. Reads only their own list.",
+  parameters: { type: "object", properties: {}, required: [] },
+};
+
+const M365_ADD_TASK_DECL: FunctionDeclaration = {
+  name: "add_task",
+  description:
+    "Add a task to the asking person's OWN Microsoft To Do list. Use it when they ask you to remind " +
+    "them or note something to do. Confirm the wording with them first, then call it. Optionally " +
+    "pass `due` as YYYY-MM-DD.",
+  parameters: {
+    type: "object",
+    properties: {
+      title: { type: "string", description: "The task, in their words." },
+      due: { type: "string", description: "Optional due date, YYYY-MM-DD." },
+    },
+    required: ["title"],
+  },
+};
+
+const M365_SEND_MAIL_DECL: FunctionDeclaration = {
+  name: "send_email",
+  description:
+    "Send an email FROM the asking person's own mailbox, in their name. This is consequential and " +
+    "cannot be undone, so: draft it, show them the recipient, subject and full body, get an explicit " +
+    "yes, and only then call this. Never invent a recipient - look the person up first if you only " +
+    "have a name. The organisation may require a colleague to approve it, in which case the result " +
+    "will say so and nothing has been sent; tell them that plainly rather than implying it went.",
+  parameters: {
+    type: "object",
+    properties: {
+      to: { type: "string", description: "Recipient email address, or several separated by commas." },
+      subject: { type: "string", description: "The subject line." },
+      body: { type: "string", description: "The full message body, as plain text." },
+    },
+    required: ["to", "subject", "body"],
+  },
+};
+
+/** Sending mail as a person is the one action here that cannot be taken back, so
+ *  it is held for approval unless the organisation has explicitly said otherwise.
+ *  Adding a task to your own list is not, which is why only this one is gated. */
+async function m365SendPolicy(db: SupabaseClient, storeId: string): Promise<"auto" | "hold"> {
+  try {
+    const { data } = await db.from("agent_config")
+      .select("value").eq("store_id", storeId).eq("key", "m365_send_policy").maybeSingle();
+    return (data as { value?: string } | null)?.value === "auto" ? "auto" : "hold";
+  } catch {
+    return "hold";
+  }
+}
+
 /** Local HH:MM (store tz) of a UTC instant. */
 function localHM(d: Date, tz: string): string {
   const p: Record<string, string> = {};
@@ -1621,6 +1751,36 @@ export function buildToolset(
     redeem_credit: (args) => executeRedeemCredit(db, store, sessionId, args),
     submit_post_url: (args) => executeSubmitPost(db, store, sessionId, args),
     search_knowledge: (args) => executeSearchKnowledge(db, store, sessionId, args, today),
+    find_document: (args) => m365FindDocument(db, store, String(args.query ?? "")),
+    find_person: (args) => m365FindPerson(db, store, String(args.query ?? "")),
+    my_schedule: (args) => m365MySchedule(db, store, visitor?.email, args.date ? String(args.date) : undefined),
+    search_my_mail: (args) => m365SearchMyMail(db, store, visitor?.email, String(args.query ?? "")),
+    my_tasks: () => m365MyTasks(db, store, visitor?.email),
+    add_task: (args) => m365AddTask(db, store, visitor?.email, String(args.title ?? ""), args.due ? String(args.due) : undefined),
+    send_email: async (args) => {
+      // Governance does not depend on how a tool was built. A held write here goes
+      // through exactly the same approval path as a held HTTP or MCP call, and the
+      // approval runs it — see resolve.ts.
+      const policy = await m365SendPolicy(db, store.id);
+      if (policy === "hold") {
+        const routed = await routeHeldAction(db, store, sessionId, {
+          tool: "send_email", kind: "m365", actedAs: visitor?.email ?? null, args,
+        });
+        void logToolCall(db, store, sessionId, {
+          tool: "send_email", kind: "connector", actedAs: visitor?.email ?? null, sideEffect: true, status: "held",
+        });
+        return { ok: false, held: true, ...(routed.reference ? { reference: routed.reference } : {}), note: routed.note };
+      }
+      const out = await m365SendMail(
+        db, store, visitor?.email,
+        String(args.to ?? ""), String(args.subject ?? ""), String(args.body ?? ""),
+      );
+      void logToolCall(db, store, sessionId, {
+        tool: "send_email", kind: "connector", actedAs: visitor?.email ?? null,
+        sideEffect: true, status: out.ok === false ? "error" : "ok",
+      });
+      return out;
+    },
     check_calendar_availability: (args) => executeCheckAvailability(db, store, timezone, calProvider, args),
     book_appointment: (args) => executeBookAppointment(db, store, timezone, calProvider, args),
     square_find_item: (args) => executeSquareFindItem(db, store, args),
@@ -1699,6 +1859,19 @@ export function buildToolset(
   ];
   // Connected-provider tools — attached only when that provider is connected.
   if (calProvider) declarations.push(CHECK_AVAILABILITY_DECL, BOOK_APPOINTMENT_DECL);
+  // Microsoft 365. The organisation connecting it is what turns the whole group on.
+  // The personal tools are offered to anyone the channel identified — they prompt
+  // that person to connect their own account rather than borrowing somebody else's,
+  // so offering them is how someone finds out the capability exists.
+  if (connected.includes("microsoft")) {
+    declarations.push(M365_FIND_DOC_DECL, M365_FIND_PERSON_DECL);
+    if (visitor?.email) {
+      declarations.push(
+        M365_MY_SCHEDULE_DECL, M365_MY_MAIL_DECL, M365_MY_TASKS_DECL,
+        M365_ADD_TASK_DECL, M365_SEND_MAIL_DECL,
+      );
+    }
+  }
   if (connected.includes("square")) declarations.push(SQUARE_FIND_ITEM_DECL, SQUARE_ORDER_STATUS_DECL);
   if (connected.includes("hubspot")) declarations.push(HUBSPOT_SAVE_LEAD_DECL, HUBSPOT_FIND_CONTACT_DECL);
   if (connected.includes("calendly")) declarations.push(CALENDLY_EVENT_TYPES_DECL, CALENDLY_TIMES_DECL);

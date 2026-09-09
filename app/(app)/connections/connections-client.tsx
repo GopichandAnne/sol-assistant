@@ -14,7 +14,7 @@ type Provider = { id: string; name: string; blurb: string; accent: string };
 
 const CATALOG: Provider[] = [
   { id: "google", name: "Google", blurb: "Calendar — the assistant checks availability and books appointments.", accent: "#4285F4" },
-  { id: "microsoft", name: "Microsoft", blurb: "Outlook calendar — check availability and book, on Microsoft 365.", accent: "#0067b8" },
+  { id: "microsoft", name: "Microsoft 365", blurb: "Documents in SharePoint and OneDrive, the staff directory, and calendars. Each person connects their own account for their mail and tasks.", accent: "#0067b8" },
   { id: "square", name: "Square", blurb: "Catalog & orders — stock lookups and order status in chat.", accent: "#111827" },
   { id: "hubspot", name: "HubSpot", blurb: "CRM — captured leads flow straight into your pipeline.", accent: "#ff7a59" },
   { id: "calendly", name: "Calendly", blurb: "Scheduling — the assistant shares your booking link and event types.", accent: "#006bff" },
@@ -29,8 +29,16 @@ const ERR: Record<string, string> = {
 };
 
 export function ConnectionsClient({
-  storeSlug, isOwner, connected,
-}: { storeSlug: string; isOwner: boolean; connected: Record<string, ConnStatus> }) {
+  storeSlug, isOwner, connected, personalCounts = {},
+}: {
+  storeSlug: string;
+  isOwner: boolean;
+  connected: Record<string, ConnStatus>;
+  /** How many people have connected their OWN account, per provider. Connecting
+   *  the organisation is what turns a connector on; this is what says whether the
+   *  team is actually getting the personal half of it. */
+  personalCounts?: Record<string, number>;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const [busy, setBusy] = useState<string | null>(null);
@@ -99,6 +107,14 @@ export function ConnectionsClient({
               <p className="text-muted-foreground truncate text-sm">
                 {conn?.label ? `${conn.label}` : p.blurb}
               </p>
+              {/* Connecting the organisation switches the connector on; the personal
+                  half only works for people who have connected their own account,
+                  so say how many have. */}
+              {conn && (personalCounts[p.id] ?? 0) > 0 && (
+                <p className="text-muted-foreground text-xs">
+                  {personalCounts[p.id]} {personalCounts[p.id] === 1 ? "person has" : "people have"} connected their own account
+                </p>
+              )}
             </div>
             {conn ? (
               <Button variant="outline" size="sm" disabled={isBusy || !isOwner} onClick={() => remove(p.id)}>

@@ -17,12 +17,15 @@ export type Database = {
       action_request: {
         Row: {
           acted_as: string | null
+          args: Json
+          completed: boolean
           created_at: string
           decided_at: string | null
           decided_by: string | null
           detail: string
           id: string
           kind: string
+          result_note: string | null
           session_id: string | null
           status: string
           store_id: string
@@ -30,12 +33,15 @@ export type Database = {
         }
         Insert: {
           acted_as?: string | null
+          args?: Json
+          completed?: boolean
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
           detail?: string
           id?: string
           kind: string
+          result_note?: string | null
           session_id?: string | null
           status?: string
           store_id: string
@@ -43,12 +49,15 @@ export type Database = {
         }
         Update: {
           acted_as?: string | null
+          args?: Json
+          completed?: boolean
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
           detail?: string
           id?: string
           kind?: string
+          result_note?: string | null
           session_id?: string | null
           status?: string
           store_id?: string
@@ -1261,6 +1270,7 @@ export type Database = {
           status: string
           store_id: string
           updated_at: string
+          user_key: string
         }
         Insert: {
           access_token: string
@@ -1275,6 +1285,7 @@ export type Database = {
           status?: string
           store_id: string
           updated_at?: string
+          user_key?: string
         }
         Update: {
           access_token?: string
@@ -1289,6 +1300,7 @@ export type Database = {
           status?: string
           store_id?: string
           updated_at?: string
+          user_key?: string
         }
         Relationships: [
           {

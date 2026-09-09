@@ -98,8 +98,29 @@ export const PROVIDERS: Record<ProviderId, ProviderSpec> = {
     id: "microsoft", label: "Microsoft",
     authorizeUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
     tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-    // offline_access -> refresh token; Calendars.ReadWrite -> book/check Outlook calendar.
-    scope: "offline_access openid email Calendars.ReadWrite",
+    // Microsoft 365 is the connector that decides whether "without opening ten
+    // applications" is a real claim, so it reaches past the calendar: documents in
+    // SharePoint and OneDrive, the staff directory, mail, and tasks.
+    //
+    // Every scope here is one a person can consent to for themselves — no tenant
+    // admin required — which is what keeps the connector self-serve. The obvious
+    // omission is User.Read.All: it would give job titles and departments for the
+    // whole directory, and it needs admin consent. User.ReadBasic.All does not, so
+    // the directory lookup degrades to name and address rather than failing.
+    //
+    // Whether these can be consented to at all still depends on the tenant: an
+    // organisation that has turned user consent off requires an admin either way.
+    scope: [
+      "offline_access", "openid", "email", "profile",
+      "User.ReadBasic.All",     // find a colleague by name
+      "People.Read",            // richer "who is this" when the tenant allows it
+      "Files.Read.All",         // documents in OneDrive
+      "Sites.Read.All",         // documents in SharePoint
+      "Mail.Read",              // find a message
+      "Mail.Send",              // send as the person who connected — held by policy
+      "Calendars.ReadWrite",    // check availability, book
+      "Tasks.ReadWrite",        // To Do
+    ].join(" "),
     scopeSep: " ",
     authParams: { prompt: "select_account" },
     tokenStyle: "form",
@@ -185,7 +206,11 @@ function timingEq(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let r = 0; for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i); return r === 0;
 }
-export interface StateObj { sid: string; prov: ProviderId; uid: string; exp: number; n: string }
+/** `ukey` carries WHOSE connection the flow will create: absent or empty for the
+ *  organisation's, otherwise the verified email of the one person it is for. It is
+ *  inside the signed state precisely so it cannot be swapped in the browser — the
+ *  person who follows the link cannot turn it into somebody else's connection. */
+export interface StateObj { sid: string; prov: ProviderId; uid: string; exp: number; n: string; ukey?: string }
 export async function signState(obj: StateObj): Promise<string> {
   const secret = Deno.env.get("OAUTH_STATE_SECRET");
   if (!secret) throw new Error("OAUTH_STATE_SECRET not set");
@@ -297,26 +322,38 @@ export async function testCall(id: ProviderId, accessToken: string): Promise<{ o
 /* ── the vault ─────────────────────────────────────────────────────────────── */
 export async function saveConnection(
   db: SupabaseClient, storeId: string, id: ProviderId, tokens: Tokens, label: string | null, connectedBy: string | null,
+  userKey = "",
 ): Promise<void> {
   const row = {
-    store_id: storeId, provider: id,
+    store_id: storeId, provider: id, user_key: userKey.trim().toLowerCase(),
     access_token: await encrypt(tokens.accessToken),
     refresh_token: tokens.refreshToken ? await encrypt(tokens.refreshToken) : null,
     expires_at: tokens.expiresAt, scope: tokens.scope, account_label: label,
     status: "connected", connected_by: connectedBy, updated_at: new Date().toISOString(),
   };
-  await db.from("oauth_connection").upsert(row, { onConflict: "store_id,provider" });
+  await db.from("oauth_connection").upsert(row, { onConflict: "store_id,provider,user_key" });
 }
 
 interface ConnRow { access_token: string; refresh_token: string | null; expires_at: string | null; scope: string | null; account_label: string | null; status: string }
 
-/** A fresh, decrypted access token for a store+provider — refreshing if expired.
- *  Returns null when not connected or a refresh fails. Never throws. */
-export async function getAccessToken(db: SupabaseClient, storeId: string, id: ProviderId): Promise<string | null> {
+/**
+ * A fresh, decrypted access token for a store+provider — refreshing if expired.
+ * Returns null when not connected or a refresh fails. Never throws.
+ *
+ * `userKey` selects WHOSE token. Empty (the default) is the organisation's shared
+ * connection. Anything else must be a channel-verified email, and there is no
+ * fallback from a personal lookup to the organisation's token: a missing personal
+ * connection means "we cannot answer that as you", never "answer it as somebody
+ * else". That fallback is exactly the disclosure this split exists to prevent.
+ */
+export async function getAccessToken(
+  db: SupabaseClient, storeId: string, id: ProviderId, userKey = "",
+): Promise<string | null> {
   try {
+    const key = userKey.trim().toLowerCase();
     const { data } = await db.from("oauth_connection")
       .select("access_token, refresh_token, expires_at, scope, account_label, status")
-      .eq("store_id", storeId).eq("provider", id).maybeSingle();
+      .eq("store_id", storeId).eq("provider", id).eq("user_key", key).maybeSingle();
     const row = data as ConnRow | null;
     if (!row || row.status !== "connected") return null;
 
@@ -328,7 +365,7 @@ export async function getAccessToken(db: SupabaseClient, storeId: string, id: Pr
     const client = providerClient(id);
     if (!client) return null;
     const refreshed = await refreshToken(id, await decrypt(row.refresh_token), client.clientId, client.clientSecret);
-    await saveConnection(db, storeId, id, refreshed, row.account_label, null);
+    await saveConnection(db, storeId, id, refreshed, row.account_label, null, key);
     return refreshed.accessToken;
   } catch (e) {
     console.error(`[connections] getAccessToken ${id}: ${e instanceof Error ? e.message : e}`);
@@ -336,13 +373,14 @@ export async function getAccessToken(db: SupabaseClient, storeId: string, id: Pr
   }
 }
 
-export async function disconnect(db: SupabaseClient, storeId: string, id: ProviderId): Promise<void> {
+export async function disconnect(db: SupabaseClient, storeId: string, id: ProviderId, userKey = ""): Promise<void> {
   // Best-effort: tell the provider to forget the grant, so "Disconnect" in Rani
   // actually revokes access upstream — not just deletes our stored token. Never
   // let a revoke failure (already-expired token, network) block the local delete.
   try {
     const { data } = await db.from("oauth_connection")
-      .select("access_token, refresh_token").eq("store_id", storeId).eq("provider", id).maybeSingle();
+      .select("access_token, refresh_token")
+      .eq("store_id", storeId).eq("provider", id).eq("user_key", userKey.trim().toLowerCase()).maybeSingle();
     const spec = PROVIDERS[id];
     const client = providerClient(id);
     if (data && spec.revoke && client) {
@@ -363,12 +401,53 @@ export async function disconnect(db: SupabaseClient, storeId: string, id: Provid
   } catch (e) {
     console.error(`[connections] revoke ${id}: ${e instanceof Error ? e.message : e}`);
   }
-  await db.from("oauth_connection").delete().eq("store_id", storeId).eq("provider", id);
+  await db.from("oauth_connection").delete()
+    .eq("store_id", storeId).eq("provider", id).eq("user_key", userKey.trim().toLowerCase());
 }
 
-/** Which providers a store has connected — so the bot only offers the matching
- *  tools (e.g. calendar tools only when Google is connected). */
+/** Which providers the ORGANISATION has connected — so the bot only offers the
+ *  matching shared tools. Personal connections are deliberately excluded: one
+ *  person having connected their mailbox must not put a mail tool in front of
+ *  everybody else. */
 export async function listConnectedProviders(db: SupabaseClient, storeId: string): Promise<string[]> {
-  const { data } = await db.from("oauth_connection").select("provider").eq("store_id", storeId).eq("status", "connected");
+  const { data } = await db.from("oauth_connection")
+    .select("provider").eq("store_id", storeId).eq("status", "connected").eq("user_key", "");
   return (data ?? []).map((r: { provider: string }) => r.provider);
+}
+
+/** Whether THIS person has connected this provider themselves. Decides whether the
+ *  personal tools are offered to them on this turn, and to them only. */
+export async function hasPersonalConnection(
+  db: SupabaseClient, storeId: string, id: ProviderId, email: string | null | undefined,
+): Promise<boolean> {
+  const key = (email ?? "").trim().toLowerCase();
+  if (!key) return false;
+  const { data } = await db.from("oauth_connection")
+    .select("provider").eq("store_id", storeId).eq("provider", id)
+    .eq("user_key", key).eq("status", "connected").maybeSingle();
+  return !!data;
+}
+
+/**
+ * A one-off link this person can follow to connect their own account.
+ *
+ * Minted server-side with their channel-verified email already inside the signed
+ * state, so the assistant can offer it in chat without the link being something
+ * anyone can retarget. It expires in fifteen minutes, which is long enough to
+ * switch to a browser and short enough not to sit usable in a Teams history.
+ *
+ * Returns null when the provider has no app credentials configured, so the caller
+ * can say that plainly rather than handing out a link that dead-ends.
+ */
+export async function personalConnectUrl(id: ProviderId, storeId: string, email: string): Promise<string | null> {
+  const client = providerClient(id);
+  if (!client) return null;
+  const key = email.trim().toLowerCase();
+  if (!key) return null;
+  const state = await signState({
+    sid: storeId, prov: id, uid: "", ukey: key,
+    exp: Math.floor(Date.now() / 1000) + 900,
+    n: crypto.randomUUID(),
+  });
+  return buildAuthorizeUrl(id, client.clientId, state);
 }

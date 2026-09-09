@@ -15,8 +15,8 @@ import {
 // deno-lint-ignore no-explicit-any
 type Db = any;
 
-function bounce(params: string): Response {
-  return new Response(null, { status: 302, headers: { Location: `${panelUrl()}/connections?${params}` } });
+function bounce(params: string, path = "/connections"): Response {
+  return new Response(null, { status: 302, headers: { Location: `${panelUrl()}${path}?${params}` } });
 }
 
 Deno.serve(async (req) => {
@@ -45,7 +45,17 @@ Deno.serve(async (req) => {
     const t = await testCall(provider, tokens.accessToken);
 
     const db: Db = serviceClient();
-    await saveConnection(db, parsed.sid, provider, tokens, t.label, parsed.uid);
+    // `ukey` came from the signed state, so it is the email we put there — not
+    // anything the browser could have changed on the way through.
+    const userKey = (parsed.ukey ?? "").trim().toLowerCase();
+    await saveConnection(db, parsed.sid, provider, tokens, t.label, parsed.uid || null, userKey);
+
+    // A personal connection is made from a chat, not from the console, so the
+    // person following the link has no reason to land on an admin page they may
+    // not even be able to open.
+    if (userKey) {
+      return bounce(`personal=${provider}${t.label ? `&label=${encodeURIComponent(t.label)}` : ""}`, "/connected");
+    }
     return bounce(`connected=${provider}${t.label ? `&label=${encodeURIComponent(t.label)}` : ""}`);
   } catch (e) {
     console.error(`[oauth-callback] ${PROVIDERS[provider].label}: ${e instanceof Error ? e.message : e}`);

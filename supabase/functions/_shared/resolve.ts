@@ -26,6 +26,7 @@ import { loadHttpTools, executeHttpTool } from "./httptool.ts";
 import { loadMcpTools, executeMcpTool } from "./mcp.ts";
 import { logToolCall } from "./audit.ts";
 import { relayToAsker } from "./responders.ts";
+import { sendMail } from "./graph.ts";
 import { noteAssistantMessage } from "./history.ts";
 
 export interface ResolveResult {
@@ -120,6 +121,17 @@ async function runApproved(
       const out = await executeMcpTool(db, store, { ...t, action_policy: "auto" }, args, visitor);
       return finish(db, store, req, out, "mcp");
     }
+    // Built-in connector writes. A held action must complete on approval whatever
+    // kind of tool raised it — governance that only works for tools an owner wired
+    // by hand is governance with a hole in it.
+    if (req.kind === "m365") {
+      if (req.tool !== "send_email") return { completed: false, note: `cannot replay ${req.tool}` };
+      const out = await sendMail(
+        db, store, req.acted_as,
+        String(args.to ?? ""), String(args.subject ?? ""), String(args.body ?? ""),
+      );
+      return finish(db, store, req, out, "m365");
+    }
     return { completed: false, note: `unknown tool kind: ${req.kind}` };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -133,7 +145,7 @@ function finish(
   store: Store,
   req: Row,
   out: Record<string, unknown>,
-  kind: "http" | "mcp",
+  kind: "http" | "mcp" | "m365",
 ): { completed: boolean; note: string } {
   const failed = !!out?.error || out?.ok === false;
   // Audited like any other call, so the log shows the action running at approval
