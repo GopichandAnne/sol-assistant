@@ -47,7 +47,3 @@ next-env.d.ts
 # edge function secrets (local serve) — never commit
 /supabase/functions/.env
 !/supabase/functions/.env.example
-
-# Temporary end-to-end test harness (deployed by hand, deleted after use).
-supabase/functions/dbg/
-supabase/functions/demo-api/
