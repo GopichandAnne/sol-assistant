@@ -174,6 +174,14 @@ export function EmbedChat({
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          // Enter sends. Relying on the form's implicit submit alone is one
+          // browser quirk away from a chat box that swallows what you typed.
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              send(input);
+            }
+          }}
           placeholder="Type your question"
           className="focus-visible:ring-ring min-w-0 flex-1 rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2"
           autoComplete="off"

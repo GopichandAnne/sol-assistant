@@ -37,7 +37,7 @@ async function judge(storeName: string, question: string, answer: string): Promi
   // describe THIS product's world. Written for a retail FAQ ("a customer's
   // question", "the store's products, hours, locations"), it quietly rejected the
   // internal questions this product actually gets, and the same question escalated
-  // to a person again the next day \u2014 which is the whole loop failing.
+  // to a person again the next day — which is the whole loop failing.
   //
   // The keep/drop line is the same shape as before and is the one that matters:
   // how the organisation works is reusable, one person's own situation is not.

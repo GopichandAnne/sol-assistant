@@ -27,7 +27,7 @@ export async function SetupChecklist() {
   if (!isOwner) return null;
 
   const db = createAdminClient();
-  const [cfg, know, tools, mcp, held, embedSeen, setupRow, slack, teams] = await Promise.all([
+  const [cfg, know, tools, mcp, held, embedSeen, setupRow, slack, teams, responders] = await Promise.all([
     supabase.from("agent_config").select("key,value").eq("store_id", store.id).in("key", ["personality", "store_prompt"]),
     supabase.from("knowledge_index").select("id", { count: "exact", head: true }).eq("store_id", store.id),
     db.from("http_tool").select("id", { count: "exact", head: true }).eq("store_id", store.id),
@@ -37,6 +37,7 @@ export async function SetupChecklist() {
     db.from("assistant_setup").select("job, channel, systems, approvals").eq("store_id", store.id).maybeSingle(),
     db.from("slack_installs").select("team_id", { count: "exact", head: true }).eq("store_id", store.id),
     db.from("teams_installs").select("tenant_id", { count: "exact", head: true }).eq("store_id", store.id),
+    db.from("store_responders").select("email", { count: "exact", head: true }).eq("store_slug", store.slug).eq("active", true),
   ]);
 
   const described = (cfg.data ?? []).some((r) => (r.value ?? "").trim().length > 20);
@@ -49,6 +50,8 @@ export async function SetupChecklist() {
   const systems = (plan?.systems ?? []).map((s) => s?.name).filter(Boolean) as string[];
   const approvals = plan?.approvals ?? [];
   const channel = plan?.channel ?? "web";
+
+  const hasResponder = (responders.count ?? 0) > 0;
 
   const steps: Step[] = [
     {
@@ -64,6 +67,18 @@ export async function SetupChecklist() {
       href: "/knowledge",
     },
   ];
+
+  // The half of the loop that is easy to forget until it matters. An assistant that
+  // cannot answer something opens a request — and with nobody named, that request
+  // waits in the console for whoever happens to look. It says so honestly in the
+  // chat rather than pretending, which is right but not a substitute for naming a
+  // person.
+  steps.push({
+    done: hasResponder,
+    label: "Say who picks up what it can't answer",
+    desc: "It reaches them in Teams, Slack or by email \u2014 whichever they use. Until then, questions and approvals wait here for someone to notice.",
+    href: "/inbox",
+  });
 
   // Derived from the plan: the systems the owner said this job touches. Named, so
   // the step is a real errand ("connect Jira") rather than an abstract prompt.

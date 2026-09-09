@@ -33,8 +33,8 @@ export default async function AppLayout({
 
   // Preview bubble: the owner's OWN assistant, floating in the console exactly as it
   // appears on a website. Where the assistant has an SSO secret the chat runs AS the
-  // signed-in owner \u2014 minted here, server-side, from the session we already have, so
-  // there is no second login \u2014 which is what makes an identity-forwarding tool
+  // signed-in owner — minted here, server-side, from the session we already have, so
+  // there is no second login — which is what makes an identity-forwarding tool
   // testable without leaving the console.
   let preview: { key: string; token: string | null } | null = null;
   try {

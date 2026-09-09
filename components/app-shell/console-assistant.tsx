@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { MessageSquare } from "lucide-react";
 
-// The assistant itself, embedded in the console as a floating bubble \u2014 exactly how
+// The assistant itself, embedded in the console as a floating bubble — exactly how
 // it appears on a real website. Because you are already signed in here, the console
 // minted your identity server-side (no separate chat login), so it acts AS you: it
 // can read your account, reach members-only knowledge, and hold risky actions for

@@ -52,7 +52,7 @@ const TIMEOUTS: [number, string][] = [
  *
  * It used to be a constant pointing at askrani.ai, which was correct while the
  * widget lived there. This product hosts its own /embed.js and /embed, and a
- * snippet aimed at another deployment resolves keys against another database \u2014
+ * snippet aimed at another deployment resolves keys against another database —
  * so it would simply never find the assistant it names. Read from the browser so
  * a preview deployment, a custom domain, and localhost each hand out a snippet
  * that actually works.
