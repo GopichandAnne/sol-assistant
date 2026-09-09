@@ -19,5 +19,6 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "supabase/functions"]
+  "_comment_exclude": "Deno-runtime code, not part of the Next build. Both use .ts extensions in imports, which the Next typechecker rejects unless allowImportingTsExtensions is on. scripts/ holds Deno test scripts that import from supabase/functions.",
+  "exclude": ["node_modules", "supabase/functions", "scripts"]
 }
