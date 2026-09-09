@@ -206,19 +206,16 @@ export async function listResponders(): Promise<Responder[]> {
 }
 
 export async function addResponder(input: {
-  phone?: string;
   email?: string;
   name?: string;
   role?: "owner" | "staff";
   topics?: string[];
 }): Promise<ResponderResult> {
-  const phone = normalizePhone(input.phone ?? "");
+  // Email is the address: it reaches them by mail, and it is also how they are
+  // found in Teams (teams_user) and Slack (users.lookupByEmail).
   const email = (input.email ?? "").trim().toLowerCase();
-  if (!phone && !email) return { ok: false, error: "Add a WhatsApp number or an email." };
-  if (phone && phone.length < 7) {
-    return { ok: false, error: "Enter a valid phone number (country code + number)." };
-  }
-  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+  if (!email) return { ok: false, error: "Add their email address." };
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { ok: false, error: "Enter a valid email address." };
   }
 
@@ -233,14 +230,13 @@ export async function addResponder(input: {
     .upsert(
       {
         store_slug: ctx.active.slug,
-        phone: phone || null,
-        email: email || null,
+        email,
         name: (input.name ?? "").trim() || null,
         role: input.role ?? "staff",
         topics: input.topics ?? ["escalation"],
         active: true,
       },
-      { onConflict: "store_slug,phone" },
+      { onConflict: "store_slug,email" },
     )
     .select("*")
     .single();

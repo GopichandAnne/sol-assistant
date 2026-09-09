@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Plus, Trash2, Users } from "lucide-react";
-import { DIAL_CODES, combineDial } from "@/lib/phone";
 
 type Topic = { key: string; label: string };
 
@@ -24,23 +23,21 @@ export function RespondersSection({
   topics: Topic[];
 }) {
   const [rows, setRows] = useState<Responder[]>(initial);
-  const [phone, setPhone] = useState("");
-  const [dial, setDial] = useState("+1");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [adding, startAdd] = useTransition();
 
   function add() {
-    if (!phone.trim() && !email.trim()) return;
+    if (!email.trim()) return;
     startAdd(async () => {
-      const res = await addResponder({ phone: combineDial(dial, phone), email, name });
+      const res = await addResponder({ email, name });
       if (res.ok) {
         setRows((prev) => {
           const i = prev.findIndex((r) => r.id === res.responder.id);
           if (i >= 0) { const c = prev.slice(); c[i] = res.responder; return c; }
           return [...prev, res.responder];
         });
-        setPhone(""); setEmail(""); setName("");
+        setEmail(""); setName("");
         toast.success("Responder added");
       } else toast.error("Couldn't add", { description: res.error });
     });
@@ -80,9 +77,9 @@ export function RespondersSection({
           {rows.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{r.name || r.phone || r.email}</p>
+                <p className="truncate text-sm font-medium">{r.name || r.email}</p>
                 <p className="text-muted-foreground truncate text-xs">
-                  {[r.phone, r.email].filter(Boolean).join(" · ")}
+                  {r.email}
                   {r.role === "owner" ? " · owner" : ""}
                   {!r.active ? " · inactive" : ""}
                 </p>
@@ -115,32 +112,14 @@ export function RespondersSection({
 
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
-          <Label htmlFor="resp-phone" className="text-xs">WhatsApp</Label>
-          <div className="flex gap-1.5">
-            <select
-              aria-label="Country code"
-              value={dial}
-              onChange={(e) => setDial(e.target.value)}
-              className="border-input bg-transparent focus-visible:ring-ring h-9 shrink-0 rounded-md border px-1.5 text-sm shadow-sm outline-none focus-visible:ring-1"
-            >
-              {DIAL_CODES.map((c) => (
-                <option key={c.name} value={c.dial}>
-                  {c.flag} {c.dial}
-                </option>
-              ))}
-            </select>
-            <Input id="resp-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="512 555 1234" inputMode="tel" className="w-32" />
-          </div>
-        </div>
-        <div className="space-y-1">
           <Label htmlFor="resp-email" className="text-xs">Email</Label>
-          <Input id="resp-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" inputMode="email" className="w-48" />
+          <Input id="resp-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="colleague@yourcompany.com" inputMode="email" className="w-56" />
         </div>
         <div className="space-y-1">
           <Label htmlFor="resp-name" className="text-xs">Name</Label>
           <Input id="resp-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ravi" className="w-32" />
         </div>
-        <Button onClick={add} disabled={adding || (!phone.trim() && !email.trim())} size="sm">
+        <Button onClick={add} disabled={adding || !email.trim()} size="sm">
           {adding ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
           Add
         </Button>

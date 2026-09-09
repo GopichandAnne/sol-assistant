@@ -38,6 +38,27 @@ export async function slackUserInfo(botToken: string, userId: string): Promise<{
   }
 }
 
+/** Find a Slack user by email so we can DM them (needs users:read.email).
+ *  Returns the user id, which chat.postMessage accepts as a channel. */
+export async function slackLookupByEmail(botToken: string, email: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://slack.com/api/users.lookupByEmail?email=${encodeURIComponent(email)}`, {
+      headers: { authorization: `Bearer ${botToken}` },
+    });
+    // deno-lint-ignore no-explicit-any
+    const j: any = await res.json();
+    if (!j?.ok) {
+      // users_not_found is ordinary: the person may simply not be in this workspace.
+      if (j?.error !== "users_not_found") console.warn(`[slack] users.lookupByEmail: ${j?.error}`);
+      return null;
+    }
+    return j.user?.id ?? null;
+  } catch (e) {
+    console.warn(`[slack] users.lookupByEmail error: ${(e as Error)?.message}`);
+    return null;
+  }
+}
+
 /** Reply to an interaction's response_url (e.g. replace the approval message). */
 export async function slackRespond(responseUrl: string, body: Record<string, unknown>): Promise<void> {
   try {

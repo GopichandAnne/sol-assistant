@@ -524,10 +524,17 @@ async function executeEscalate(
     event_payload_json: { ticket_id: ticketId, question },
   });
 
-  // DM the store's responders so they can answer from their own WhatsApp.
+  // Reach the responders wherever they work: Teams, Slack, or email (notify.ts).
+  // Written in the assistant's voice, because in a Teams or Slack DM that is who
+  // it appears to be from, not a system alert from an address nobody recognises.
   await notifyResponders(
     db, store, "escalation",
-    `A customer asked: ${question}\n\nReply to this message to answer them (Rani will pass it along).`,
+    `Someone asked me something I couldn't answer, and they're waiting:
+
+"${question}"
+
+Can you take it? Answer in the console and I'll pass it back to them.`,
+    { subject: `Someone needs a hand — ${store.store_display_name ?? store.slug}` },
   );
 
   return { escalated: true, ticket_id: ticketId };
