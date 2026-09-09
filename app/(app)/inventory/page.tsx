@@ -9,7 +9,7 @@ import { vocabFor } from "@/lib/vertical-vocab";
 export async function generateMetadata(): Promise<Metadata> {
   const ctx = await getActiveStore();
   const title = vocabFor(ctx?.active?.businessType).catalogTitle;
-  return { title: `${title} · Ask Rani` };
+  return { title: `${title} · The Assistant` };
 }
 
 export default async function InventoryPage() {

@@ -1,58 +1,133 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Ask Rani — DESIGN TOKENS (single source of truth)
-   Extracted verbatim from the production askrani.ai stylesheet.
-   DO NOT invent brand colors. Components derive from these variables only.
-   Semantic (shadcn/ui) tokens are mapped from these in globals.css.
+   The Assistant, by Sol Consulting. DESIGN TOKENS (single source of truth).
+
+   Values are taken verbatim from the Sol Consulting Design System v1.0.0
+   (sol-design-system.json / colors_and_type.css). Token names match the design
+   system 1:1, so anything written against the Sol spec drops straight in.
+   Do not invent brand colors. Semantic (shadcn/ui) tokens are mapped from these
+   in globals.css.
+
+   Two rules from the system that constrain this file:
+     1. Orange is precious. It marks the one most important thing on a surface.
+        It is never a decorative or hover surface, so the neutral washes below
+        are Sol neutrals, not orange tints.
+     2. Contrast minimum is 3:1. White on Sol Orange is 2.5:1 and is never used.
+        Text on an orange surface is always Sol Dark.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Brand: teal (primary) ───────────────────────────────────────────── */
-  --teal: #14b8a6; /* primary */
-  --teal-dark: #0d9488;
-  --teal-deep: #0f766e; /* headings/links on light */
-  --teal-light: #5eead4; /* accents, live pulse, dark-mode link */
-  --teal-mist: #f0fdfa; /* tints, chat bubbles */
-  --teal-border: #ccfbf1;
+  /* ── Sol brand core ──────────────────────────────────────────────────── */
+  --sol-orange: #ff7546;
+  --sol-orange-dark: #e05a2b;
+  --sol-orange-pale: #ffe1d1;
 
-  /* ── Brand: coral (secondary accent — sparing) ───────────────────────── */
-  --coral: #fb923c;
-  --coral-dark: #f97316;
+  /* ── Sol neutrals ────────────────────────────────────────────────────── */
+  --sol-dark: #242f36;
+  --sol-slate: #3a4c57;
+  --sol-slate-mid: #4e6270;
+  --sol-slate-light: #8a9fa9;
+  --sol-grey: #c4ced3;
+  --sol-light-grey: #f0f2f3;
+  --sol-off-white: #f4f4f2;
+  --sol-primary-light: #fcfaf7;
+  --sol-white: #ffffff;
+
+  /* ── Sol accents (the other three of the four main accent colors) ────── */
+  --sol-teal: #00d0bf;
+  --sol-teal-dark: #009e92;
+  --sol-light-teal: #bcf7f3;
+  --sol-teal-pale: #e0faf8;
+  --sol-sage: #a8d88f;
+  --sol-sage-dark: #5c8a47;
+  --sol-light-sage: #d7ebc6;
+  --sol-sage-pale: #eaf5de;
+  --sol-purple: #d9c0f8;
+  --sol-purple-dark: #a87de8;
+  --sol-light-purple: #e3cffc;
+
+  /* ── Compatibility layer ─────────────────────────────────────────────────
+     The upstream platform this forked from was built on a teal palette, and
+     several hundred call sites still say `text-teal-deep`, `bg-teal` and so on.
+     Rewriting every one of them would be a large, purely cosmetic diff across
+     ~48,000 lines with real risk of missing spots, so the legacy names are
+     aliased onto Sol values here instead. The class names are a leftover; the
+     colors they now render are Sol's. New work should use the --sol-* tokens
+     above directly. (Same reasoning as pinning profileFor: change one place,
+     not every caller.)
+
+     Note the names no longer describe their hue. That is the cost of the alias,
+     and the reason this block is loud rather than quiet.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  /* legacy primary -> Sol Orange */
+  --teal: var(--sol-orange);
+  --teal-dark: var(--sol-orange-dark);
+  /* Small text and links on light. Sol Orange itself is 2.5:1 on white and is
+     forbidden below 24px, so links resolve to Orange Dark instead: 3.9:1, which
+     clears the system's 3:1 floor while staying recognisably brand. */
+  --teal-deep: var(--sol-orange-dark);
+  /* On dark surfaces, full Sol Orange has ample contrast. */
+  --teal-light: var(--sol-orange);
+  --teal-mist: var(--sol-orange-pale);
+  --teal-border: var(--sol-orange-pale);
+
+  /* legacy secondary accent -> Sol Teal, one of the four main accents */
+  --coral: var(--sol-teal);
+  --coral-dark: var(--sol-teal-dark);
 
   /* ── Surfaces / neutrals ─────────────────────────────────────────────── */
-  --navy: #0c1222; /* dark-mode surface base */
-  --cream: #fafaf8; /* light app background */
-  --text: #1f2937;
-  --muted: #6b7280;
-  --border: #e5e7eb;
+  --navy: var(--sol-dark); /* dark-mode surface base */
+  --cream: var(--sol-primary-light); /* warm off-white, the preferred page background */
+  --text: var(--sol-dark);
+  --muted: var(--sol-slate-light);
+  --border: var(--sol-grey);
 
-  /* dark-mode surface ramp (derived from the site's dark aesthetic) */
-  --navy-surface: #141b2e; /* raised surfaces */
-  --navy-border: #1e293b;
-  --dark-text: #fafaf8;
-  --dark-muted: #9ca3af;
+  /* dark-mode surface ramp, built from Sol neutrals */
+  --navy-surface: var(--sol-slate); /* raised surfaces (cards on dark) */
+  --navy-border: var(--sol-slate-mid);
+  --dark-text: var(--sol-white);
+  --dark-muted: rgba(255, 255, 255, 0.65);
 
   /* ── Signature treatments ────────────────────────────────────────────── */
-  --gradient-primary: linear-gradient(135deg, var(--teal), var(--teal-dark));
-  --radius: 12px; /* button / control radius */
-  --radius-lg: 16px; /* large (cards) */
-  --shadow-primary: 0 4px 14px rgba(20, 184, 166, 0.3);
+  /* Sol is flat by design, so the "gradient" is a single flat orange. Kept as a
+     token because ~20 call sites use bg-gradient-primary for the main CTA. */
+  --gradient-primary: linear-gradient(135deg, var(--sol-orange), var(--sol-orange));
+  --radius: 8px; /* buttons and controls: Sol specifies 4-8px */
+  --radius-lg: 12px; /* cards: Sol specifies 8-12px */
+  --shadow-primary: 0 8px 24px rgba(255, 117, 70, 0.35); /* --shadow-orange */
 
-  /* ── Order-status chip colors (soft tint bg + saturated text) ─────────── */
-  /* saturated text values: */
-  --status-placed: #6b7280; /* grey */
-  --status-submitted: #d97706; /* amber */
-  --status-pending_approval: #f97316; /* coral */
-  --status-proposed: #14b8a6; /* teal */
-  --status-confirmed: #0f766e; /* teal-deep */
-  --status-fulfilled: #16a34a; /* green (confirmed-complete) */
-  --status-rejected: #dc2626; /* red */
-  --status-cancelled: #dc2626; /* red */
-  /* soft tint backgrounds: */
-  --status-placed-bg: #f3f4f6;
+  /* ── Sol spacing, radius, motion (available for new work) ────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 3px rgba(36, 47, 54, 0.1), 0 1px 2px rgba(36, 47, 54, 0.06);
+  --shadow-md: 0 4px 12px rgba(36, 47, 54, 0.12), 0 2px 4px rgba(36, 47, 54, 0.08);
+  --shadow-lg: 0 10px 30px rgba(36, 47, 54, 0.15), 0 4px 8px rgba(36, 47, 54, 0.08);
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* ── Status chips (functional, not brand) ────────────────────────────────
+     Semantic state colors stay distinct from the brand accent on purpose: a
+     reader must be able to tell "confirmed" from "rejected" without reference
+     to the palette. Only the neutral and in-progress states are pulled toward
+     Sol's hues. */
+  --status-placed: var(--sol-slate-light);
+  --status-submitted: #d97706;
+  --status-pending_approval: var(--sol-orange-dark);
+  --status-proposed: var(--sol-teal-dark);
+  --status-confirmed: var(--sol-sage-dark);
+  --status-fulfilled: #16a34a;
+  --status-rejected: #dc2626;
+  --status-cancelled: #dc2626;
+
+  --status-placed-bg: var(--sol-light-grey);
   --status-submitted-bg: #fffbeb;
-  --status-pending_approval-bg: #fff7ed;
-  --status-proposed-bg: #f0fdfa;
-  --status-confirmed-bg: #f0fdfa;
+  --status-pending_approval-bg: var(--sol-orange-pale);
+  --status-proposed-bg: var(--sol-teal-pale);
+  --status-confirmed-bg: var(--sol-sage-pale);
   --status-fulfilled-bg: #f0fdf4;
   --status-rejected-bg: #fef2f2;
   --status-cancelled-bg: #fef2f2;

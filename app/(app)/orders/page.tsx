@@ -8,7 +8,7 @@ import type { Charge } from "@/lib/orders/totals";
 import { OrdersBoard } from "@/components/orders/orders-board";
 import { SetupChecklist } from "@/components/setup/setup-checklist";
 
-export const metadata: Metadata = { title: "Orders · Ask Rani" };
+export const metadata: Metadata = { title: "Orders · The Assistant" };
 
 export default async function OrdersPage() {
   const ctx = await getActiveStore();

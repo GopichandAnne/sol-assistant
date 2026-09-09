@@ -53,7 +53,7 @@ export function StoresView({ initial }: { initial: StoreRow[] }) {
     <div className="mx-auto max-w-5xl space-y-5 p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl italic">Stores</h1>
+          <h1 className="font-display text-2xl">Stores</h1>
           <p className="text-muted-foreground text-sm">
             Every store on the platform · {initial.length}
           </p>

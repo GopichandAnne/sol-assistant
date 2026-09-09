@@ -6,7 +6,7 @@ import type { SavedQA } from "@/lib/knowledge/types";
 import { KnowledgeView } from "@/components/knowledge/knowledge-view";
 import { listDocuments } from "./actions";
 
-export const metadata: Metadata = { title: "Knowledge · Ask Rani" };
+export const metadata: Metadata = { title: "Knowledge · The Assistant" };
 
 export default async function KnowledgePage() {
   const ctx = await getActiveStore();

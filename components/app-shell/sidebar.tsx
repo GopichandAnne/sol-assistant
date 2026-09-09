@@ -36,7 +36,7 @@ export function Sidebar() {
   return (
     <aside className="bg-card hidden w-60 shrink-0 flex-col border-r md:flex">
       <div className="flex h-14 items-center px-5">
-        <Link href={homeHrefFor(profile)} aria-label="Ask Rani home">
+        <Link href={homeHrefFor(profile)} aria-label="The Assistant home">
           <Wordmark />
         </Link>
       </div>

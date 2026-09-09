@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ConversationsView } from "@/components/conversations/conversations-view";
 import { computeThreadSignals } from "@/lib/conversations/signals";
 
-export const metadata: Metadata = { title: "Conversations · Ask Rani" };
+export const metadata: Metadata = { title: "Conversations · The Assistant" };
 
 export default async function ConversationsPage() {
   const ctx = await getActiveStore();

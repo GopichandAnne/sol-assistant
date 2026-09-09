@@ -1,36 +1,39 @@
 import type { Metadata } from "next";
-import { DM_Sans, Playfair_Display } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-// DM Sans — all UI / body / data
-const dmSans = DM_Sans({
+// Inter. All UI, body and data. Sol's body face.
+// The CSS variable keeps its old name so the ~200 call sites reading
+// var(--font-dm-sans) and the Tailwind `sans` family keep resolving.
+const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-dm-sans",
   display: "swap",
 });
 
-// Playfair Display (italic 800) — display / headings / key numbers (used with restraint)
-const playfair = Playfair_Display({
+// Outfit. Sol's display face: a geometric sans whose "O" is a near-perfect
+// circle, matching the sun motif the brand is built on. Bold weights only,
+// and never italic, which is what the upstream serif was set in.
+const outfit = Outfit({
   subsets: ["latin"],
-  weight: ["800"],
-  style: ["italic", "normal"],
+  weight: ["600", "700", "800", "900"],
   variable: "--font-playfair",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Ask Rani — Control Panel",
-  description: "Staff & owner control panel for the Ask Rani AI shopping assistant.",
+  title: "The Assistant",
+  description: "Console for The Assistant, the AI agent that answers your customers and acts in your product. By Sol Consulting.",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
       <body>
         <ThemeProvider
           attribute="class"

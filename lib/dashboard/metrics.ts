@@ -202,7 +202,7 @@ export function topMissing(convs: ConvRow[], limit = 8) {
   return topItemsBy(convs, (a) => toStrings(a.missing_items), limit);
 }
 
-/** Conversations where Rani hit a gap (named something it couldn't answer). Used
+/** Conversations where the assistant hit a gap (named something it couldn't answer). Used
  *  for the self-serve rate on the SaaS Assistant-Health home. */
 export function gapConversationCount(convs: ConvRow[]): number {
   let n = 0;

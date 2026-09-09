@@ -58,9 +58,9 @@ export function TicketsView({
   return (
     <div className="mx-auto max-w-4xl space-y-5 p-6">
       <header>
-        <h1 className="font-display text-2xl italic">Questions</h1>
+        <h1 className="font-display text-2xl">Questions</h1>
         <p className="text-muted-foreground text-sm">
-          {storeName} · questions Rani couldn&apos;t answer. Reply here and Rani sends your answer
+          {storeName} · questions the assistant couldn&apos;t answer. Reply here and the assistant sends your answer
           to the customer (WhatsApp or web) — no WhatsApp needed on your end.
         </p>
       </header>
@@ -199,7 +199,7 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             rows={2}
-            placeholder="Type your answer — Rani sends it to the customer as you…"
+            placeholder="Type your answer — the assistant sends it to the customer as you…"
             disabled={sending}
           />
           <div className="flex justify-end">

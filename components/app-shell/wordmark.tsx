@@ -1,7 +1,18 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { RaniMark } from "@/components/app-shell/rani-mark";
 
-/** Rani robot + "Ask Rani" (Playfair italic) — matches the marketing site. */
+/**
+ * The Assistant, by Sol Consulting.
+ *
+ * The circular badge is Sol's own logo asset, used unmodified: the "O" in SOL is
+ * a perfect circle standing for the sun, and the design system asks that the
+ * circle and the motif be preserved rather than redrawn. The badge carries its
+ * own orange ground, so it reads correctly on light and dark surfaces alike and
+ * needs no per-theme variant.
+ *
+ * The product name is set in Outfit, Sol's display face. Sentence case, no
+ * italic: the upstream wordmark was an italic serif, which is not Sol.
+ */
 export function Wordmark({
   className,
   withIcon = true,
@@ -12,12 +23,21 @@ export function Wordmark({
   return (
     <span
       className={cn(
-        "font-display text-teal-deep dark:text-teal-light inline-flex items-center gap-2 text-xl italic leading-none",
+        "font-display text-foreground inline-flex items-center gap-2 text-xl leading-none",
         className,
       )}
     >
-      {withIcon && <RaniMark animated={false} className="h-[1.15em] w-auto shrink-0" />}
-      Ask Rani
+      {withIcon && (
+        <Image
+          src="/brand/logo-sol-circle-orange.png"
+          alt=""
+          width={1000}
+          height={1000}
+          priority
+          className="h-[1.15em] w-[1.15em] shrink-0 rounded-full"
+        />
+      )}
+      The Assistant
     </span>
   );
 }

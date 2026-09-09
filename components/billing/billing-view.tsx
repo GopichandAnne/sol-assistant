@@ -39,7 +39,7 @@ export function BillingView({
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <header>
-        <h1 className="font-display text-2xl italic">Credits</h1>
+        <h1 className="font-display text-2xl">Credits</h1>
         <p className="text-muted-foreground text-sm">
           {company.name} — one balance across every assistant on this account.
         </p>
@@ -99,7 +99,7 @@ export function BillingView({
                   <span className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
                     <span
                       className="block h-full rounded-full"
-                      style={{ width: `${Math.max(2, (s.credits / top) * 100)}%`, background: "#0d9488" }}
+                      style={{ width: `${Math.max(2, (s.credits / top) * 100)}%`, background: "var(--sol-orange-dark)" }}
                     />
                   </span>
                   <span className="text-muted-foreground w-16 shrink-0 text-right tabular-nums">
@@ -232,9 +232,9 @@ function Settings({ company, credits }: { company: CompanyView; credits: Credits
 function Unassigned() {
   return (
     <div className="mx-auto max-w-3xl p-6">
-      <h1 className="font-display text-2xl italic">Credits</h1>
+      <h1 className="font-display text-2xl">Credits</h1>
       <div className="bg-card mt-4 rounded-xl border p-8 text-center">
-        <Coins className="mx-auto size-8" style={{ color: "#0d9488" }} />
+        <Coins className="mx-auto size-8" style={{ color: "var(--sol-orange-dark)" }} />
         <h2 className="font-display mt-3 text-xl font-bold">This assistant isn&apos;t on an account yet</h2>
         <p className="text-muted-foreground mx-auto mt-1 max-w-md text-sm">
           Its usage is being recorded, but there&apos;s no credit balance to show until it&apos;s attached

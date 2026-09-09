@@ -27,7 +27,7 @@ type Detect = { kind: "local" | "online"; query: string; name?: string };
 type Detected = Record<string, unknown> | null;
 
 /**
- * The Setup Copilot — conversational store setup. Rani interviews the owner one
+ * The Setup Copilot — conversational store setup. The assistant interviews the owner one
  * plain question at a time (their language, tap-able chips, or voice); when it has
  * enough it writes the whole config and provisions the store. No forms, no prompts.
  */
@@ -64,14 +64,14 @@ export function WelcomeChat({ email, initialSite, initialType }: { email: string
     if (error || !data?.reply) {
       setBusy(false);
       setDetecting(false);
-      toast.error("Rani had trouble responding", { description: "Please try again." });
+      toast.error("The assistant had trouble responding", { description: "Please try again." });
       return;
     }
     const withReply: Msg[] = [...next, { role: "rani", text: data.reply as string }];
     setMessages(withReply);
 
-    // Detect handshake: Rani asked us to look the business up. Run it, then feed the
-    // result back into the very next turn so Rani confirms instead of interrogates.
+    // Detect handshake: The assistant asked us to look the business up. Run it, then feed the
+    // result back into the very next turn so the assistant confirms instead of interrogates.
     // `afterDetect` guards against ever looping on a second detect signal.
     const detect = data.detect as Detect | null;
     if (detect?.query && !afterDetect) {
@@ -178,7 +178,7 @@ export function WelcomeChat({ email, initialSite, initialType }: { email: string
           <div className="flex justify-start">
             <div className="bg-muted text-muted-foreground flex items-center gap-2 rounded-2xl rounded-bl-sm px-3.5 py-2 text-sm">
               <Loader2 className="size-3.5 animate-spin" />
-              {provisioning ? "Setting up your store…" : detecting ? "Looking up your business…" : "Rani is typing…"}
+              {provisioning ? "Setting up your store…" : detecting ? "Looking up your business…" : "The assistant is typing…"}
             </div>
           </div>
         )}

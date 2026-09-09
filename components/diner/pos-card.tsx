@@ -127,8 +127,8 @@ export function PosCard({ providers }: { providers: PosProviderState[] }) {
         <div className="space-y-0.5">
           <h2 className="text-sm font-medium">Point of sale</h2>
           <p className="text-muted-foreground text-sm">
-            When you approve an order, Rani sends it straight to your POS as an open ticket.
-            Rani adds the order — it never touches payment.
+            When you approve an order, the assistant sends it straight to your POS as an open ticket.
+            The assistant adds the order — it never touches payment.
           </p>
         </div>
       </div>

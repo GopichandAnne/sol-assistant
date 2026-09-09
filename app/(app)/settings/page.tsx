@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { profileFor, homeHrefFor } from "@/lib/console-profile";
 import { StoreSettings } from "@/components/settings/store-settings";
 
-export const metadata: Metadata = { title: "Settings · Ask Rani" };
+export const metadata: Metadata = { title: "Settings · The Assistant" };
 
 export default async function SettingsPage() {
   const ctx = await getActiveStore();

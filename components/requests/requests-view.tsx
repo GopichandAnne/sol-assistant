@@ -203,7 +203,7 @@ export function RequestsView({
         <div className="flex items-center gap-2">
           <Inbox className="text-muted-foreground size-5" />
           <div>
-            <h1 className="font-display text-2xl italic">Requests</h1>
+            <h1 className="font-display text-2xl">Requests</h1>
             <p className="text-muted-foreground text-sm">{storeName}</p>
           </div>
         </div>
@@ -269,7 +269,7 @@ export function RequestsView({
           </Button>
         </div>
         <p className="text-muted-foreground text-sm">
-          Define the kinds of requests Rani can collect (e.g. a job enquiry, a callback, a quote).
+          Define the kinds of requests the assistant can collect (e.g. a job enquiry, a callback, a quote).
           Each becomes a notification topic your team can subscribe to on the Agent page.
         </p>
 
@@ -425,7 +425,7 @@ export function RequestsView({
             <Inbox className="size-6" />
             <p className="text-sm font-medium">No requests yet</p>
             <p className="max-w-sm text-sm">
-              When Rani captures a request from a visitor, it shows up here for your team to review.
+              When the assistant captures a request from a visitor, it shows up here for your team to review.
             </p>
           </div>
         ) : (

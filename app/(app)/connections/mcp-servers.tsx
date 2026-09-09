@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plug, Plus, RefreshCw, Trash2, Zap } from "lucide-react";
+import { Loader2, Lock, Plug, Plus, RefreshCw, Trash2, Zap } from "lucide-react";
 import { MCP_CATALOG, type McpCatalogEntry } from "./mcp-catalog";
 
 export type McpServerRow = { id: string; name: string; url: string; auth: { type?: string; provider?: string } | null; enabled: boolean };
@@ -61,7 +61,7 @@ export function McpServers({
     const { data, error } = await supabase.functions.invoke("mcp", { body: { action: "connect", storeSlug, name: entry.name, url: entry.url, authType: "none" } });
     setAddingId(null);
     if (error || data?.error) { toast.error(`Couldn't connect ${entry.name}`, { description: data?.error ?? error?.message }); return; }
-    toast.success(`Connected ${entry.name}`, { description: `${data.tools?.length ?? 0} tool(s) — Rani can use them now.` });
+    toast.success(`Connected ${entry.name}`, { description: `${data.tools?.length ?? 0} tool(s) — the assistant can use them now.` });
     void refresh();
   }
 
@@ -85,7 +85,7 @@ export function McpServers({
       toast.error("Couldn't connect", { description: data?.error ?? error?.message });
       return;
     }
-    toast.success(`Connected ${data.name}`, { description: `${data.tools?.length ?? 0} tool(s) discovered — Rani can use them now.` });
+    toast.success(`Connected ${data.name}`, { description: `${data.tools?.length ?? 0} tool(s) discovered — the assistant can use them now.` });
     setName(""); setUrl(""); setApiKey("");
     void refresh();
   }
@@ -100,7 +100,7 @@ export function McpServers({
     setTools((prev) => prev.map((t) => (t.id === id ? { ...t, action_policy: next } : t)));
     const { error } = await supabase.functions.invoke("mcp", { body: { action: "set_tool_policy", storeSlug, toolId: id, policy: next } });
     if (error) { toast.error("Couldn't update"); return; }
-    toast.success(hold ? "Held for a person" : "Auto — Rani can run this");
+    toast.success(hold ? "Held for a person" : "Auto — the assistant can run this");
   }
 
   async function toggleServer(id: string, enabled: boolean) {
@@ -129,7 +129,7 @@ export function McpServers({
         <h2 className="text-base font-semibold">MCP servers</h2>
       </div>
       <p className="text-muted-foreground mb-4 text-sm">
-        Connect a remote MCP server and Rani discovers its tools automatically — no spec, no mapping. She picks
+        Connect a remote MCP server and the assistant discovers its tools automatically — no spec, no mapping. It picks
         each tool by <b>its own description</b> (provided by the server) and calls it by context — if one isn&apos;t
         triggering, guide it from the <a href="/agent" className="text-teal-deep hover:underline">Agent</a> prompt
         (describe the situation). Store-level auth only; the model never sees your key.
@@ -247,9 +247,9 @@ export function McpServers({
                             variant={t.action_policy === "hold" ? "secondary" : "ghost"}
                             size="sm"
                             onClick={() => setToolPolicy(t.id, t.action_policy !== "hold")}
-                            title={t.action_policy === "hold" ? "Held — Rani flags this for a person. Click to allow." : "Auto — Rani can run this. Click to require a person."}
+                            title={t.action_policy === "hold" ? "Held — the assistant flags this for a person. Click to allow." : "Auto — the assistant can run this. Click to require a person."}
                           >
-                            {t.action_policy === "hold" ? "🔒 Hold" : "Auto"}
+                            {t.action_policy === "hold" ? <><Lock className="size-3.5" /> Hold</> : "Auto"}
                           </Button>
                         )}
                         <Switch checked={t.enabled} onCheckedChange={(c) => toggleTool(t.id, c)} aria-label={`Enable ${t.remote_name}`} />

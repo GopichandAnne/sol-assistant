@@ -6,7 +6,7 @@ import { WelcomeChat } from "./welcome-chat";
 import { Wordmark } from "@/components/app-shell/wordmark";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const metadata: Metadata = { title: "Set up your store · Ask Rani" };
+export const metadata: Metadata = { title: "Set up your store · The Assistant" };
 export const dynamic = "force-dynamic";
 
 /**
@@ -31,7 +31,7 @@ export default async function WelcomePage() {
         <CardHeader className="space-y-3 text-center">
           <Wordmark className="justify-center text-2xl" />
           <div className="space-y-1">
-            <CardTitle className="text-lg">Let&apos;s set up your Rani</CardTitle>
+            <CardTitle className="text-lg">Let&apos;s set up your the assistant</CardTitle>
             <CardDescription>Just chat with me about your business — type or tap the mic. No forms.</CardDescription>
           </div>
         </CardHeader>

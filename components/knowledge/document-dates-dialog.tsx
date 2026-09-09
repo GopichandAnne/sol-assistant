@@ -68,7 +68,7 @@ export function DocumentDatesDialog({
         <DialogHeader>
           <DialogTitle>Effective dates</DialogTitle>
           <DialogDescription>
-            Rani only mentions “{title}” within this window and stops after it ends.
+            The assistant only mentions “{title}” within this window and stops after it ends.
             Clear both for always-on info.
           </DialogDescription>
         </DialogHeader>

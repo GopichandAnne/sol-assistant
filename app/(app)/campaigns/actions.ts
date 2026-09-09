@@ -139,8 +139,8 @@ export type PlatformRule = {
 export type PostEarnConfig = {
   active: boolean;
   platforms: PlatformRule[];         // every known platform; enabled ones are offered
-  promoContext: string;              // "what to promote" — Rani tells customers, reviewers check relevance
-  shareMedia: ShareMediaItem[];      // owner-uploaded images Rani hands out to post
+  promoContext: string;              // "what to promote" — the assistant tells customers, reviewers check relevance
+  shareMedia: ShareMediaItem[];      // owner-uploaded images the assistant hands out to post
   budgetUsd: number | null;          // shared budget across platforms
 };
 

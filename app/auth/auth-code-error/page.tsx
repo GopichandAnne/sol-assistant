@@ -3,7 +3,7 @@ import { Wordmark } from "@/components/app-shell/wordmark";
 
 // Force dynamic so this page is NOT statically prerendered at build time — the
 // static collection of this route was failing the whole build ("e.createContext
-// is not a function"), which blocked every Rani web deploy. An error page has no
+// is not a function"), which blocked every the assistant web deploy. An error page has no
 // reason to be static. We also render a plain styled link instead of the Radix
 // <Button asChild> to keep this page free of client-component context at build.
 export const dynamic = "force-dynamic";

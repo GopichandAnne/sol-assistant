@@ -7,12 +7,12 @@ import { ApiBuilder, type ApiTool } from "./api-builder";
 import { QuickTool } from "./quick-tool";
 import { McpServers, type McpServerRow, type McpToolRow } from "./mcp-servers";
 
-export const metadata: Metadata = { title: "Connections · Ask Rani" };
+export const metadata: Metadata = { title: "Connections · The Assistant" };
 export const dynamic = "force-dynamic";
 
 /**
  * Connections — the OAuth broker's front door. The owner clicks "Connect" on a
- * provider, authorizes on the provider's own site, and Rani gets the tokens (the
+ * provider, authorizes on the provider's own site, and the assistant gets the tokens (the
  * model never sees them). Read the current status from the vault (service role;
  * the table has no client policies).
  */
@@ -50,19 +50,19 @@ export default async function ConnectionsPage() {
       <div className="mb-5">
         <h1 className="text-lg font-semibold">Connections</h1>
         <p className="text-muted-foreground text-sm">
-          Connect the tools you already use. One click, sign in on their site — Rani gets access, and never sees your password.
+          Connect the tools you already use. One click, sign in on their site — the assistant gets access, and never sees your password.
         </p>
       </div>
       <details className="bg-card mb-5 rounded-lg border p-4 text-sm [&_summary]:cursor-pointer">
-        <summary className="font-medium">How Rani uses your tools</summary>
+        <summary className="font-medium">How the assistant uses your tools</summary>
         <div className="text-muted-foreground mt-3 space-y-2">
-          <p>Rani sees every connected tool with its description. When a customer&apos;s question matches, she calls it — and she can <b>chain</b> several (look something up, then act) before answering.</p>
+          <p>The assistant sees every connected tool with its description. When a customer&apos;s question matches, it calls it — and it can <b>chain</b> several (look something up, then act) before answering.</p>
           <ul className="list-disc space-y-1 pl-5">
             <li><b>Reads</b> run on their own. <b>Writes</b> wait for the customer to confirm.</li>
-            <li>A tool set to <b>🔒 Hold</b> never runs itself — Rani flags it for a person.</li>
-            <li>Every call is recorded in <a href="/activity" className="text-teal-deep underline">Activity</a> — what she did, and as whom.</li>
+            <li>A tool set to <b>🔒 Hold</b> never runs itself — the assistant flags it for a person.</li>
+            <li>Every call is recorded in <a href="/activity" className="text-teal-deep underline">Activity</a> — what it did, and as whom.</li>
           </ul>
-          <p>Steer her from the <a href="/agent" className="text-teal-deep underline">Agent</a> prompt — describe the <i>situation</i>, not the tool name: e.g. <i>&ldquo;when a customer asks about their invoice or usage, look it up and answer with their real data.&rdquo;</i></p>
+          <p>Steer it from the <a href="/agent" className="text-teal-deep underline">Agent</a> prompt — describe the <i>situation</i>, not the tool name: e.g. <i>&ldquo;when a customer asks about their invoice or usage, look it up and answer with their real data.&rdquo;</i></p>
         </div>
       </details>
 

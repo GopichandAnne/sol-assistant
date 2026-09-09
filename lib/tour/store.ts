@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// The product-tour store — the "Ask Rani - Assistant" store whose embed runs on
+// The product-tour store — the "The Assistant - Assistant" store whose embed runs on
 // agent.askrani.ai. Its publishable key is public (it ships in the embed snippet);
 // override via env if it ever changes.
 export const TOUR_STORE_KEY = process.env.TOUR_STORE_KEY || "pk_live_bcc9d886cbe042748f67eb3854aa025a";

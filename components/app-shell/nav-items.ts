@@ -55,7 +55,7 @@ export type NavItem = {
 /** Information architecture for the panel (built in order across phases). */
 export const NAV_ITEMS: NavItem[] = [
   { label: "Home", href: "/health", icon: Activity, available: true, profiles: ["saas"] },
-  { label: "Ask Rani", href: "/assistant", icon: Sparkles, available: true },
+  { label: "Copilot", href: "/assistant", icon: Sparkles, available: true },
   { label: "Orders", href: "/orders", icon: ShoppingCart, available: true, capability: "orders" },
   { label: "Redemptions", href: "/redemptions", icon: Ticket, available: true, profiles: ["local"] },
   { label: "Post reviews", href: "/reviews", icon: BadgeCheck, available: true, profiles: ["local"] },

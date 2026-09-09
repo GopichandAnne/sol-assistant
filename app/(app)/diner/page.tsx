@@ -13,11 +13,11 @@ import { countMapped } from "@/lib/pos/mapping";
 import { Button } from "@/components/ui/button";
 import { Utensils, Flame, Leaf, Star, ArrowRight, QrCode } from "lucide-react";
 
-export const metadata: Metadata = { title: "Diner · Ask Rani" };
+export const metadata: Metadata = { title: "Diner · The Assistant" };
 
 /**
  * Restaurant "Diner" config home — one place for everything a guest experiences
- * when they scan a table QR: the menu, the table QRs, Rani's voice, and rewards.
+ * when they scan a table QR: the menu, the table QRs, the assistant's voice, and rewards.
  * These settings live on several generic pages; this gathers them, restaurant-
  * framed, so an owner isn't hunting. Restaurant-only (redirects other verticals).
  */
@@ -89,13 +89,13 @@ export default async function DinerPage() {
       <header className="flex items-center gap-2">
         <Utensils className="text-muted-foreground size-5" />
         <div>
-          <h1 className="font-display text-2xl italic">Diner</h1>
+          <h1 className="font-display text-2xl">Diner</h1>
           <p className="text-muted-foreground text-sm">{store.name}</p>
         </div>
       </header>
 
       <p className="text-muted-foreground text-sm">
-        Everything a guest experiences when they scan a table QR — Rani serves
+        Everything a guest experiences when they scan a table QR — the assistant serves
         them the menu, takes the order, and earns them rewards. Set it all up here.
       </p>
 
@@ -105,7 +105,7 @@ export default async function DinerPage() {
           <div>
             <h2 className="text-sm font-medium">Your menu</h2>
             <p className="text-muted-foreground text-sm">
-              Dishes, photos, prices, spice and dietary tags — Rani serves exactly what&apos;s here.
+              Dishes, photos, prices, spice and dietary tags — the assistant serves exactly what&apos;s here.
             </p>
           </div>
           <Button asChild size="sm" variant="outline">
@@ -151,7 +151,7 @@ export default async function DinerPage() {
       {/* Point of sale — approved orders route to the connected location */}
       <PosCard providers={posProviders} />
 
-      {/* Rani's voice */}
+      {/* the assistant's voice */}
       <VoiceCard />
 
       {/* Rewards & streaks */}

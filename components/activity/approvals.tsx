@@ -15,7 +15,7 @@ export type Approval = {
   detail: string;
 };
 
-/** Pending approvals — the held actions Rani flagged for a person. The owner
+/** Pending approvals — the held actions the assistant flagged for a person. The owner
  *  approves (signs off, then completes it in their system) or declines. */
 export function Approvals({ initial }: { initial: Approval[] }) {
   const [rows, setRows] = useState(initial);
@@ -44,13 +44,13 @@ export function Approvals({ initial }: { initial: Approval[] }) {
     <section className="space-y-3">
       <div className="flex items-center gap-2">
         <ShieldAlert className="size-4 text-amber-600" />
-        <h2 className="font-display text-lg italic">Pending approvals</h2>
+        <h2 className="font-display text-lg">Pending approvals</h2>
         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">
           {rows.length}
         </span>
       </div>
       <p className="text-muted-foreground -mt-1 text-sm">
-        Rani held these writes because their tool is set to require approval. Nothing ran — review and
+        The assistant held these writes because their tool is set to require approval. Nothing ran — review and
         decide. Approving records your sign-off; you then complete the action in your system.
       </p>
 

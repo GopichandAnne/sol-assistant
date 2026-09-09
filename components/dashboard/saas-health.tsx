@@ -36,7 +36,7 @@ export function SaasHealthView({ health, storeName }: { health: SaasHealth; stor
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
       <header>
-        <h1 className="font-display text-2xl italic">Assistant health</h1>
+        <h1 className="font-display text-2xl">Assistant health</h1>
         <p className="text-muted-foreground text-sm">
           {storeName} — last {h.windowDays} days
         </p>
@@ -44,10 +44,10 @@ export function SaasHealthView({ health, storeName }: { health: SaasHealth; stor
 
       {empty ? (
         <div className="bg-card rounded-xl border p-8 text-center">
-          <Sparkles className="mx-auto size-8" style={{ color: "#0d9488" }} />
-          <h2 className="font-display mt-3 text-xl font-bold">Rani&apos;s ready to work</h2>
+          <Sparkles className="mx-auto size-8" style={{ color: "var(--sol-orange-dark)" }} />
+          <h2 className="font-display mt-3 text-xl font-bold">The assistant&apos;s ready to work</h2>
           <p className="text-muted-foreground mx-auto mt-1 max-w-md text-sm">
-            No conversations yet. Connect your docs so Rani can answer from them, then embed her on your site.
+            No conversations yet. Connect your docs so the assistant can answer from them, then embed it on your site.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Link href="/knowledge" className="hover:bg-muted inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium">
@@ -70,13 +70,13 @@ export function SaasHealthView({ health, storeName }: { health: SaasHealth; stor
           <div className="grid gap-4 md:grid-cols-2">
             <div className="bg-card rounded-xl border p-5">
               <div className="flex items-center justify-between">
-                <h3 className="font-display font-bold">Questions Rani couldn&apos;t answer</h3>
-                <Link href="/knowledge" className="text-xs font-medium hover:underline" style={{ color: "#0d9488" }}>
+                <h3 className="font-display font-bold">Questions the assistant couldn&apos;t answer</h3>
+                <Link href="/knowledge" className="text-xs font-medium hover:underline" style={{ color: "var(--sol-orange-dark)" }}>
                   Fill your docs →
                 </Link>
               </div>
               {h.gaps.length === 0 ? (
-                <p className="text-muted-foreground mt-3 text-sm">No gaps — Rani had an answer for everything. 🎉</p>
+                <p className="text-muted-foreground mt-3 text-sm">No gaps. The assistant had an answer for everything.</p>
               ) : (
                 <ul className="mt-3 space-y-1.5">
                   {h.gaps.map((g) => (
@@ -125,14 +125,14 @@ function SentimentBar({ s }: { s: { positive: number; neutral: number; negative:
   return (
     <div className="mt-3">
       <div className="flex h-3 overflow-hidden rounded-full">
-        <div style={{ width: pct(s.positive), background: "#14b8a6" }} />
+        <div style={{ width: pct(s.positive), background: "var(--sol-orange)" }} />
         <div style={{ width: pct(s.neutral), background: "#cbd5e1" }} />
-        <div style={{ width: pct(s.negative), background: "#fb923c" }} />
+        <div style={{ width: pct(s.negative), background: "var(--sol-teal)" }} />
       </div>
       <div className="text-muted-foreground mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-        <span>😊 {pct(s.positive)} positive</span>
-        <span>😐 {pct(s.neutral)} neutral</span>
-        <span>🙁 {pct(s.negative)} negative</span>
+        <span>{pct(s.positive)} positive</span>
+        <span>{pct(s.neutral)} neutral</span>
+        <span>{pct(s.negative)} negative</span>
       </div>
     </div>
   );

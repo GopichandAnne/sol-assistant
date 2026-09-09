@@ -7,7 +7,7 @@ import { PostEarnClient } from "./post-earn-client";
 import { loadGiveGet, loadPostEarn, loadResults, type CampaignResults, type GiveGetConfig, type PostEarnConfig } from "./actions";
 import { POST_PLATFORMS, PLATFORM_FORMATS } from "./post-earn-shared";
 
-export const metadata: Metadata = { title: "Campaigns · Ask Rani" };
+export const metadata: Metadata = { title: "Campaigns · The Assistant" };
 
 const DEFAULTS: GiveGetConfig = {
   active: false,
@@ -47,7 +47,7 @@ export default async function CampaignsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-5 p-6">
       <header>
-        <h1 className="font-display text-2xl italic">Campaigns</h1>
+        <h1 className="font-display text-2xl">Campaigns</h1>
         <p className="text-muted-foreground text-sm">
           {store.name} — reward customers for bringing you business. Share &amp; Earn pays when a friend orders;
           Post &amp; Earn pays when they post about you on social media (you review each post).

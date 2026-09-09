@@ -12,7 +12,7 @@ import { profileFor } from "@/lib/console-profile";
 import { Dashboard } from "@/components/dashboard/dashboard";
 import { SaasDashboard } from "@/components/dashboard/saas-dashboard";
 
-export const metadata: Metadata = { title: "Dashboard · Ask Rani" };
+export const metadata: Metadata = { title: "Dashboard · The Assistant" };
 
 export default async function DashboardPage() {
   const ctx = await getActiveStore();
@@ -74,7 +74,7 @@ export default async function DashboardPage() {
 function OwnersOnly() {
   return (
     <div className="mx-auto max-w-md p-10 text-center">
-      <h1 className="font-display text-2xl italic">Dashboard</h1>
+      <h1 className="font-display text-2xl">Dashboard</h1>
       <p className="text-muted-foreground mt-2 text-sm">
         This page is for store owners. Ask an owner for access.
       </p>

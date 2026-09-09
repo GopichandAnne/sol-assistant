@@ -74,7 +74,7 @@ export function QADialog({
         <DialogHeader>
           <DialogTitle>{mode === "create" ? "Add Q&A" : "Edit Q&A"}</DialogTitle>
           <DialogDescription>
-            An escalation answer Rani can reuse for this store.
+            An escalation answer the assistant can reuse for this store.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
@@ -97,7 +97,7 @@ export function QADialog({
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               rows={4}
-              placeholder="The answer Rani should give."
+              placeholder="The answer the assistant should give."
             />
           </div>
           <div className="flex items-end gap-4">

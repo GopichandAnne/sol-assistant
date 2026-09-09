@@ -103,7 +103,7 @@ export function IntegrationDialog({
         <DialogHeader>
           <DialogTitle>{editing ? "Edit integration" : "Add integration"}</DialogTitle>
           <DialogDescription>
-            A tool Rani can call on its own. Rani decides <em>when</em> to use it from the
+            A tool the assistant can call on its own. The assistant decides <em>when</em> to use it from the
             description below — write it like you&apos;re telling a new employee when to reach for it.
           </DialogDescription>
         </DialogHeader>
@@ -125,7 +125,7 @@ export function IntegrationDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="int-desc">When should Rani use it?</Label>
+            <Label htmlFor="int-desc">When should the assistant use it?</Label>
             <Textarea
               id="int-desc"
               value={description}
@@ -144,8 +144,8 @@ export function IntegrationDialog({
               placeholder="https://your-service.example.com/rani"
             />
             <p className="text-muted-foreground text-xs">
-              Rani POSTs the tool call here and reads back the JSON. Requests are signed with the
-              shared secret (header <code>X-Rani-Signature</code>).
+              The assistant POSTs the tool call here and reads back the JSON. Requests are signed with the
+              shared secret (header <code>X-the assistant-Signature</code>).
             </p>
           </div>
 
@@ -156,11 +156,11 @@ export function IntegrationDialog({
               type="password"
               value={secret}
               onChange={(e) => setSecret(e.target.value)}
-              placeholder={editing && initial?.has_secret ? "•••••••• (unchanged)" : "used to sign requests so your service can trust Rani"}
+              placeholder={editing && initial?.has_secret ? "•••••••• (unchanged)" : "used to sign requests so your service can trust the assistant"}
             />
           </div>
 
-          {/* Parameters — the args Rani fills in when it calls the tool. */}
+          {/* Parameters — the args the assistant fills in when it calls the tool. */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Parameters</Label>
@@ -176,7 +176,7 @@ export function IntegrationDialog({
               </Button>
             </div>
             {params.length === 0 && (
-              <p className="text-muted-foreground text-xs">No parameters — Rani calls it with no arguments.</p>
+              <p className="text-muted-foreground text-xs">No parameters — the assistant calls it with no arguments.</p>
             )}
             {params.map((p, i) => (
               <div key={i} className="bg-muted/40 space-y-2 rounded-md border p-2">
@@ -210,7 +210,7 @@ export function IntegrationDialog({
                 <Input
                   value={p.description}
                   onChange={(e) => setParam(i, { description: e.target.value })}
-                  placeholder="what this value is (helps Rani fill it correctly)"
+                  placeholder="what this value is (helps the assistant fill it correctly)"
                 />
                 <label className="text-muted-foreground flex items-center gap-2 text-xs">
                   <Switch checked={p.required} onCheckedChange={(v) => setParam(i, { required: v })} />
@@ -224,7 +224,7 @@ export function IntegrationDialog({
             <div>
               <Label htmlFor="int-side">Performs an action</Label>
               <p className="text-muted-foreground text-xs">
-                On = writes/charges. Rani only calls it after the customer clearly confirms.
+                On = writes/charges. The assistant only calls it after the customer clearly confirms.
               </p>
             </div>
             <Switch id="int-side" checked={sideEffect} onCheckedChange={setSideEffect} />
@@ -233,7 +233,7 @@ export function IntegrationDialog({
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>
               <Label htmlFor="int-enabled">Enabled</Label>
-              <p className="text-muted-foreground text-xs">Off = Rani won&apos;t see or call it.</p>
+              <p className="text-muted-foreground text-xs">Off = the assistant won&apos;t see or call it.</p>
             </div>
             <Switch id="int-enabled" checked={enabled} onCheckedChange={setEnabled} />
           </div>

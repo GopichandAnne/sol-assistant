@@ -4,7 +4,7 @@ import { Wordmark } from "@/components/app-shell/wordmark";
 import { LoginForm } from "@/components/auth/login-form";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-export const metadata: Metadata = { title: "Sign in · Ask Rani" };
+export const metadata: Metadata = { title: "Sign in · The Assistant" };
 
 export default function LoginPage() {
   return (

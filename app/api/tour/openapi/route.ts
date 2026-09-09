@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export function GET() {
   return NextResponse.json({
     openapi: "3.0.0",
-    info: { title: "Ask Rani Tour — Your account", version: "1.0.0" },
+    info: { title: "The Assistant Tour — Your account", version: "1.0.0" },
     servers: [{ url: "https://app.askrani.ai" }],
     paths: {
       "/api/tour/account": {

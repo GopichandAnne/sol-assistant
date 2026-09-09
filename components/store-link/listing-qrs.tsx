@@ -85,9 +85,9 @@ export function ListingQrs({ storeId, storeSlug }: { storeId: string; storeSlug:
         <p className="text-sm font-medium">Listing QRs</p>
       </div>
       <p className="text-muted-foreground text-xs">
-        Make a QR for a specific listing — a yard sign or flyer. Scanning it opens Rani already
+        Make a QR for a specific listing — a yard sign or flyer. Scanning it opens the assistant already
         talking about that home, and the visitor can still ask about your other listings. One agent,
-        the same Rani underneath. When the home sells, flip it to <b>Sold</b> — the QR keeps working
+        the same the assistant underneath. When the home sells, flip it to <b>Sold</b> — the QR keeps working
         and shows similar homes instead.
       </p>
 
@@ -103,7 +103,7 @@ export function ListingQrs({ storeId, storeSlug }: { storeId: string; storeSlug:
           rows={3}
           value={details}
           onChange={(e) => setDetails(e.target.value)}
-          placeholder="A sentence or two about this home — beds/baths, size, price, standout features. Rani leads with this."
+          placeholder="A sentence or two about this home — beds/baths, size, price, standout features. The assistant leads with this."
         />
         <Textarea
           rows={2}

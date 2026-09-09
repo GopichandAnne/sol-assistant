@@ -6,7 +6,7 @@ import { profileFor, homeHrefFor } from "@/lib/console-profile";
 import { ShieldCheck, UserCheck, Store as StoreIcon } from "lucide-react";
 import { Approvals, type Approval } from "@/components/activity/approvals";
 
-export const metadata: Metadata = { title: "Activity · Ask Rani" };
+export const metadata: Metadata = { title: "Activity · The Assistant" };
 export const dynamic = "force-dynamic";
 
 type Row = {
@@ -20,7 +20,7 @@ type Row = {
 };
 
 /**
- * The trust surface for agentic tool-use: exactly what Rani did through a
+ * The trust surface for agentic tool-use: exactly what the assistant did through a
  * connected tool, and WHO it acted as. This is the answer to "what did the agent
  * do as this user?" — the make-or-break question for delegated-identity actions.
  */
@@ -58,9 +58,9 @@ export default async function ActivityPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-5 p-6">
       <header>
-        <h1 className="font-display text-2xl italic">Activity</h1>
+        <h1 className="font-display text-2xl">Activity</h1>
         <p className="text-muted-foreground text-sm">
-          {store.name} — every action Rani took through a connected tool.
+          {store.name} — every action the assistant took through a connected tool.
         </p>
       </header>
 
@@ -70,7 +70,7 @@ export default async function ActivityPage() {
           <p className="font-medium">You can see exactly what the agent did — and who it acted as.</p>
           <p className="text-muted-foreground mt-1">
             When a tool acts as a signed-in customer, it forwards only that customer&apos;s verified identity —
-            Rani (and the model) never see your credentials or their token. Reads and writes are labeled; writes
+            The assistant (and the model) never see your credentials or their token. Reads and writes are labeled; writes
             require the customer&apos;s confirmation first.
           </p>
         </div>
@@ -86,7 +86,7 @@ export default async function ActivityPage() {
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground bg-card rounded-lg border border-dashed px-4 py-8 text-center text-sm">
-          No tool actions yet. Once Rani calls a connected API or MCP tool in a chat, every call shows here.
+          No tool actions yet. Once the assistant calls a connected API or MCP tool in a chat, every call shows here.
         </p>
       ) : (
         <div className="bg-card overflow-x-auto rounded-lg border">
@@ -138,7 +138,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="bg-card rounded-lg border p-4">
       <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">{label}</p>
-      <p className="font-display text-teal-deep dark:text-teal-light mt-1 text-3xl italic tabular-nums">{value}</p>
+      <p className="font-display text-teal-deep dark:text-teal-light mt-1 text-3xl tabular-nums">{value}</p>
     </div>
   );
 }

@@ -10,7 +10,7 @@ import type {
   RequestType,
 } from "@/app/(app)/requests/actions";
 
-/** One roof for the two "needs attention" surfaces: Questions (tickets Rani
+/** One roof for the two "needs attention" surfaces: Questions (tickets the assistant
  *  couldn't answer) and Requests (structured captures). Each tab renders its own
  *  existing view; Requests is owner-only. */
 export function InboxTabs({

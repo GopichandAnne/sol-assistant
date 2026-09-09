@@ -43,7 +43,7 @@ export function CompaniesAdmin({
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <header>
-        <h1 className="font-display text-2xl italic">Accounts</h1>
+        <h1 className="font-display text-2xl">Accounts</h1>
         <p className="text-muted-foreground text-sm">
           Each account holds one credit pool shared by its assistants.
         </p>

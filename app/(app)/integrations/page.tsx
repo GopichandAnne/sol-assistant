@@ -6,7 +6,7 @@ import { profileFor, homeHrefFor } from "@/lib/console-profile";
 import { listIntegrations } from "./actions";
 import { IntegrationsView } from "@/components/integrations/integrations-view";
 
-export const metadata: Metadata = { title: "Integrations · Ask Rani" };
+export const metadata: Metadata = { title: "Integrations · The Assistant" };
 
 export default async function IntegrationsPage() {
   const ctx = await getActiveStore();

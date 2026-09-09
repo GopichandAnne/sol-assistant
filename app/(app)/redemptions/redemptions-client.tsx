@@ -122,7 +122,7 @@ function CodePanel({ minBillUsd }: { minBillUsd: number }) {
             >
               Confirm &amp; apply {usd(bill.trim() ? Math.min(Number(bill) || 0, match.amountUsd) : match.amountUsd)} discount
             </Button>
-            <p className="text-xs text-muted-foreground">Apply this as a discount on your register. Rani never charges the customer.</p>
+            <p className="text-xs text-muted-foreground">Apply this as a discount on your register. The assistant never charges the customer.</p>
           </div>
         )}
       </CardContent>

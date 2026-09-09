@@ -6,7 +6,7 @@ import type { Ticket } from "@/lib/tickets/types";
 import { listConfigAudit, listRequests, listRequestTypes } from "@/app/(app)/requests/actions";
 import { InboxTabs } from "@/components/inbox/inbox-tabs";
 
-export const metadata: Metadata = { title: "Inbox · Ask Rani" };
+export const metadata: Metadata = { title: "Inbox · The Assistant" };
 
 const OPEN_TICKET = new Set(["created", "sent_to_owner"]);
 

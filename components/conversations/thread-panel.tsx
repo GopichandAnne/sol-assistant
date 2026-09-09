@@ -88,7 +88,7 @@ export function ThreadPanel({
         toast.success(
           next === "active_owner_handling"
             ? "You're now handling this conversation"
-            : "Conversation handed back to Rani",
+            : "Conversation handed back to the assistant",
         );
         // Refresh so the new routing_state_changed event shows in the timeline.
         loadMessages(thread!.thread_id).then(setMessages);
@@ -124,7 +124,7 @@ export function ThreadPanel({
                 active ? "bg-teal animate-live-pulse" : "bg-muted-foreground/50",
               )}
             />
-            {active ? "Owner handling" : "Rani (idle)"}
+            {active ? "Owner handling" : "The assistant (idle)"}
           </span>
           {active ? (
             <Button
@@ -147,7 +147,7 @@ export function ThreadPanel({
 
       {active && (
         <div className="bg-teal-mist text-teal-deep dark:bg-secondary dark:text-secondary-foreground border-b px-4 py-2 text-xs">
-          You&apos;re handling this conversation — Rani is paused. Mark it
+          You&apos;re handling this conversation — the assistant is paused. Mark it
           resolved to hand it back.
         </div>
       )}
@@ -174,7 +174,7 @@ export function ThreadPanel({
               }
             }}
             rows={1}
-            placeholder="Message the customer as Rani…  (Enter to send, Shift+Enter for a new line)"
+            placeholder="Message the customer as the assistant…  (Enter to send, Shift+Enter for a new line)"
             className="max-h-32 min-h-9 flex-1 resize-none"
             disabled={sending}
           />
@@ -184,7 +184,7 @@ export function ThreadPanel({
         </form>
       ) : (
         <div className="text-muted-foreground border-t px-4 py-3 text-center text-xs">
-          Rani is handling this conversation. Click “Start messaging” to take over and reply.
+          The assistant is handling this conversation. Click “Start messaging” to take over and reply.
         </div>
       )}
     </div>

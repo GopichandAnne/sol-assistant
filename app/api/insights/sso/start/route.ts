@@ -7,10 +7,10 @@ export const dynamic = "force-dynamic";
 const APP = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://app.askrani.ai";
 
 /**
- * Direct "Sign in with Ask Rani" entry for the STANDALONE Insights app (its own
+ * Direct "Sign in with The Assistant" entry for the STANDALONE Insights app (its own
  * tab, not the embedded panel). Insights links here with ?return=<insights path>.
  *
- *   • Not signed into Rani  → bounce through Rani /login, then come back here.
+ *   • Not signed into the assistant  → bounce through the assistant /login, then come back here.
  *   • Signed in (with email)→ mint the SSO token and hand off to Insights /api/sso,
  *                             which provisions the matching Insights user by email
  *                             and starts a first-party session.

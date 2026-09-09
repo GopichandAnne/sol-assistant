@@ -49,7 +49,7 @@ export const toastAdapter: PosAdapter = {
   },
 
   manualFields: [
-    { key: "restaurant_guid", label: "Toast Restaurant GUID", required: true, help: "From Toast Web, or provided when you enable the Ask Rani integration." },
+    { key: "restaurant_guid", label: "Toast Restaurant GUID", required: true, help: "From Toast Web, or provided when you enable the The Assistant integration." },
     { key: "dining_option_guid", label: "Dining option GUID (optional)", help: "Required by most Toast configs for the order to be accepted." },
     { key: "open_item_guid", label: "Open item GUID (optional)", help: "A price-overridable menu item; needed to send ad-hoc orders until menu mapping is set up." },
   ],

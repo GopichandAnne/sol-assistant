@@ -12,7 +12,7 @@ export type AnswerResult = { ok: true } | { ok: false; error: string };
  * store's team (owners and staff, including email-only responders who can't
  * reply over WhatsApp). Delivery is identical to a WhatsApp reply: the customer
  * gets the answer (WhatsApp or web/Realtime), the ticket is marked answered,
- * Rani learns from it, and the team is told it's handled.
+ * the assistant learns from it, and the team is told it's handled.
  */
 export async function answerTicket(ticketId: string, answer: string): Promise<AnswerResult> {
   const ctx = await getActiveStore();

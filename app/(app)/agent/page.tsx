@@ -6,7 +6,7 @@ import { AgentView } from "@/components/agent/agent-view";
 import { listCharges, listResponders } from "./actions";
 import { listRequestTypes } from "@/app/(app)/requests/actions";
 
-export const metadata: Metadata = { title: "Agent · Ask Rani" };
+export const metadata: Metadata = { title: "Agent · The Assistant" };
 
 export default async function AgentPage() {
   const ctx = await getActiveStore();

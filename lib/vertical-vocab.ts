@@ -64,7 +64,7 @@ const SAAS: Partial<Vocab> = {
   addCta: "Add product",
   importCta: "Import products",
   checklistCatalogLabel: "Connect your docs & knowledge",
-  checklistCatalogDesc: "Point Rani at your docs or help centre, or add a few Q&As — it answers from them.",
+  checklistCatalogDesc: "Point the assistant at your docs or help centre, or add a few Q&As — it answers from them.",
 };
 
 /** Per-business-type overrides, merged onto DEFAULT. Keys are stores.business_type. */

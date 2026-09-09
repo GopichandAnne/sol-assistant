@@ -178,7 +178,7 @@ export async function setStoreLogo(
   return { ok: true, logoUrl };
 }
 
-/** Remove the store's chat logo (revert to the default Rani avatar). */
+/** Remove the store's chat logo (revert to the default the assistant avatar). */
 export async function removeStoreLogo(
   storeId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -251,7 +251,7 @@ export async function setWhatsappRedirect(
   return { ok: true, waRedirect: enabled };
 }
 
-/** Put the store's web chat into (or out of) "Rani is taking a break" mode. */
+/** Put the store's web chat into (or out of) "The assistant is taking a break" mode. */
 export async function setWebChatPaused(
   storeId: string,
   paused: boolean,
@@ -404,7 +404,7 @@ export async function setAnswersPublished(
   return { ok: true, answersPublished: on, url: slug ? `${ANSWERS_SITE}/a/${slug}` : null };
 }
 
-/** Remove (or restore) the "Powered by Ask Rani" attribution in the chat header. */
+/** Remove (or restore) the "Powered by The Assistant" attribution in the chat header. */
 export async function setWhiteLabel(
   storeId: string,
   on: boolean,

@@ -2,7 +2,7 @@ import "server-only";
 import crypto from "node:crypto";
 
 /**
- * Host side of the Ask Rani → Insights SSO. When a platform admin has granted a
+ * Host side of the The Assistant → Insights SSO. When a platform admin has granted a
  * store `insights_enabled`, we mint a short-lived HS256 token (signed with the
  * shared INSIGHTS_SSO_SECRET) that the Insights app's /api/sso route verifies and
  * exchanges for a session — so an owner opens embedded Insights with no second
@@ -26,7 +26,7 @@ export function insightsBaseUrl(): string {
  *  it's used immediately to establish the iframe session. */
 export function mintInsightsToken(input: {
   email: string;
-  sub?: string; // the Rani user id (stable linking)
+  sub?: string; // the assistant user id (stable linking)
   name?: string;
   storeName?: string; // shown as the org hint on the Insights side
 }): string {

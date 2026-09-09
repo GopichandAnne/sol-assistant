@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FlaskConical, Loader2, Trash2, Wand2 } from "lucide-react";
+import { FlaskConical, Loader2, Lock, Trash2, Wand2 } from "lucide-react";
 
 export type ApiTool = { id: string; name: string; description: string; method: string; side_effect: boolean; auth?: { type?: string; claim?: string; provider?: string } | null; action_policy?: string };
 type BuiltTool = ApiTool & { tested?: "ok" | "failed" | "skipped" };
@@ -44,7 +44,7 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
     const supabase = createClient();
     const { error } = await supabase.functions.invoke("integration-build", { body: { action: "set_policy", storeSlug, toolId: id, policy: next } });
     if (error) { setPolicies((p) => ({ ...p, [id]: hold ? "auto" : "hold" })); toast.error("Couldn't update"); return; }
-    toast.success(hold ? "Held for a person — Rani won't run this itself" : "Auto — Rani can run this");
+    toast.success(hold ? "Held for a person — the assistant won't run this itself" : "Auto — the assistant can run this");
   }
 
   async function build() {
@@ -73,7 +73,7 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
     const identityReady = (data as { identity_ready?: boolean }).identity_ready;
     const passed = created.filter((t) => t.tested === "ok").length;
     const failed = created.filter((t) => t.tested === "failed").length;
-    const label = (t: BuiltTool) => `${t.name}${t.tested === "ok" ? " ✓" : t.tested === "failed" ? " ⚠" : ""}`;
+    const label = (t: BuiltTool) => `${t.name}${t.tested === "ok" ? " (working)" : t.tested === "failed" ? " (no answer)" : ""}`;
 
     if (isIdentity) {
       if (!identityReady) {
@@ -91,7 +91,7 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
       });
     } else if (failed > 0) {
       toast.warning(`Added ${created.length}, but ${failed} didn't answer`, {
-        description: `${created.map(label).join(", ")}. ⚠ = the test call failed — check the URL or key. ✓ = live and working.`,
+        description: `${created.map(label).join(", ")}. "No answer" means the test call failed, so check the URL or key.`,
       });
     } else {
       toast.success(`Added ${created.length} tool${created.length === 1 ? "" : "s"}`, {
@@ -128,14 +128,14 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
     <div className="mt-8">
       <h2 className="text-base font-semibold">Connect a custom API</h2>
       <p className="text-muted-foreground mb-3 text-sm">
-        Have an API of your own? Paste its OpenAPI (Swagger) link — JSON or YAML — and say what Rani should be able to do; it builds the tools for you.
+        Have an API of your own? Paste its OpenAPI (Swagger) link — JSON or YAML — and say what the assistant should be able to do; it builds the tools for you.
       </p>
 
       <div className="space-y-2 rounded-xl border p-4">
         <Input placeholder="https://api.yourservice.com/openapi.json (or .yaml)" value={url} onChange={(e) => setUrl(e.target.value)} disabled={!isOwner || busy} />
-        <Input placeholder="What should Rani do with it? e.g. look up order status, check stock" value={goal} onChange={(e) => setGoal(e.target.value)} disabled={!isOwner || busy} />
+        <Input placeholder="What should the assistant do with it? e.g. look up order status, check stock" value={goal} onChange={(e) => setGoal(e.target.value)} disabled={!isOwner || busy} />
         <p className="text-muted-foreground text-xs">
-          Be specific — this becomes each tool&apos;s description, which is <b>how Rani decides when to call it</b>. Say the job <i>and</i> when to use it: &ldquo;look up an order&apos;s status when a customer asks where their order is.&rdquo;
+          Be specific — this becomes each tool&apos;s description, which is <b>how the assistant decides when to call it</b>. Say the job <i>and</i> when to use it: &ldquo;look up an order&apos;s status when a customer asks where their order is.&rdquo;
         </p>
         {connectedProviders.length > 0 && !asCustomer && (
           <Select value={authProvider} onValueChange={setAuthProvider} disabled={!isOwner || busy}>
@@ -156,13 +156,13 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
           <span>
             <span className="font-medium">This is my own app — answer as the signed-in customer</span>
             <span className="text-muted-foreground block text-xs">
-              Rani calls your API as whoever is logged in on your site (their orders, their account), using the sign-in they already have — no API key, and it never sees their password. Needs embedded sign-in turned on.
+              The assistant calls your API as whoever is logged in on your site (their orders, their account), using the sign-in they already have — no API key, and it never sees their password. Needs embedded sign-in turned on.
             </span>
           </span>
         </label>
         {asCustomer && (
           <div className="space-y-2 rounded-lg border border-dashed p-2.5">
-            <p className="text-xs font-medium">What should Rani send to identify them?</p>
+            <p className="text-xs font-medium">What should the assistant send to identify them?</p>
             <Select
               value={identityClaim}
               onValueChange={(v) => {
@@ -225,9 +225,9 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
                   size="sm"
                   disabled={!isOwner}
                   onClick={() => setPolicy(t.id, policies[t.id] !== "hold")}
-                  title={policies[t.id] === "hold" ? "Held — Rani flags this for a person instead of running it. Click to allow." : "Auto — Rani can run this after the customer confirms. Click to require a person."}
+                  title={policies[t.id] === "hold" ? "Held — the assistant flags this for a person instead of running it. Click to allow." : "Auto — the assistant can run this after the customer confirms. Click to require a person."}
                 >
-                  {policies[t.id] === "hold" ? "🔒 Hold" : "Auto"}
+                  {policies[t.id] === "hold" ? <><Lock className="size-3.5" /> Hold</> : "Auto"}
                 </Button>
               )}
               {!t.side_effect && (

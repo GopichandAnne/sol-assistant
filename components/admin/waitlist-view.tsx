@@ -40,7 +40,7 @@ export function WaitlistView({ initial }: { initial: Row[] }) {
     <div className="mx-auto max-w-6xl space-y-5 p-6">
       <header className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl italic">Waitlist</h1>
+          <h1 className="font-display text-2xl">Waitlist</h1>
           <p className="text-muted-foreground text-sm">
             Early-access signups from askrani.ai · {rows.length}
           </p>
@@ -90,7 +90,7 @@ export function WaitlistView({ initial }: { initial: Row[] }) {
 
                 <div className="flex shrink-0 items-center gap-1">
                   <Button variant="outline" size="sm" asChild>
-                    <a href={`mailto:${r.email}?subject=${encodeURIComponent("Ask Rani — your early access")}`}>
+                    <a href={`mailto:${r.email}?subject=${encodeURIComponent("The Assistant — your early access")}`}>
                       <Mail className="size-4" /> Reply
                     </a>
                   </Button>

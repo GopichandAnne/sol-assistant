@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-// Female voices Rani can speak in (owner-facing names → set server-side).
+// Female voices the assistant can speak in (owner-facing names → set server-side).
 const VOICES = [
   { key: "aria", name: "Aria", desc: "Warm & friendly" },
   { key: "sable", name: "Sable", desc: "Soft & gentle" },
   { key: "coral", name: "Coral", desc: "Bright & upbeat" },
   { key: "sage", name: "Sage", desc: "Calm & measured" },
 ];
-const SAMPLE = "Hi, welcome in — I'm Rani. Let me help you find something you'll love tonight.";
+const SAMPLE = "Hi, welcome in — I'm the assistant. Let me help you find something you'll love tonight.";
 
 export function VoiceCard() {
   const [loading, setLoading] = useState(true);
@@ -73,7 +73,7 @@ export function VoiceCard() {
     setSaving(true);
     const res = await saveAgentConfig({ tts_voice: voice, tts_enabled: enabled ? "true" : "false" });
     setSaving(false);
-    if (res.ok) toast.success("Rani's voice saved");
+    if (res.ok) toast.success("the assistant's voice saved");
     else toast.error("Couldn't save", { description: res.error });
   }
 
@@ -82,10 +82,10 @@ export function VoiceCard() {
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-0.5">
           <Label className="flex items-center gap-1.5 text-sm font-medium">
-            <Volume2 className="text-muted-foreground size-4" /> Rani&apos;s voice (premium)
+            <Volume2 className="text-muted-foreground size-4" /> The assistant&apos;s voice (premium)
           </Label>
           <p className="text-muted-foreground text-sm">
-            When a diner turns on sound at the table, Rani speaks her picks and answers in a natural
+            When a diner turns on sound at the table, the assistant speaks its picks and answers in a natural
             voice. Off falls back to the device&apos;s built-in voice (free).
           </p>
         </div>

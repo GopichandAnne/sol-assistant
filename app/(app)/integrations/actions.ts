@@ -49,7 +49,7 @@ export async function saveIntegration(input: SaveInput): Promise<Result> {
       error: "Name must be lowercase letters/numbers/underscores (e.g. pos_price_lookup).",
     };
   }
-  if (!input.description.trim()) return { ok: false, error: "A description is required — it's how Rani knows when to use it." };
+  if (!input.description.trim()) return { ok: false, error: "A description is required — it's how the assistant knows when to use it." };
   try {
     new URL(input.endpoint_url);
   } catch {

@@ -24,7 +24,7 @@ const STARTERS = [
 export function AssistantChat({ storeSlug, storeName }: { storeSlug: string; storeName: string }) {
   const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>([
-    { role: "rani", text: `Hi! I'm Rani for ${storeName}. Ask me anything, or tell me what to change.` },
+    { role: "rani", text: `Hi. I'm the copilot for ${storeName}. Ask me anything, or tell me what to change.` },
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -47,11 +47,11 @@ export function AssistantChat({ storeSlug, storeName }: { storeSlug: string; sto
     });
     setBusy(false);
     if (error || !data?.reply) {
-      toast.error("Rani had trouble responding", { description: "Please try again." });
+      toast.error("The assistant had trouble responding", { description: "Please try again." });
       return;
     }
     setMessages([...next, { role: "rani", text: data.reply as string }]);
-    // If Rani changed settings, refresh server data (nav counts, vocab, etc.).
+    // If the assistant changed settings, refresh server data (nav counts, vocab, etc.).
     if (Array.isArray(data.changed) && data.changed.length > 0) router.refresh();
   }
 
@@ -86,7 +86,7 @@ export function AssistantChat({ storeSlug, storeName }: { storeSlug: string; sto
         {busy && (
           <div className="flex justify-start">
             <div className="bg-muted text-muted-foreground flex items-center gap-2 rounded-2xl rounded-bl-sm px-3.5 py-2 text-sm">
-              <Loader2 className="size-3.5 animate-spin" /> Rani is thinking…
+              <Loader2 className="size-3.5 animate-spin" /> The assistant is thinking…
             </div>
           </div>
         )}

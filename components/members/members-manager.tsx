@@ -39,7 +39,7 @@ const MODES: { value: AccessMode; label: string; help: string }[] = [
 // Host-side signing example (built as lines to avoid template-literal escaping).
 // Your server runs this for the logged-in user and passes the result to the embed.
 const SIGN_SNIPPET = [
-  "// On YOUR server — mint a short token for the logged-in user, then hand it to Rani.",
+  "// On YOUR server — mint a short token for the logged-in user, then hand it to the assistant.",
   'import crypto from "node:crypto";',
   "",
   "// RANI_SSO_SECRET = the secret shown above. Keep it server-side only — never ship it to the browser.",

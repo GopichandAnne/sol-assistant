@@ -14,7 +14,7 @@ export type SendResult =
   | { ok: false; error: string };
 
 /**
- * Send a manual reply to the customer as Rani (used while an owner/staff has
+ * Send a manual reply to the customer as the assistant (used while an owner/staff has
  * taken over a conversation). Delivers over WhatsApp from the store's number,
  * then persists the outbound message to the thread. RLS scopes the thread load
  * to the caller's stores, so only a member of the store can reply.

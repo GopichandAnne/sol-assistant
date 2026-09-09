@@ -173,7 +173,7 @@ export function LoginForm() {
         <p className="text-muted-foreground text-sm">
           {isSignup
             ? "Set up your AI assistant in a couple of minutes — just chat, no forms."
-            : "Staff & owners of Ask Rani stores."}
+            : "Staff & owners of The Assistant stores."}
         </p>
       </div>
 
@@ -329,7 +329,7 @@ export function LoginForm() {
       )}
 
       <p className="text-muted-foreground text-center text-sm">
-        {isSignup ? "Already have a store? " : "New to Ask Rani? "}
+        {isSignup ? "Already have a store? " : "New to The Assistant? "}
         <button
           type="button"
           onClick={() => setMode(isSignup ? "signin" : "signup")}

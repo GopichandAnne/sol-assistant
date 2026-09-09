@@ -68,8 +68,8 @@ export function RespondersSection({
       </div>
       <p className="text-muted-foreground text-xs">
         Owner/staff contacts — a WhatsApp number, an email, or both. Each person
-        subscribes to the topics they care about; Rani notifies them on whichever
-        channel they set. WhatsApp responders can reply right in WhatsApp and Rani
+        subscribes to the topics they care about; the assistant notifies them on whichever
+        channel they set. WhatsApp responders can reply right in WhatsApp and the assistant
         relays the first answer to the customer. Topics come from{" "}
         <b>Escalations</b> plus the request types you create in{" "}
         <a href="/inbox" className="text-teal-deep underline">Inbox → Requests</a>.

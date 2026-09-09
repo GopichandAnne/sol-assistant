@@ -152,7 +152,7 @@ export function InventoryTable({
     <div className="mx-auto max-w-6xl space-y-5 p-6">
       <header className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl italic">{vocab.catalogTitle}</h1>
+          <h1 className="font-display text-2xl">{vocab.catalogTitle}</h1>
           <p className="text-muted-foreground text-sm">{storeName}</p>
         </div>
         {isOwner && (

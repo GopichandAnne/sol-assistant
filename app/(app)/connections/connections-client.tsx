@@ -13,11 +13,11 @@ export type ConnStatus = { label: string | null };
 type Provider = { id: string; name: string; blurb: string; accent: string };
 
 const CATALOG: Provider[] = [
-  { id: "google", name: "Google", blurb: "Calendar — Rani checks availability and books appointments.", accent: "#4285F4" },
+  { id: "google", name: "Google", blurb: "Calendar — the assistant checks availability and books appointments.", accent: "#4285F4" },
   { id: "microsoft", name: "Microsoft", blurb: "Outlook calendar — check availability and book, on Microsoft 365.", accent: "#0067b8" },
   { id: "square", name: "Square", blurb: "Catalog & orders — stock lookups and order status in chat.", accent: "#111827" },
   { id: "hubspot", name: "HubSpot", blurb: "CRM — captured leads flow straight into your pipeline.", accent: "#ff7a59" },
-  { id: "calendly", name: "Calendly", blurb: "Scheduling — Rani shares your booking link and event types.", accent: "#006bff" },
+  { id: "calendly", name: "Calendly", blurb: "Scheduling — the assistant shares your booking link and event types.", accent: "#006bff" },
 ];
 
 const ERR: Record<string, string> = {

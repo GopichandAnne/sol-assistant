@@ -285,7 +285,7 @@ export function StoreLinkPanel({
     setBusy(false);
     if (res.ok) {
       setLogoUrl(null);
-      toast.success("Logo removed — back to the default Rani avatar");
+      toast.success("Logo removed — back to the default the assistant avatar");
     } else {
       toast.error("Couldn't remove logo", { description: res.error });
     }
@@ -341,7 +341,7 @@ export function StoreLinkPanel({
     <div className="space-y-5">
       {isSaas && (
         <div className="space-y-2 rounded-lg border p-3">
-          <p className="text-sm font-medium">Install Rani on your site</p>
+          <p className="text-sm font-medium">Install the assistant on your site</p>
           <p className="text-muted-foreground text-xs">
             Paste this one line before <code className="bg-muted rounded px-1">&lt;/body&gt;</code> — a chat bubble appears, no coding.
           </p>
@@ -372,7 +372,7 @@ export function StoreLinkPanel({
           <p className="text-sm font-medium">Break mode</p>
           <p className="text-muted-foreground text-xs">
             {paused
-              ? "On — visitors see “Rani is taking a break”; no chatting."
+              ? "On — visitors see “the assistant is taking a break”; no chatting."
               : "Off — pause the web chat without changing the QR."}
           </p>
         </div>
@@ -483,18 +483,18 @@ export function StoreLinkPanel({
               </Button>
             </div>
             <p className="text-muted-foreground text-xs">
-              Print the QR for {storeName} and place it in-store. Customers scan it to chat with Rani —
+              Print the QR for {storeName} and place it in-store. Customers scan it to chat with the assistant —
               no app, no login.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Chat logo — shown in the chat header instead of the default Rani avatar. */}
+      {/* Chat logo — shown in the chat header instead of the default the assistant avatar. */}
       <div className="space-y-2 border-t pt-4">
         <p className="text-sm font-medium">Chat logo</p>
         <p className="text-muted-foreground text-xs">
-          Shown on the chat welcome screen (the top-left Ask Rani logo stays). A square image works
+          Shown on the chat welcome screen (the top-left The Assistant logo stays). A square image works
           best (PNG, SVG, or JPG, up to 2 MB).
         </p>
         <div className="flex items-center gap-3">
@@ -566,7 +566,7 @@ export function StoreLinkPanel({
         <p className="text-sm font-medium">Embed on your website</p>
         <p className="text-muted-foreground text-xs">
           Paste this before <code className="bg-muted rounded px-1">&lt;/body&gt;</code> on any page.
-          A chat bubble appears in the corner — same Rani, no coding.
+          A chat bubble appears in the corner — same the assistant, no coding.
         </p>
         <code className="bg-muted block overflow-x-auto whitespace-pre rounded px-2 py-1.5 text-xs">
           {embedSnippet || "…"}
@@ -589,7 +589,7 @@ export function StoreLinkPanel({
         </p>
         <label className="flex items-center justify-between gap-3 border-t pt-3">
           <span className="text-muted-foreground text-xs">
-            White-label — remove <span className="font-medium">&ldquo;Powered by Ask Rani&rdquo;</span> from the chat header
+            White-label — remove <span className="font-medium">&ldquo;Powered by The Assistant&rdquo;</span> from the chat header
           </span>
           <Switch checked={whiteLabel} onCheckedChange={toggleWhiteLabel} />
         </label>
@@ -606,7 +606,7 @@ export function StoreLinkPanel({
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 inline-flex items-center gap-1 text-xs font-medium hover:underline"
-              style={{ color: "#0d9488" }}
+              style={{ color: "var(--sol-orange-dark)" }}
             >
               View your Answers page → {SITE.replace(/^https?:\/\//, "")}/a/{storeSlug}
             </a>

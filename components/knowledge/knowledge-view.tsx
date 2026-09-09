@@ -78,8 +78,8 @@ export function KnowledgeView({
     if (res.ok) {
       toast.success(membersOnly ? "Now members-only" : "Now public", {
         description: membersOnly
-          ? "Rani shares this only with signed-in members."
-          : "Rani shares this with anyone.",
+          ? "The assistant shares this only with signed-in members."
+          : "The assistant shares this with anyone.",
       });
     } else {
       setDocs(before);
@@ -146,7 +146,7 @@ export function KnowledgeView({
     <div className="mx-auto max-w-4xl space-y-5 p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl italic">Knowledge</h1>
+          <h1 className="font-display text-2xl">Knowledge</h1>
           <p className="text-muted-foreground text-sm">{storeName}</p>
         </div>
         {isOwner && (
@@ -193,7 +193,7 @@ export function KnowledgeView({
         </div>
         {isOwner && docs.length > 0 && (
           <p className="text-muted-foreground text-xs">
-            Use the lock to make a document <span className="font-medium">members-only</span> — Rani
+            Use the lock to make a document <span className="font-medium">members-only</span> — the assistant
             shares it only with a signed-in member. Set up sign-in in{" "}
             <Link href="/members" className="text-teal-deep hover:underline">Members &amp; access</Link>.
           </p>
@@ -201,7 +201,7 @@ export function KnowledgeView({
         {docs.length === 0 ? (
           <p className="text-muted-foreground bg-card rounded-lg border border-dashed px-4 py-6 text-center text-sm">
             {isOwner
-              ? "Paste a policy, FAQ, or guide so Rani can answer from it."
+              ? "Paste a policy, FAQ, or guide so the assistant can answer from it."
               : "No documents yet."}
           </p>
         ) : (
@@ -302,7 +302,7 @@ export function KnowledgeView({
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete this document?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Rani will no longer be able to answer from “{d.title}”.
+                          The assistant will no longer be able to answer from “{d.title}”.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -328,9 +328,9 @@ export function KnowledgeView({
             {pendingFromChat} learned answer{pendingFromChat === 1 ? "" : "s"} to review
           </p>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            When your team answers an escalation, Rani auto-publishes the answers it’s confident
+            When your team answers an escalation, the assistant auto-publishes the answers it’s confident
             are safe and reusable (tagged “Learned automatically”). These were less certain —
-            review the wording, turn them on, then Sync. Delete any you don’t want Rani reusing.
+            review the wording, turn them on, then Sync. Delete any you don’t want the assistant reusing.
           </p>
         </div>
       )}

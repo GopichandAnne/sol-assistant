@@ -24,7 +24,7 @@ function Flag({ on, label }: { on: boolean; label: string }) {
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-      style={on ? { color: "#0d9488", background: "#eafaf6" } : { color: "#8a8f98", background: "#f1efec" }}
+      style={on ? { color: "var(--sol-orange-dark)", background: "#eafaf6" } : { color: "#8a8f98", background: "#f1efec" }}
     >
       {on ? "✓" : "—"} {label}
     </span>
@@ -143,12 +143,12 @@ export function ProofPanel({ storeId }: { storeId: string }) {
                   <div
                     key={g.question}
                     className="rounded-lg border p-3"
-                    style={pickedUp ? { borderColor: "#5eead4", background: "#f4fefb" } : undefined}
+                    style={pickedUp ? { borderColor: "var(--sol-orange-pale)", background: "#f4fefb" } : undefined}
                   >
                     <div className="mb-2 flex items-start justify-between gap-2">
                       <p className="text-sm font-medium">{g.question}</p>
                       {pickedUp && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ color: "#0d9488", background: "#d7f8f0" }}>
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ color: "var(--sol-orange-dark)", background: "#d7f8f0" }}>
                           <Sparkles className="size-3" /> Picked up
                         </span>
                       )}

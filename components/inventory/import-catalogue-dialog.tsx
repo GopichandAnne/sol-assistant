@@ -195,7 +195,7 @@ export function ImportCatalogueDialog({
               <DialogTitle>{label}</DialogTitle>
               <DialogDescription>
                 Paste a menu/catalogue URL, upload several files at once (PDFs, images, JSON, CSV —
-                a whole listing folder is fine), or paste the items. Rani reads them all and merges
+                a whole listing folder is fine), or paste the items. The assistant reads them all and merges
                 the products for you to review.
               </DialogDescription>
             </DialogHeader>
@@ -265,7 +265,7 @@ export function ImportCatalogueDialog({
                   <div className="space-y-3 rounded-md border p-3">
                     <p className="text-muted-foreground text-xs">
                       Fetch products from a JSON API — unlike a plain URL, this sends an auth header and
-                      follows pages. Add a field map for an exact import; leave it blank to let Rani read the JSON.
+                      follows pages. Add a field map for an exact import; leave it blank to let the assistant read the JSON.
                     </p>
                     <div className="space-y-1.5">
                       <Label htmlFor="api-url" className="text-xs">Endpoint URL</Label>

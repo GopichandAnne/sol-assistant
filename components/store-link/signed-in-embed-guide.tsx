@@ -11,7 +11,7 @@ type Method = "jwks" | "secret" | "endpoint";
 
 const METHODS: { id: Method; title: string; when: string }[] = [
   { id: "jwks", title: "I already have login (Auth0, Clerk, Firebase, Cognito, our own JWT)", when: "Easiest — no shared secret, no signing code. Pass the JWT you already issue." },
-  { id: "secret", title: "We have a custom login and can add a little server code", when: "Sign a short token per user with your Rani secret." },
+  { id: "secret", title: "We have a custom login and can add a little server code", when: "Sign a short token per user with your the assistant secret." },
   { id: "endpoint", title: "We'd rather not put a token in every page", when: "Expose one endpoint that returns the current user's token; the embed fetches it." },
 ];
 
@@ -39,7 +39,7 @@ export function SignedInEmbedGuide({ pubKey }: { pubKey: string | null }) {
       <div>
         <h2 className="text-base font-semibold">Signed-in users (optional)</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          The snippet above works for anonymous visitors. If your users log in and you want Rani to
+          The snippet above works for anonymous visitors. If your users log in and you want the assistant to
           know who they are — greet them, unlock members-only answers, or act in your systems{" "}
           <em>as that user</em> — forward their identity. Pick what fits your setup:
         </p>

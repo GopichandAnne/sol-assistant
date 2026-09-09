@@ -33,13 +33,13 @@ export async function SetupChecklist() {
   const steps =
     profileFor(store.businessType) === "saas"
       ? [
-          { done: described, label: "Set up your assistant", desc: "Tell Rani about your product and how to sound.", href: "/agent" },
-          { done: hasKnowledge, label: "Connect your docs", desc: "Point Rani at your docs or help centre so it answers from them.", href: "/knowledge" },
-          { done: !!embedSeen.data?.last_embed_at, label: "Install Rani on your site", desc: "Copy your embed snippet and add it to your site — this ticks once Rani loads there.", href: "/link" },
+          { done: described, label: "Set up your assistant", desc: "Tell the assistant about your product and how to sound.", href: "/agent" },
+          { done: hasKnowledge, label: "Connect your docs", desc: "Point the assistant at your docs or help centre so it answers from them.", href: "/knowledge" },
+          { done: !!embedSeen.data?.last_embed_at, label: "Install the assistant on your site", desc: "Copy your embed snippet and add it to your site — this ticks once the assistant loads there.", href: "/link" },
           { done: String(ansPub.data?.value ?? "").toLowerCase() === "true", label: "Publish your Answers page", desc: "A crawlable page so Google & AI can answer about you.", href: "/link" },
         ]
       : [
-          { done: described, label: "Describe your business", desc: "Tell Rani who you are, what you sell, and how to sound.", href: "/agent" },
+          { done: described, label: "Describe your business", desc: "Tell the assistant who you are, what you sell, and how to sound.", href: "/agent" },
           { done: (prod.count ?? 0) > 0 || hasKnowledge, label: vocab.checklistCatalogLabel, desc: vocab.checklistCatalogDesc, href: "/inventory" },
           { done: (tok.count ?? 0) > 0, label: "Create your chat link", desc: "Generate the web link / QR code to share with customers.", href: "/link" },
           { done: (resp.count ?? 0) > 0, label: "Add a responder", desc: "So questions and new orders reach a real person.", href: "/agent" },
@@ -51,11 +51,11 @@ export async function SetupChecklist() {
     <div className="mx-auto max-w-6xl px-6 pt-6">
       <div className="bg-card rounded-lg border p-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-display text-lg italic">Get {store.name} ready</h2>
+          <h2 className="font-display text-lg">Get {store.name} ready</h2>
           <span className="text-muted-foreground text-sm">{doneCount} of {steps.length} done</span>
         </div>
         <p className="text-muted-foreground mb-3 mt-0.5 text-sm">
-          A few quick steps and Rani is ready for your customers.
+          A few quick steps and the assistant is ready for your customers.
         </p>
         <ul className="space-y-1">
           {steps.map((s) => (

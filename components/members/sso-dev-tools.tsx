@@ -136,7 +136,7 @@ export function SsoDevTools({ storeId }: { storeId: string }) {
                   {res.verdict.method ? ` · via ${res.verdict.method.toUpperCase()}` : ""}
                 </p>
               ) : (
-                <p className="font-medium">✗ Not accepted{res.verdict.method ? ` (${res.verdict.method.toUpperCase()})` : ""} — {res.verdict.reason || "token rejected."}</p>
+                <p className="font-medium">Not accepted{res.verdict.method ? ` (${res.verdict.method.toUpperCase()})` : ""} — {res.verdict.reason || "token rejected."}</p>
               )}
             </div>
             {res.detail && !res.verdict.recognized && (

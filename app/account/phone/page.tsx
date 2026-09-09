@@ -5,7 +5,7 @@ import { PhoneCaptureForm } from "./phone-capture-form";
 import { Wordmark } from "@/components/app-shell/wordmark";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const metadata: Metadata = { title: "Add your phone · Ask Rani" };
+export const metadata: Metadata = { title: "Add your phone · The Assistant" };
 export const dynamic = "force-dynamic";
 
 /**
@@ -27,7 +27,7 @@ export default async function AccountPhonePage() {
           <div className="space-y-1">
             <CardTitle className="text-lg">Add your phone number</CardTitle>
             <CardDescription>
-              So Rani recognizes you on WhatsApp — your questions and answers stay in one thread across WhatsApp and the console.
+              So the assistant recognizes you on WhatsApp — your questions and answers stay in one thread across WhatsApp and the console.
             </CardDescription>
           </div>
         </CardHeader>

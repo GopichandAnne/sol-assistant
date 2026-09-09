@@ -138,7 +138,7 @@ export const squareAdapter: PosAdapter = {
         location_id: creds.location_id,
         reference_id: order.order_id.slice(0, 40),
         ticket_name: ticketName(order),
-        source: { name: "Ask Rani" },
+        source: { name: "The Assistant" },
         line_items: lines.map((l) => {
           const ext = l.sku ? itemMap[l.sku] : undefined;
           // Mapped → reference the Square catalog variation (it prices itself).

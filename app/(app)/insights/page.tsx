@@ -28,7 +28,7 @@ export default async function InsightsPage({
         <Telescope className="text-foreground/70 size-7" />
       </div>
       <div className="space-y-1">
-        <h1 className="font-display text-xl italic">Ask Rani Insights</h1>
+        <h1 className="font-display text-xl">The Assistant Insights</h1>
         <p className="text-muted-foreground text-sm">
           Local market intelligence for {ctx.active.name} — competitor pricing, reviews and social,
           plus a weekly plan of what to do next.
@@ -51,7 +51,7 @@ export default async function InsightsPage({
       ) : (
         <p className="text-muted-foreground text-sm">
           {(error && ERRORS[error]) ||
-            "Ask your Ask Rani admin to switch Insights on for this store."}
+            "Ask your The Assistant admin to switch Insights on for this store."}
         </p>
       )}
     </div>

@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 /**
- * The Rani robot mark. viewBox is tightened to hug the robot so it sizes cleanly
+ * The assistant robot mark. viewBox is tightened to hug the robot so it sizes cleanly
  * next to text. `animated` glows the antennae (on for the loader, off for logos).
  */
 export function RaniMark({

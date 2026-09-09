@@ -2,7 +2,7 @@ import { RaniMark } from "@/components/app-shell/rani-mark";
 import { cn } from "@/lib/utils";
 
 /**
- * Branded loading state — a spinning teal ring around a bobbing Rani. Used as the
+ * Branded loading state — a spinning teal ring around a bobbing the assistant. Used as the
  * route-transition overlay (app/(app)/loading.tsx) and anywhere a page waits.
  */
 export function BrandLoader({

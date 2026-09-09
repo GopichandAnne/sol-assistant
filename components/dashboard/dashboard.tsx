@@ -29,7 +29,7 @@ function StatCard({
       <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
         {label}
       </p>
-      <p className="font-display text-teal-deep dark:text-teal-light mt-1 text-4xl italic tabular-nums">
+      <p className="font-display text-teal-deep dark:text-teal-light mt-1 text-4xl tabular-nums">
         {value}
       </p>
       {sub && <p className="text-muted-foreground mt-0.5 text-xs">{sub}</p>}
@@ -228,7 +228,7 @@ export function Dashboard({
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <header>
-        <h1 className="font-display text-2xl italic">Dashboard</h1>
+        <h1 className="font-display text-2xl">Dashboard</h1>
         <p className="text-muted-foreground text-sm">
           {storeName} · last {DASHBOARD_DAYS} days
         </p>

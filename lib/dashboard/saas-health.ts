@@ -20,7 +20,7 @@ export function computeSaasHealth(convs: ConvRow[], leadsCaptured: number) {
   const c = inWindow(convs, days);
   const total = c.length;
   const gaps = gapConversationCount(c);
-  // Self-serve = conversations Rani answered without naming a gap it couldn't cover.
+  // Self-serve = conversations the assistant answered without naming a gap it couldn't cover.
   const selfServeRate = total > 0 ? Math.round(((total - gaps) / total) * 100) : null;
 
   const rts = c

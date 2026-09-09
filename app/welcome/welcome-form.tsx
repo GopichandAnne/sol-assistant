@@ -63,7 +63,7 @@ export function WelcomeForm({ email }: { email: string | null }) {
         <div className="space-y-2">
           <Label htmlFor="email">Email (optional)</Label>
           <Input id="email" type="email" value={emailVal} onChange={(e) => setEmailVal(e.target.value)} placeholder="you@business.com" />
-          <p className="text-muted-foreground text-xs">Lets you also sign in by email and unifies your Ask Rani account.</p>
+          <p className="text-muted-foreground text-xs">Lets you also sign in by email and unifies your The Assistant account.</p>
         </div>
       )}
       <Button type="submit" className="w-full" disabled={busy}>

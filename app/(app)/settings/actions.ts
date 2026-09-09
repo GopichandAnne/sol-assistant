@@ -3,7 +3,7 @@
 import { getSessionContext } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/** Changing the console type / vertical is restricted to Ask Rani (platform
+/** Changing the console type / vertical is restricted to The Assistant (platform
  *  admins) only — store owners can view it but not switch it. */
 async function requirePlatformAdmin() {
   const ctx = await getSessionContext();
@@ -18,7 +18,7 @@ export async function setConsoleType(
   businessType: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!(await requirePlatformAdmin())) {
-    return { ok: false, error: "Only Ask Rani can change the console type." };
+    return { ok: false, error: "Only The Assistant can change the console type." };
   }
   const value = businessType.trim().toLowerCase();
   const db = createAdminClient();

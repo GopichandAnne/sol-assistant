@@ -88,7 +88,7 @@ export function IntegrationsView({
         <div className="flex items-center gap-2">
           <Plug className="text-muted-foreground size-5" />
           <div>
-            <h1 className="font-display text-2xl italic">Integrations</h1>
+            <h1 className="font-display text-2xl">Integrations</h1>
             <p className="text-muted-foreground text-sm">{storeName}</p>
           </div>
         </div>
@@ -103,8 +103,8 @@ export function IntegrationsView({
       </header>
 
       <p className="text-muted-foreground text-sm">
-        Connect Rani to your own systems — a POS for live prices, a booking system, anything with an
-        HTTP endpoint. Rani decides on its own when to call each one, based on the description you
+        Connect the assistant to your own systems — a POS for live prices, a booking system, anything with an
+        HTTP endpoint. The assistant decides on its own when to call each one, based on the description you
         write.
       </p>
 
@@ -122,7 +122,7 @@ export function IntegrationsView({
           <Plug className="size-6" />
           <p className="text-sm font-medium">No integrations yet</p>
           <p className="max-w-sm text-sm">
-            Add one to give Rani a new ability — for example a live price lookup from your POS.
+            Add one to give the assistant a new ability — for example a live price lookup from your POS.
           </p>
         </div>
       ) : (
@@ -184,7 +184,7 @@ export function IntegrationsView({
                       <AlertDialogHeader>
                         <AlertDialogTitle>Remove this integration?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Rani will no longer be able to call “{integ.name}”.
+                          The assistant will no longer be able to call “{integ.name}”.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

@@ -94,7 +94,7 @@ export function DocumentDialog({
           <DialogTitle>Add document</DialogTitle>
           <DialogDescription>
             Upload a file (PDF, image, CSV, text), fetch a docs/help-center URL, or paste
-            text. Rani reads it (transcribing PDFs and images) and searches it by meaning.
+            text. The assistant reads it (transcribing PDFs and images) and searches it by meaning.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
@@ -162,7 +162,7 @@ export function DocumentDialog({
               />
             </div>
             <p className="text-muted-foreground text-xs">
-              For time-limited info like a weekend sale or holiday hours. Rani only
+              For time-limited info like a weekend sale or holiday hours. The assistant only
               mentions it within this window and stops after it ends. Leave blank for
               always-on info.
             </p>

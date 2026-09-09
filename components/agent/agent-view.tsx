@@ -20,17 +20,17 @@ type Section = { key: string; label: string; hint: string; ordersOnly?: boolean;
 
 // Big prompt areas — each maps to an agent_config key (the bot's source of truth).
 const SECTIONS: Section[] = [
-  { key: "personality", label: "Personality & tone", hint: "Who Rani is and how she speaks — identity, warmth, style rules.", essential: true },
+  { key: "personality", label: "Personality & tone", hint: "Who the assistant is and how it speaks — identity, warmth, style rules.", essential: true },
   { key: "store_prompt", label: "Store info", hint: "Address, hours, what you sell, anything about the store.", essential: true,
-    saas: { label: "Product & company info", hint: "What your product does, key features, plans & pricing, and policies — anything Rani should know to answer prospects and users." } },
+    saas: { label: "Product & company info", hint: "What your product does, key features, plans & pricing, and policies — anything the assistant should know to answer prospects and users." } },
   { key: "language_handling", label: "Language handling", hint: "Which languages to mirror, regional product-name mappings, how to handle mixed languages." },
-  { key: "engage_info", label: "Behavior & engagement", hint: "How Rani helps — navigation, escalation, feedback, interaction style, store layout. Tip: to trigger a connected tool, describe the situation (e.g. “when a customer asks about their order, look it up”) — not the tool name.",
-    saas: { hint: "How Rani helps — guiding users, when to escalate to a human, and interaction style. Tip: to trigger a connected tool or MCP, describe the situation (e.g. “when a customer asks about their invoice or usage, look it up and answer with their real data”) — Rani maps it to the right tool." } },
+  { key: "engage_info", label: "Behavior & engagement", hint: "How the assistant helps — navigation, escalation, feedback, interaction style, store layout. Tip: to trigger a connected tool, describe the situation (e.g. “when a customer asks about their order, look it up”) — not the tool name.",
+    saas: { hint: "How the assistant helps — guiding users, when to escalate to a human, and interaction style. Tip: to trigger a connected tool or MCP, describe the situation (e.g. “when a customer asks about their invoice or usage, look it up and answer with their real data”) — the assistant maps it to the right tool." } },
   { key: "off_topic_handling", label: "Off-topic handling", hint: "How to gracefully redirect non-shopping questions.",
     saas: { hint: "How to gracefully redirect questions outside what your product covers." } },
-  { key: "promotions", label: "Promotions & offers", hint: "What to promote and when — combos, specials, seasonal offers. Rani weaves these in naturally and sparingly, and can show a matching product or flyer image from your Knowledge Base. Leave blank for none.", localOnly: true },
+  { key: "promotions", label: "Promotions & offers", hint: "What to promote and when — combos, specials, seasonal offers. The assistant weaves these in naturally and sparingly, and can show a matching product or flyer image from your Knowledge Base. Leave blank for none.", localOnly: true },
   { key: "order_prompt", label: "Ordering & checkout", hint: "How to take pre-orders: building the cart, confirmation, pickup, weight vs quantity, notes.", ordersOnly: true },
-  { key: "order_item_details", label: "Order details to collect", hint: "Per-item details Rani should try to gather for each order — e.g. brand, size/pack, weight or count, variant. She asks lightly and never forces it; the store confirms anything missing.", ordersOnly: true },
+  { key: "order_item_details", label: "Order details to collect", hint: "Per-item details the assistant should try to gather for each order — e.g. brand, size/pack, weight or count, variant. It asks lightly and never forces it; the store confirms anything missing.", ordersOnly: true },
 ];
 
 export function AgentView({
@@ -83,7 +83,7 @@ export function AgentView({
         <div className="flex items-center gap-2">
           <Bot className="text-muted-foreground size-5" />
           <div>
-            <h1 className="font-display text-2xl italic">Agent</h1>
+            <h1 className="font-display text-2xl">Agent</h1>
             <p className="text-muted-foreground text-sm">{storeName}</p>
           </div>
         </div>
@@ -94,7 +94,7 @@ export function AgentView({
       </header>
 
       <p className="text-muted-foreground text-sm">
-        This is Rani&apos;s setup for {storeName}. Everything here is the source of
+        This is the assistant&apos;s setup for {storeName}. Everything here is the source of
         truth for how the bot behaves — no code changes needed. Core safety rules
         (never invent a price, always confirm before placing an order) are always
         enforced on top of what you write.
@@ -107,7 +107,7 @@ export function AgentView({
         <div className="space-y-0.5">
           <Label htmlFor="orders-toggle" className="text-sm font-medium">Enable ordering</Label>
           <p className="text-muted-foreground text-sm">
-            When on, Rani can build a cart and take pre-orders. When off, she is an
+            When on, the assistant can build a cart and take pre-orders. When off, it is an
             info, navigation, and Q&amp;A assistant only.
           </p>
         </div>
@@ -123,8 +123,8 @@ export function AgentView({
         <div className="space-y-0.5">
           <Label htmlFor="catalog-toggle" className="text-sm font-medium">Structured catalogue (show prices)</Label>
           <p className="text-muted-foreground text-sm">
-            On: Rani looks up products and shows prices. Off (request mode): the
-            catalogue lives in your knowledge base, Rani never quotes a price, and
+            On: The assistant looks up products and shows prices. Off (request mode): the
+            catalogue lives in your knowledge base, the assistant never quotes a price, and
             every order is a request your team prices at confirmation.
           </p>
         </div>
@@ -153,8 +153,8 @@ export function AgentView({
         <div className="space-y-0.5">
           <Label htmlFor="followup-toggle" className="text-sm font-medium">Check back if a chat goes quiet</Label>
           <p className="text-muted-foreground text-sm">
-            If a customer stops replying mid-chat, Rani sends one gentle check-back
-            after a few minutes. She skips it when the chat already wrapped up (a
+            If a customer stops replying mid-chat, the assistant sends one gentle check-back
+            after a few minutes. It skips it when the chat already wrapped up (a
             goodbye or a finished request).
           </p>
         </div>
@@ -197,7 +197,7 @@ export function AgentView({
             <div>
               <h2 className="text-sm font-medium">The essentials</h2>
               <p className="text-muted-foreground text-xs">
-                Rani needs these to represent {storeName} well. Everything below is optional fine-tuning.
+                The assistant needs these to represent {storeName} well. Everything below is optional fine-tuning.
               </p>
             </div>
             <div className="space-y-5">{SECTIONS.filter((s) => s.essential).map((s) => renderSection(s, 8))}</div>
@@ -223,7 +223,7 @@ export function AgentView({
               placeholder="10"
               inputMode="numeric"
             />
-            <p className="text-muted-foreground text-xs">How many prior turns Rani remembers in a chat.</p>
+            <p className="text-muted-foreground text-xs">How many prior turns the assistant remembers in a chat.</p>
           </div>
           {followupEnabled && (
             <div className="space-y-1.5">

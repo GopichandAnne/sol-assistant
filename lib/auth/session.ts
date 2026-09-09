@@ -11,7 +11,7 @@ export type StoreAccess = {
   role: StoreRole;
   /** Drives the vertical vocabulary layer (lib/vertical-vocab.ts). */
   businessType: string | null;
-  /** Platform-admin grant: store can open the embedded Ask Rani Insights product. */
+  /** Platform-admin grant: store can open the embedded The Assistant Insights product. */
   insightsEnabled: boolean;
 };
 

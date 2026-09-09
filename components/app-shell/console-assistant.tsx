@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MessageSquare } from "lucide-react";
 
 // The customer-facing assistant, embedded in the console as a floating bubble —
 // exactly how it appears on a real website. Because you're already signed in here,
@@ -39,7 +40,7 @@ export function ConsoleAssistant({ token, publishableKey }: { token: string; pub
         className="bg-gradient-primary text-primary-foreground shadow-primary inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold"
         aria-label="Chat with your assistant"
       >
-        {open ? "Close" : "💬 Try your assistant"}
+        {open ? "Close" : <><MessageSquare className="size-4" /> Try your assistant</>}
       </button>
     </div>
   );

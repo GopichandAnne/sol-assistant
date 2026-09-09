@@ -116,7 +116,7 @@ export function PostEarnClient({ initial }: { initial: PostEarnConfig }) {
       </CardHeader>
       <CardContent className="space-y-5">
         <p className="text-sm text-muted-foreground">
-          Customers post about you on social media, paste the link to Rani, and you review it in Post reviews.
+          Customers post about you on social media, paste the link to the assistant, and you review it in Post reviews.
           Set up each platform separately — a YouTube video can pay differently from an Instagram story.
           Verification is manual; you confirm each post before it pays.
         </p>
@@ -131,7 +131,7 @@ export function PostEarnClient({ initial }: { initial: PostEarnConfig }) {
             placeholder="e.g. Our weekend biryani special, or the new mango season arrivals"
             className="border-input bg-background focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1"
           />
-          <p className="text-muted-foreground text-xs">Rani tells customers what to feature, and it shows in Post reviews so you can check the post is on-topic.</p>
+          <p className="text-muted-foreground text-xs">The assistant tells customers what to feature, and it shows in Post reviews so you can check the post is on-topic.</p>
         </div>
 
         <div className="space-y-3">
@@ -218,7 +218,7 @@ export function PostEarnClient({ initial }: { initial: PostEarnConfig }) {
         <div className="space-y-2">
           <Label className="text-muted-foreground text-xs">Ready-to-post media (optional)</Label>
           <p className="text-muted-foreground text-xs">
-            Upload branded images customers can share. Rani sends them when someone asks to post — so they have
+            Upload branded images customers can share. The assistant sends them when someone asks to post — so they have
             content ready and your store gets tagged.
           </p>
           {media.length > 0 && (

@@ -32,7 +32,7 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
       <div>
         <h2 className="flex items-center gap-2 text-base font-semibold"><Users className="text-teal-deep size-4" /> Microsoft Teams</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Add Rani to Teams as a teammate — it answers DMs and @mentions and recognizes each person by
+          Add the assistant to Teams as a teammate — it answers DMs and @mentions and recognizes each person by
           their Microsoft (Azure AD) identity.
         </p>
       </div>

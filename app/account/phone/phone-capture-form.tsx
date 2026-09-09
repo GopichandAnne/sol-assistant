@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
 
 /**
  * Account phone capture — a country-code picker + local number, combined into
- * E.164 (reusing lib/phone). Saved to the auth identity so Rani recognizes the
+ * E.164 (reusing lib/phone). Saved to the auth identity so the assistant recognizes the
  * person on WhatsApp. No SMS is sent; this is a one-field step the account gate
  * requires once.
  */

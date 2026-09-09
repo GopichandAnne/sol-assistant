@@ -7,7 +7,7 @@ import type { ConvRow } from "@/lib/dashboard/metrics";
 import { SaasHealthView } from "@/components/dashboard/saas-health";
 import { SetupChecklist } from "@/components/setup/setup-checklist";
 
-export const metadata: Metadata = { title: "Assistant health · Ask Rani" };
+export const metadata: Metadata = { title: "Assistant health · The Assistant" };
 
 /** The SaaS/product console home — how the embedded assistant is doing. */
 export default async function HealthPage() {

@@ -56,7 +56,7 @@ export function QuickTool({ isOwner }: { isOwner: boolean }) {
         </Button>
       </div>
       <p className="text-muted-foreground text-sm">
-        Have a single API call and no OpenAPI spec? Describe it here and Rani builds the tool. For a full
+        Have a single API call and no OpenAPI spec? Describe it here and the assistant builds the tool. For a full
         API, use <span className="font-medium">Connect a custom API</span> below.
       </p>
 
@@ -68,7 +68,7 @@ export function QuickTool({ isOwner }: { isOwner: boolean }) {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium">
-              When should Rani call it? (this becomes the tool&apos;s description)
+              When should the assistant call it? (this becomes the tool&apos;s description)
             </label>
             <Input
               value={desc}
@@ -99,7 +99,7 @@ export function QuickTool({ isOwner }: { isOwner: boolean }) {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium">
-              Inputs Rani provides — comma separated, add * for required
+              Inputs the assistant provides — comma separated, add * for required
             </label>
             <Input
               value={params}

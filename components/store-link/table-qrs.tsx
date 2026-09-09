@@ -10,7 +10,7 @@ import { Check, Copy, Download, Plus, Printer, QrCode, Utensils, X } from "lucid
 const SITE = "https://askrani.ai";
 
 // Optional dine-in QR codes. Each opens the restaurant diner surface
-// (Rani as your server) at /s/<slug>?t=<token>&table=<label>. Purely client-side
+// (The assistant as your server) at /s/<slug>?t=<token>&table=<label>. Purely client-side
 // and deterministic — the link is the store token plus a spot label, so there's
 // nothing to persist server-side. A store that doesn't do table ordering just
 // leaves this alone.
@@ -75,7 +75,7 @@ export function TableQrs({
         const canvas = c.querySelector("canvas");
         const label = c.getAttribute("data-label") || "";
         return canvas
-          ? `<div class="cell"><img src="${canvas.toDataURL("image/png")}"/><div class="lbl">${label}</div><div class="sub">Scan to order with Rani · ${storeName}</div></div>`
+          ? `<div class="cell"><img src="${canvas.toDataURL("image/png")}"/><div class="lbl">${label}</div><div class="sub">Scan to order with the assistant · ${storeName}</div></div>`
           : "";
       })
       .join("");
@@ -107,7 +107,7 @@ export function TableQrs({
         <span className="text-muted-foreground text-xs">· optional</span>
       </div>
       <p className="text-muted-foreground text-xs">
-        For sit-down and counter service. Each QR opens Rani as the guest&apos;s <b>server</b> — a
+        For sit-down and counter service. Each QR opens the assistant as the guest&apos;s <b>server</b> — a
         menu they&apos;re served, not one they scan — tagged to that spot. Add numbered tables and any
         common areas (bar, patio, takeaway). Nothing changes for your main chat QR; leave this blank
         if you don&apos;t do table ordering.

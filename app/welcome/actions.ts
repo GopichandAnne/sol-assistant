@@ -43,7 +43,7 @@ const REQUEST_TYPE_PRESETS: Record<string, { key: string; label: string; descrip
 };
 
 /**
- * Self-serve store creation — the Rani side of the first-run flow. Any SIGNED-IN
+ * Self-serve store creation — the assistant side of the first-run flow. Any SIGNED-IN
  * user (no admin gate) provisions their OWN store and becomes its owner:
  *   • insert the store (unique slug derived from the business name)
  *   • link the caller as owner (staff row)
@@ -63,7 +63,7 @@ export async function createMyStore(input: {
   /** Online/B2B only — lead types to capture (demo/quote/support/careers). Seeds
    *  request_types so the bot captures leads from day one (P3). */
   captureTypes?: string[];
-  /** Q&A pairs Rani detected by crawling the business's site during onboarding.
+  /** Q&A pairs the assistant detected by crawling the business's site during onboarding.
    *  Seeded into the KB so the assistant answers from real content on day one
    *  (instead of an empty knowledge base). */
   faqs?: { q: string; a: string }[];
@@ -168,7 +168,7 @@ export async function createMyStore(input: {
     if (reqErr) console.error("[welcome] seed request types:", reqErr.message);
   }
 
-  // Seed the KB from the site Rani crawled during onboarding, so the assistant
+  // Seed the KB from the site the assistant crawled during onboarding, so the assistant
   // isn't answering from an empty knowledge base on day one. Write the detected
   // Q&A pairs as saved_qa, then index them (saved_qa is NOT auto-synced to the
   // retrievable knowledge_index — sync_saved_qa does the embed pass).
@@ -197,7 +197,7 @@ export async function createMyStore(input: {
   }
 
   // Attach an email to the account (best-effort) so the umbrella can link by email
-  // for "Sign in with Ask Rani". Never fatal — fails silently if it's already used.
+  // for "Sign in with The Assistant". Never fatal — fails silently if it's already used.
   const email = input.email?.trim().toLowerCase();
   if (email && email !== (ctx.user.email ?? "").toLowerCase()) {
     try { await db.auth.admin.updateUserById(ctx.user.id, { email }); } catch { /* already in use / non-fatal */ }

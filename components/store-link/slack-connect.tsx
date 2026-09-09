@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Check, Loader2, MessageSquare } from "lucide-react";
 
 const NOTES: Record<string, { ok: boolean; msg: string }> = {
-  connected: { ok: true, msg: "Slack connected — Rani is now a teammate in that workspace." },
+  connected: { ok: true, msg: "Slack connected — the assistant is now a teammate in that workspace." },
   denied: { ok: false, msg: "Slack install was cancelled." },
   badstate: { ok: false, msg: "That install link expired — try again." },
   error: { ok: false, msg: "Slack couldn't complete the install. Please try again." },
@@ -51,7 +51,7 @@ export function SlackConnect({ storeId }: { storeId: string }) {
       <div>
         <h2 className="flex items-center gap-2 text-base font-semibold"><MessageSquare className="text-teal-deep size-4" /> Slack</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Add Rani to a Slack workspace as a teammate — it answers DMs and @mentions using the same
+          Add the assistant to a Slack workspace as a teammate — it answers DMs and @mentions using the same
           knowledge and tools, and recognizes each person by their Slack identity.
         </p>
       </div>

@@ -22,16 +22,21 @@
     --popover-foreground: var(--text);
 
     --primary: var(--teal);
-    --primary-foreground: #ffffff;
+    /* Sol law: never white on Sol Orange (2.5:1). Dark on orange is 4.7:1. */
+    --primary-foreground: var(--sol-dark);
 
-    --secondary: var(--teal-mist);
-    --secondary-foreground: var(--teal-deep);
+    /* Secondary and accent are the hover/selected surfaces used all over the
+       console. They resolve to Sol NEUTRALS, not orange tints, because orange
+       marks the one most important thing on a surface and stops meaning that
+       the moment every hover state uses it. */
+    --secondary: var(--sol-off-white);
+    --secondary-foreground: var(--sol-slate);
 
-    --muted-surface: #f3f4f6;
+    --muted-surface: var(--sol-light-grey);
     --muted-foreground: var(--muted);
 
-    --accent: var(--teal-mist);
-    --accent-foreground: var(--teal-deep);
+    --accent: var(--sol-off-white);
+    --accent-foreground: var(--sol-slate);
 
     --destructive: #dc2626;
     --destructive-foreground: #ffffff;
@@ -51,18 +56,19 @@
     --popover: var(--navy-surface);
     --popover-foreground: var(--dark-text);
 
-    /* primary gradient/teal stays — it pops on navy */
+    /* Sol Orange holds up on Sol Dark, and the contrast law is unchanged:
+       dark text on orange, never white. */
     --primary: var(--teal);
-    --primary-foreground: #06201d;
+    --primary-foreground: var(--sol-dark);
 
-    --secondary: #122a2a;
-    --secondary-foreground: var(--teal-light);
+    --secondary: var(--sol-slate-mid);
+    --secondary-foreground: var(--sol-white);
 
-    --muted-surface: #182338;
+    --muted-surface: var(--sol-slate-mid);
     --muted-foreground: var(--dark-muted);
 
-    --accent: #122a2a;
-    --accent-foreground: var(--teal-light);
+    --accent: var(--sol-slate-mid);
+    --accent-foreground: var(--sol-white);
 
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
@@ -83,6 +89,17 @@
     font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  /* Sol's display face carries its own weight and tracking. The upstream serif
+     was loaded at a single bold weight, so headings inherited boldness for free;
+     Outfit ships many weights, so it has to be stated. Set here rather than at
+     the ~33 call sites that use font-display, for the same reason the palette is
+     aliased in tokens.css: one place, not every caller.
+     Sol type scale: H1 800, H2/H3 700, tracking -0.02em. */
+  .font-display {
+    font-weight: var(--weight-bold, 700);
+    letter-spacing: -0.02em;
   }
 
   /* Respect reduced-motion for the signature live feed + lifts. */

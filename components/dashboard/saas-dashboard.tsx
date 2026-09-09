@@ -23,7 +23,7 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
   return (
     <div className="bg-card rounded-lg border p-4">
       <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">{label}</p>
-      <p className="font-display text-teal-deep dark:text-teal-light mt-1 text-4xl italic tabular-nums">{value}</p>
+      <p className="font-display text-teal-deep dark:text-teal-light mt-1 text-4xl tabular-nums">{value}</p>
       {sub && <p className="text-muted-foreground mt-0.5 text-xs">{sub}</p>}
     </div>
   );
@@ -117,7 +117,7 @@ export function SaasDashboard({ metrics, storeName }: { metrics: SaasDashboardMe
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-6">
       <header>
-        <h1 className="font-display text-3xl italic">Dashboard</h1>
+        <h1 className="font-display text-3xl">Dashboard</h1>
         <p className="text-muted-foreground text-sm">{storeName} · last {DASHBOARD_DAYS} days</p>
       </header>
 
@@ -140,7 +140,7 @@ export function SaasDashboard({ metrics, storeName }: { metrics: SaasDashboardMe
       <Card title="Leads by type">
         <Bars
           rows={m.leadsByType.map((t) => ({ label: leadTypeLabel(t.type), count: t.count }))}
-          empty="No leads captured yet — they'll appear here once Rani starts capturing demo, sales, support, or careers requests."
+          empty="No leads captured yet — they'll appear here once the assistant starts capturing demo, sales, support, or careers requests."
         />
       </Card>
 
@@ -151,10 +151,10 @@ export function SaasDashboard({ metrics, storeName }: { metrics: SaasDashboardMe
             empty="No topics yet."
           />
         </Card>
-        <Card title="Questions Rani couldn't answer (gaps to close)">
+        <Card title="Questions the assistant couldn't answer (gaps to close)">
           <Bars
             rows={m.gaps.map((t) => ({ label: t.item, count: t.count }))}
-            empty="No gaps flagged — Rani is answering what it's asked."
+            empty="No gaps flagged — the assistant is answering what it's asked."
           />
         </Card>
       </div>
