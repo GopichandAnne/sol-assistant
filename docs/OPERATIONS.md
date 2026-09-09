@@ -58,6 +58,40 @@ on-topic, and order-detail collection. Run it **before and after any bot change*
 5. **Eval fails** → read which assertion; the reply is printed. A grounding/price
    failure is a real regression; investigate before deploying further.
 
+## Sign-in (Microsoft Entra)
+
+Staff sign in with their SOL Microsoft account. Email and password remains as the
+break-glass path; the phone and Google routes were removed.
+
+Three parts, and all three must agree:
+
+1. **Azure** (portal.azure.com -> Entra ID -> App registrations -> "The Assistant")
+   - Single tenant only, so only the SOL directory can authenticate.
+   - Redirect URI, platform Web, pointing at **Supabase**, not Vercel:
+     `https://<project-ref>.supabase.co/auth/v1/callback`
+     Supabase receives Microsoft's callback and then sends the browser on to the
+     app. Pointing this at the Vercel domain is the most common failure.
+2. **Supabase** -> Authentication -> Sign In / Providers -> Azure
+   - Client ID, and the client secret's **Value** (not the Secret ID, which is a
+     GUID and will silently fail).
+   - Azure Tenant URL `https://login.microsoftonline.com/<tenant-id>`. This is what
+     enforces the single-tenant restriction on Supabase's side; the Azure setting
+     alone does not.
+   - "Allow users without an email" stays **off**. The app keys people by email
+     everywhere (staff links, company membership, credit warnings), so an
+     emailless account would authenticate and then fail to link to anything.
+3. **Vercel** -> `NEXT_PUBLIC_MICROSOFT_SSO=true`, type **Config**, then redeploy.
+   The button is hidden unless this is set, deliberately: the upstream Google
+   button rendered against a provider that was never configured, so it could only
+   ever fail. Register and enable first, flip the flag last.
+
+The app requests the `email` scope explicitly. Entra returns no email claim
+otherwise, which would authenticate a user the rest of the app cannot place.
+
+**Secret rotation:** client secrets expire. Add the new secret in Azure first,
+paste its Value into Supabase, then delete the old one. Doing it in that order
+means no sign-in outage.
+
 ## Known follow-ups (not yet done)
 
 - Rotate the WhatsApp access token that was once exposed (do it in Meta).
