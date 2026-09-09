@@ -81,9 +81,13 @@ const config: Config = {
         card: "0 1px 2px rgba(0,0,0,0.04)",
       },
       fontFamily: {
-        // display = Playfair Display (use with restraint); sans = DM Sans
-        display: ["var(--font-playfair)", "Georgia", "serif"],
-        sans: ["var(--font-dm-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        // Sol type: Outfit for display, Inter for body. Both fall back to a
+        // SANS stack: a serif fallback would render every heading in Georgia if
+        // the webfont failed, which is off-brand rather than merely degraded.
+        // The CSS variable names are upstream leftovers, kept so ~200 call
+        // sites and both Tailwind families keep resolving.
+        display: ["var(--font-playfair)", "Outfit", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["var(--font-dm-sans)", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       keyframes: {
         "live-pulse": {

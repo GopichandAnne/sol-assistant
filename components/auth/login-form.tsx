@@ -168,12 +168,12 @@ export function LoginForm() {
     <div className="space-y-5">
       <div className="space-y-1 text-center">
         <h1 className="text-lg font-semibold">
-          {isSignup ? "Create your store" : "Sign in to the control panel"}
+          {isSignup ? "Create your assistant" : "Sign in"}
         </h1>
         <p className="text-muted-foreground text-sm">
           {isSignup
             ? "Set up your AI assistant in a couple of minutes — just chat, no forms."
-            : "Staff & owners of The Assistant stores."}
+            : "For the people who run your assistant."}
         </p>
       </div>
 
@@ -207,7 +207,7 @@ export function LoginForm() {
               type="email"
               inputMode="email"
               autoComplete="email"
-              placeholder="you@store.com"
+              placeholder="you@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -232,7 +232,7 @@ export function LoginForm() {
               type="email"
               inputMode="email"
               autoComplete="email"
-              placeholder="you@store.com"
+              placeholder="you@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -329,13 +329,13 @@ export function LoginForm() {
       )}
 
       <p className="text-muted-foreground text-center text-sm">
-        {isSignup ? "Already have a store? " : "New to The Assistant? "}
+        {isSignup ? "Already have an account? " : "New here? "}
         <button
           type="button"
           onClick={() => setMode(isSignup ? "signin" : "signup")}
           className="text-foreground font-medium hover:underline"
         >
-          {isSignup ? "Sign in" : "Create your store"}
+          {isSignup ? "Sign in" : "Create your assistant"}
         </button>
       </p>
     </div>
