@@ -8,6 +8,9 @@ import { recordUsage, type MeterCtx } from "./meter.ts";
 const API = "https://api.openai.com/v1/chat/completions";
 const DEFAULT_MODEL = "gpt-4o-mini";
 const MAX_TOOL_ITERATIONS = 6;
+// Match the Gemini path's ceiling (gemini.ts uses maxOutputTokens 8192). At the
+// previous 1024 the same conversation truncated on GPT but not on Gemini.
+const MAX_OUTPUT_TOKENS = 8192;
 
 // deno-lint-ignore no-explicit-any
 type Msg = Record<string, any>;
@@ -92,7 +95,7 @@ export async function openaiReply(
     for (let iter = 0; iter < MAX_TOOL_ITERATIONS; iter++) {
       const body = JSON.stringify({
         model,
-        max_tokens: 1024,
+        max_tokens: MAX_OUTPUT_TOKENS,
         messages,
         ...(tools ? { tools, tool_choice: "auto" } : {}),
       });
@@ -114,6 +117,14 @@ export async function openaiReply(
       const msg = j?.choices?.[0]?.message;
       const toolCalls = msg?.tool_calls ?? [];
       if (!msg || toolCalls.length === 0) {
+        // Two finish reasons that are NOT ordinary completions and previously
+        // looked identical to one. Still fails open; now visible in the logs.
+        const finish = j?.choices?.[0]?.finish_reason;
+        if (finish === "length") {
+          console.warn(`[openai] hit max_tokens (${MAX_OUTPUT_TOKENS}) — reply truncated`);
+        } else if (finish === "content_filter") {
+          console.warn("[openai] response withheld by content filter");
+        }
         const text = (msg?.content ?? "").trim() || null;
         return { text, toolsUsed };
       }
@@ -129,7 +140,7 @@ export async function openaiReply(
       }));
       messages.push(...results);
     }
-    const finalRes = await post(JSON.stringify({ model, max_tokens: 1024, messages }), key);
+    const finalRes = await post(JSON.stringify({ model, max_tokens: MAX_OUTPUT_TOKENS, messages }), key);
     if (!finalRes.ok) return { text: null, toolsUsed };
     // deno-lint-ignore no-explicit-any
     const fj: any = await finalRes.json();

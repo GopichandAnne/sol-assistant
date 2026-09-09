@@ -9,9 +9,14 @@ import { Loader2, Sparkles } from "lucide-react";
 
 // Provider → the models we offer. Gemini keeps an empty value (the adapter default).
 const MODELS: Record<string, { value: string; label: string }[]> = {
+  // Prefer "-latest" aliases over dated ids. gemini-2.5-pro was listed here and
+  // returns HTTP 404 "no longer available to new users" on a newly created key:
+  // it still appears in ListModels, so it looks valid right up until a store picks
+  // it and every reply comes back null. An alias survives model retirements, which
+  // is the same reason the engine default is gemini-flash-latest.
   gemini: [
     { value: "", label: "Gemini Flash — fast (default)" },
-    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro — most capable" },
+    { value: "gemini-pro-latest", label: "Gemini Pro — most capable" },
   ],
   anthropic: [
     { value: "claude-sonnet-5", label: "Claude Sonnet 5 — balanced" },
