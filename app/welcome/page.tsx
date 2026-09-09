@@ -20,7 +20,10 @@ export default async function WelcomePage() {
 
   const cookieStore = await cookies();
   const initialSite = cookieStore.get("ar_intent_site")?.value || undefined;
-  const initialType = cookieStore.get("ar_intent_type")?.value || undefined;
+  // Every account here is a SaaS/product team, so the interview always skips the
+  // "what kind of business are you?" question rather than asking a question with
+  // one possible answer. (Upstream this came from a signup-door cookie.)
+  const initialType = "saas";
 
   return (
     <div className="flex min-h-dvh items-center justify-center p-6">

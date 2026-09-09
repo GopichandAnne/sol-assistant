@@ -1,23 +1,28 @@
 /**
- * Console profile — reshapes the operator panel to fit the account's use.
+ * Console profile.
  *
- * A "local" business (shop, restaurant, clinic) and a "saas"/product team that
- * embeds Rani on their own site want very different control panels. This is the
- * one place that decides which profile a store is, derived from its free-text
- * `stores.business_type`. Nav items opt into profiles via `NavItem.profiles`.
+ * This product has exactly one shape: a SaaS/product team embedding an assistant
+ * in their own app. `profileFor` is therefore PINNED to "saas" — it still takes a
+ * business type and is still called from ~10 places, because the local-business
+ * surfaces it used to select (Orders, Catalog, Redemptions, Campaigns, Diner,
+ * rewards) remain in the tree and would otherwise render.
+ *
+ * Keeping the function rather than deleting its callers is deliberate: this fork
+ * carries the whole upstream engine, and the local code paths still have to
+ * compile. Pinning here makes every one of them unreachable from a single line,
+ * which is far safer than excising features by hand from ~48,000 lines. When the
+ * local surfaces are eventually deleted outright, this file goes with them.
  */
 
 export type ConsoleProfile = "local" | "saas";
 
-/** Business types that get the SaaS/product console. */
-const SAAS_TYPES = new Set(["saas", "product", "software"]);
-
-export function profileFor(businessType?: string | null): ConsoleProfile {
-  return businessType && SAAS_TYPES.has(businessType.toLowerCase()) ? "saas" : "local";
+/** Always "saas" in this product. The parameter is retained so callers — and the
+ *  upstream diff — stay unchanged. */
+export function profileFor(_businessType?: string | null): ConsoleProfile {
+  return "saas";
 }
 
-/** The home surface for a profile. SaaS opens to Assistant health; a local
- *  business opens to Orders. */
-export function homeHrefFor(profile: ConsoleProfile): string {
-  return profile === "saas" ? "/health" : "/orders";
+/** Every account opens on assistant health. */
+export function homeHrefFor(_profile?: ConsoleProfile): string {
+  return "/health";
 }

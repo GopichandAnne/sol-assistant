@@ -74,15 +74,11 @@ export async function createMyStore(input: {
   const displayName = input.businessName.trim();
   if (!displayName) return { ok: false, error: "Business or organization name is required." };
 
-  // Signup-door intent (set by middleware from ?type=…) wins the business type, so
-  // a visitor who came through the SaaS/product door lands in the SaaS console
-  // regardless of what the onboarding interview classified them as.
+  // One product, one shape: every account here is a SaaS/product team, so there is
+  // no door intent to honour and nothing for the interview's classification to
+  // decide. The console is pinned regardless (see lib/console-profile.ts).
   const cookieStore = await cookies();
-  const intent = cookieStore.get("ar_intent_type")?.value?.toLowerCase();
-  const businessType =
-    intent && ["saas", "product", "software"].includes(intent)
-      ? intent
-      : input.businessType?.trim() || null;
+  const businessType = "saas";
 
   const db = createAdminClient();
 
@@ -95,20 +91,34 @@ export async function createMyStore(input: {
     slug = `${base}-${Math.random().toString(36).slice(2, 5)}`;
   }
 
+  // The ACCOUNT comes first: it owns the credit pool and the team, and an
+  // assistant with no company_id records usage that is billed to nobody. Created
+  // before the assistant so we never leave one stranded. company_wallet is
+  // provisioned by trigger (migration 0110).
+  const { data: company, error: companyErr } = await db
+    .from("company")
+    .insert({ name: displayName })
+    .select("id")
+    .single();
+  if (companyErr || !company) {
+    return { ok: false, error: companyErr?.message ?? "Could not create the account." };
+  }
+
   const { data: store, error } = await db
     .from("stores")
     .insert({
       slug,
       store_display_name: displayName,
       business_type: businessType,
+      company_id: company.id,
       active: true,
       whatsapp_status: "inactive",
     })
     .select("id, slug")
     .single();
-  if (error || !store) return { ok: false, error: error?.message ?? "Could not create the store." };
+  if (error || !store) return { ok: false, error: error?.message ?? "Could not create the assistant." };
 
-  // Link the caller as the store owner.
+  // Link the caller as the assistant's owner...
   const { error: staffErr } = await db.from("staff").insert({
     user_id: ctx.user.id,
     store_id: store.id,
@@ -117,6 +127,15 @@ export async function createMyStore(input: {
     name: input.ownerName?.trim() || null,
   });
   if (staffErr) return { ok: false, error: staffErr.message };
+
+  // ...and as the ACCOUNT's owner, which is what makes them a recipient of
+  // low-credit warnings when no explicit billing email is set (migration 0114).
+  const { error: memberErr } = await db.from("company_member").insert({
+    company_id: company.id,
+    user_id: ctx.user.id,
+    role: "owner",
+  });
+  if (memberErr) console.error("[welcome] company_member:", memberErr.message);
 
   // Seed the agent from the business-type preset, then let the Setup Copilot's
   // synthesized config override the persona + business knowledge so the bot is
@@ -184,9 +203,8 @@ export async function createMyStore(input: {
     try { await db.auth.admin.updateUserById(ctx.user.id, { email }); } catch { /* already in use / non-fatal */ }
   }
 
-  // Make it the active store so they land straight in it; the door intent is spent.
+  // Make it the active assistant so they land straight in it.
   cookieStore.set(ACTIVE_STORE_COOKIE, store.slug, { path: "/", sameSite: "lax" });
-  if (intent) cookieStore.set("ar_intent_type", "", { path: "/", maxAge: 0 });
   cookieStore.set("ar_intent_site", "", { path: "/", maxAge: 0 });
   return { ok: true, slug: store.slug };
 }
