@@ -47,3 +47,6 @@ next-env.d.ts
 # edge function secrets (local serve) — never commit
 /supabase/functions/.env
 !/supabase/functions/.env.example
+
+# Built Teams app packages (generated per app id)
+/dist
