@@ -6,6 +6,7 @@ import { ConnectionsClient, type ConnStatus } from "./connections-client";
 import { ApiBuilder, type ApiTool } from "./api-builder";
 import { QuickTool } from "./quick-tool";
 import { McpServers, type McpServerRow, type McpToolRow } from "./mcp-servers";
+import { listM365Capabilities, type M365Capability } from "./actions";
 
 export const metadata: Metadata = { title: "Connections · The Assistant" };
 export const dynamic = "force-dynamic";
@@ -50,6 +51,14 @@ export default async function ConnectionsPage() {
     personalCounts[r.provider] = (personalCounts[r.provider] ?? 0) + 1;
   }
 
+  // Microsoft 365 starts narrow by design and grows one approval at a time, so the
+  // card shows what it is allowed to do rather than a single connected tick.
+  let m365: M365Capability[] = [];
+  if (connected["microsoft"]) {
+    const caps = await listM365Capabilities();
+    if (caps.ok) m365 = caps.bundles;
+  }
+
   const { data: toolRows } = await db
     .from("http_tool")
     .select("id, name, description, method, side_effect, auth, action_policy")
@@ -88,6 +97,7 @@ export default async function ConnectionsPage() {
         isOwner={ctx.active.role === "owner"}
         connected={connected}
         personalCounts={personalCounts}
+        m365Capabilities={m365}
       />
       <div className="mt-6">
         <QuickTool isOwner={ctx.active.role === "owner" || ctx.isPlatformAdmin} />

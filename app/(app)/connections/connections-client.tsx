@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check } from "lucide-react";
-import { disconnectProvider } from "./actions";
+import { disconnectProvider, type M365Capability } from "./actions";
+import { M365Capabilities } from "./m365-capabilities";
 
 export type ConnStatus = { label: string | null };
 
@@ -29,7 +30,7 @@ const ERR: Record<string, string> = {
 };
 
 export function ConnectionsClient({
-  storeSlug, isOwner, connected, personalCounts = {},
+  storeSlug, isOwner, connected, personalCounts = {}, m365Capabilities = [],
 }: {
   storeSlug: string;
   isOwner: boolean;
@@ -38,6 +39,8 @@ export function ConnectionsClient({
    *  the organisation is what turns a connector on; this is what says whether the
    *  team is actually getting the personal half of it. */
   personalCounts?: Record<string, number>;
+  /** Microsoft 365's per-capability approval state, when it is connected. */
+  m365Capabilities?: M365Capability[];
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -87,7 +90,8 @@ export function ConnectionsClient({
         const conn = connected[p.id];
         const isBusy = busy === p.id;
         return (
-          <div key={p.id} className="flex items-center gap-4 rounded-xl border p-4">
+          <div key={p.id} className="rounded-xl border p-4">
+            <div className="flex items-center gap-4">
             <span
               className="flex size-10 flex-none items-center justify-center rounded-lg text-sm font-bold text-white"
               style={{ background: p.accent }}
@@ -124,6 +128,10 @@ export function ConnectionsClient({
               <Button size="sm" disabled={isBusy || !isOwner} onClick={() => connect(p.id)}>
                 {isBusy ? <Loader2 className="size-4 animate-spin" /> : "Connect"}
               </Button>
+            )}
+            </div>
+            {p.id === "microsoft" && conn && (
+              <M365Capabilities capabilities={m365Capabilities} isOwner={isOwner} />
             )}
           </div>
         );

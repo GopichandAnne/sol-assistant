@@ -23,13 +23,94 @@
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import type { Store } from "./types.ts";
-import { getAccessToken, personalConnectUrl } from "./connections.ts";
+import { consentUrl, getAccessToken, grantedScopes, personalConnectUrl } from "./connections.ts";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
 const TIMEOUT_MS = 8000;
 const MAX_ITEMS = 5;
 
 type Json = Record<string, unknown>;
+
+/**
+ * Capabilities, and what each one costs in permissions.
+ *
+ * Connecting asks only for Microsoft's low-impact set, which a person can approve
+ * for themselves under the tenant policy most organisations run. Everything below
+ * is asked for the first time somebody actually uses it — with the reason visible,
+ * at the moment it matters.
+ *
+ * That ordering is the whole point. Asking for "read all your files, read your
+ * mail and send mail as you" on a consent screen before the assistant has done
+ * anything useful is how a connector gets refused; asking for mail access when
+ * someone has just said "find the email about the renewal" is a question that
+ * answers itself. It also means a client gets a working assistant on day one
+ * while the heavier permissions are still going through their IT.
+ *
+ * mail and mail_send are deliberately separate. Reading a mailbox and sending in
+ * someone's name are different risks, and a security review will treat them
+ * differently — so an organisation can grant one without the other.
+ */
+export const M365_BUNDLES = {
+  directory: { scopes: [] as string[], label: "Find people", why: "Look someone up in the staff directory." },
+  documents: {
+    scopes: ["Files.Read.All", "Sites.Read.All"],
+    label: "Find documents",
+    why: "Search SharePoint and OneDrive for a file, a policy or a template.",
+  },
+  calendar: {
+    scopes: ["Calendars.ReadWrite"],
+    label: "Calendar",
+    why: "See what is on someone's day, check availability and book meetings.",
+  },
+  mail: { scopes: ["Mail.Read"], label: "Find mail", why: "Search a person's own mailbox for a message." },
+  mail_send: { scopes: ["Mail.Send"], label: "Send mail", why: "Send an email from a person's own mailbox, in their name." },
+  tasks: { scopes: ["Tasks.ReadWrite"], label: "Tasks", why: "Read and add tasks in a person's Microsoft To Do." },
+} as const;
+
+export type M365Bundle = keyof typeof M365_BUNDLES;
+
+/** Which capabilities a connection can actually perform right now. */
+export async function enabledBundles(
+  db: SupabaseClient, storeId: string, userKey = "",
+): Promise<M365Bundle[]> {
+  const have = new Set(await grantedScopes(db, storeId, "microsoft", userKey));
+  return (Object.keys(M365_BUNDLES) as M365Bundle[])
+    .filter((b) => M365_BUNDLES[b].scopes.every((s) => have.has(s)));
+}
+
+/**
+ * Check a capability, and when it is missing produce the link that adds it.
+ *
+ * The link asks for everything already granted plus the new bundle, so adding a
+ * capability never silently narrows the connection that was working before.
+ */
+async function requireBundle(
+  db: SupabaseClient, storeId: string, bundle: M365Bundle, userKey: string,
+): Promise<{ ok: true } | { ok: false; offer: Json }> {
+  const need = M365_BUNDLES[bundle].scopes;
+  if (need.length === 0) return { ok: true };
+  const have = await grantedScopes(db, storeId, "microsoft", userKey);
+  if (need.every((s) => have.includes(s))) return { ok: true };
+
+  const url = await consentUrl("microsoft", storeId, userKey, [...new Set([...have, ...need])]);
+  const spec = M365_BUNDLES[bundle];
+  const forOrg = !userKey;
+  return {
+    ok: false,
+    offer: {
+      ok: false,
+      needs_permission: bundle,
+      ...(url ? { approve_url: url } : {}),
+      note: url
+        ? `Microsoft 365 is connected, but "${spec.label}" hasn't been approved yet. ${spec.why} ` +
+          (forOrg
+            ? "Give the approve_url to whoever administers this assistant — it takes one approval, once, for the whole organisation. Do not claim to have looked."
+            : "Share the approve_url exactly as given: it takes one approval and only affects their own account. Do not claim to have looked.") +
+          " Say plainly which capability is missing and why you needed it."
+        : `"${spec.label}" hasn't been approved for Microsoft 365 here, and I can't produce an approval link. Ask whoever set this up.`,
+    },
+  };
+}
 
 /** One Graph call. Never throws: a connector failing is an answer the assistant
  *  has to give truthfully, not an exception that loses the turn. */
@@ -84,6 +165,8 @@ export async function findDocument(
 ): Promise<Json> {
   const token = await getAccessToken(db, store.id, "microsoft");
   if (!token) return { ok: false, note: "Microsoft 365 isn't connected for this assistant." };
+  const allowed = await requireBundle(db, store.id, "documents", "");
+  if (!allowed.ok) return allowed.offer;
 
   const res = await graph(token, "/search/query", {
     method: "POST",
@@ -155,17 +238,22 @@ export async function findPerson(
 
 /* ── personal: this person's own connection ───────────────────────────────── */
 
-/** Resolve the asking person's token, or an offer to connect. Every personal tool
- *  starts here, and none of them proceeds without it. */
+/** Resolve the asking person's token AND the capability being used, or an offer to
+ *  fix whichever is missing. Every personal tool starts here, and none of them
+ *  proceeds without it — so there is exactly one place where "can this person do
+ *  this" is decided. */
 async function personal(
-  db: SupabaseClient, store: Store, email: string | null | undefined,
+  db: SupabaseClient, store: Store, email: string | null | undefined, bundle: M365Bundle,
 ): Promise<{ token: string } | { offer: Json }> {
   const who = (email ?? "").trim().toLowerCase();
   if (!who) {
     return { offer: { ok: false, note: "I can't tell who you are here, so I can't look at your own Microsoft 365." } };
   }
   const token = await getAccessToken(db, store.id, "microsoft", who);
-  if (token) return { token };
+  if (token) {
+    const allowed = await requireBundle(db, store.id, bundle, who);
+    return allowed.ok ? { token } : { offer: allowed.offer };
+  }
 
   const url = await personalConnectUrl("microsoft", store.id, who);
   if (!url) {
@@ -188,7 +276,7 @@ async function personal(
 export async function mySchedule(
   db: SupabaseClient, store: Store, email: string | null | undefined, day?: string,
 ): Promise<Json> {
-  const p = await personal(db, store, email);
+  const p = await personal(db, store, email, "calendar");
   if ("offer" in p) return p.offer;
 
   const base = day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? new Date(`${day}T00:00:00Z`) : new Date();
@@ -218,7 +306,7 @@ export async function mySchedule(
 export async function searchMyMail(
   db: SupabaseClient, store: Store, email: string | null | undefined, query: string,
 ): Promise<Json> {
-  const p = await personal(db, store, email);
+  const p = await personal(db, store, email, "mail");
   if ("offer" in p) return p.offer;
 
   const path =
@@ -244,7 +332,7 @@ export async function searchMyMail(
 export async function myTasks(
   db: SupabaseClient, store: Store, email: string | null | undefined,
 ): Promise<Json> {
-  const p = await personal(db, store, email);
+  const p = await personal(db, store, email, "tasks");
   if ("offer" in p) return p.offer;
 
   const listId = await defaultTaskList(p.token);
@@ -270,7 +358,7 @@ export async function addTask(
   db: SupabaseClient, store: Store, email: string | null | undefined,
   title: string, due?: string,
 ): Promise<Json> {
-  const p = await personal(db, store, email);
+  const p = await personal(db, store, email, "tasks");
   if ("offer" in p) return p.offer;
   if (!title.trim()) return { ok: false, note: "A task needs a title." };
 
@@ -297,7 +385,7 @@ export async function sendMail(
   db: SupabaseClient, store: Store, email: string | null | undefined,
   to: string, subject: string, bodyText: string,
 ): Promise<Json> {
-  const p = await personal(db, store, email);
+  const p = await personal(db, store, email, "mail_send");
   if ("offer" in p) return p.offer;
 
   const recipients = to.split(/[;,]/).map((a) => a.trim()).filter((a) => a.includes("@"));

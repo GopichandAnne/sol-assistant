@@ -3,6 +3,7 @@
 import { getActiveStore } from "@/lib/store/active-store";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { callBotAdmin } from "@/lib/knowledge/bot-admin";
 
 export type QuickToolInput = {
   name: string;
@@ -104,4 +105,53 @@ export async function disconnectProvider(provider: string): Promise<{ ok: boolea
   const err = error?.message ?? (data as { error?: string } | null)?.error;
   if (err || !(data as { ok?: boolean } | null)?.ok) return { ok: false, error: err ?? "Couldn't disconnect." };
   return { ok: true };
+}
+
+/* ── Microsoft 365 capabilities ──────────────────────────────────────────────
+ * Connecting Microsoft 365 asks only for the permissions a person can approve
+ * for themselves. Each further capability — documents, mail, calendar, tasks —
+ * is approved separately, so an organisation grants what it wants and nothing
+ * else, and a security review has something specific to say yes to.
+ * -------------------------------------------------------------------------- */
+
+export type M365Capability = {
+  key: string;
+  label: string;
+  why: string;
+  /** false for what connecting already covers, so it renders as included. */
+  optional: boolean;
+  enabled: boolean;
+};
+
+/** What this assistant's Microsoft 365 connection can do today. */
+export async function listM365Capabilities(): Promise<
+  { ok: true; connected: boolean; bundles: M365Capability[] } | { ok: false; error: string }
+> {
+  const ctx = await getActiveStore();
+  if (!ctx?.active) return { ok: false, error: "No active assistant." };
+  const res = await callBotAdmin({ action: "m365_capabilities", store_slug: ctx.active.slug });
+  if (!res.ok) return { ok: false, error: res.error };
+  const d = res.data as { connected?: boolean; bundles?: M365Capability[] };
+  return { ok: true, connected: !!d.connected, bundles: d.bundles ?? [] };
+}
+
+/**
+ * The link that adds one capability to the organisation's connection.
+ *
+ * Owner-only, because it grants the assistant more reach into their systems. The
+ * link is minted server-side and asks for what is already approved plus the new
+ * capability, so approving one more thing never narrows what already worked.
+ */
+export async function m365ConsentUrl(
+  bundle: string,
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  const ctx = await getActiveStore();
+  if (!ctx?.active) return { ok: false, error: "No active assistant." };
+  if (!(ctx.active.role === "owner" || ctx.isPlatformAdmin)) {
+    return { ok: false, error: "Only the account owner can approve more access." };
+  }
+  const res = await callBotAdmin({ action: "m365_consent_url", store_slug: ctx.active.slug, bundle });
+  if (!res.ok) return { ok: false, error: res.error };
+  const url = (res.data as { url?: string }).url;
+  return url ? { ok: true, url } : { ok: false, error: "Couldn't build the approval link." };
 }

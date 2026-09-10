@@ -1526,7 +1526,8 @@ const M365_FIND_DOC_DECL: FunctionDeclaration = {
     "Use it whenever someone is looking for a file, a policy, a template, a deck, a report or " +
     "'the thing we wrote about X'. Pass what they are looking for in their own words. Returns up " +
     "to five documents with a link, when each was last changed and by whom. Always share the link. " +
-    "If it returns found:0, say nothing matched rather than guessing at a filename.",
+    "If it returns found:0, say nothing matched rather than guessing at a filename." +
+    " If the result has needs_permission, that capability hasn't been approved yet: give them the approve_url exactly as returned, say in one line what it would let you do, and do NOT claim to have searched or found anything.",
   parameters: {
     type: "object",
     properties: { query: { type: "string", description: "What they are looking for, e.g. 'expenses policy' or 'Q3 board deck'." } },
@@ -1540,7 +1541,8 @@ const M365_FIND_PERSON_DECL: FunctionDeclaration = {
     "Look someone up in the staff directory by name or email. Use it for 'who is X', 'what's X's " +
     "email', or as a step before doing something that needs their address. Returns name, email and " +
     "- where the organisation allows it - job title and department. If it returns found:0, say so; " +
-    "do not guess at an address.",
+    "do not guess at an address." +
+    " If the result has needs_permission, that capability hasn't been approved yet: give them the approve_url exactly as returned, say in one line what it would let you do, and do NOT claim to have searched or found anything.",
   parameters: {
     type: "object",
     properties: { query: { type: "string", description: "A name or email to look up." } },
@@ -1554,7 +1556,8 @@ const M365_MY_SCHEDULE_DECL: FunctionDeclaration = {
     "What is on the asking person's OWN calendar for a day. Use it for 'what's on today', 'am I " +
     "free this afternoon', 'when is my next meeting'. Pass `date` as YYYY-MM-DD, or leave it out " +
     "for today. This reads only their own calendar, never anyone else's. If the result says " +
-    "needs_connection, give them the connect_url and do not claim to have looked.",
+    "needs_connection, give them the connect_url and do not claim to have looked." +
+    " If the result has needs_permission, that capability hasn't been approved yet: give them the approve_url exactly as returned, say in one line what it would let you do, and do NOT claim to have searched or found anything.",
   parameters: {
     type: "object",
     properties: { date: { type: "string", description: "The day, as YYYY-MM-DD. Omit for today." } },
@@ -1568,7 +1571,8 @@ const M365_MY_MAIL_DECL: FunctionDeclaration = {
     "Search the asking person's OWN mailbox. Use it for 'did I get anything from Finance', 'find " +
     "the email about the renewal', 'what did X send me'. Pass what to search for. Returns up to " +
     "five messages with sender, date, a preview and a link. This reads only their own mail. If the " +
-    "result says needs_connection, give them the connect_url and do not claim to have looked.",
+    "result says needs_connection, give them the connect_url and do not claim to have looked." +
+    " If the result has needs_permission, that capability hasn't been approved yet: give them the approve_url exactly as returned, say in one line what it would let you do, and do NOT claim to have searched or found anything.",
   parameters: {
     type: "object",
     properties: { query: { type: "string", description: "What to search their mail for." } },
@@ -1580,7 +1584,8 @@ const M365_MY_TASKS_DECL: FunctionDeclaration = {
   name: "my_tasks",
   description:
     "The asking person's own open tasks in Microsoft To Do. Use it for 'what's outstanding for me', " +
-    "'what am I meant to be doing'. Reads only their own list.",
+    "'what am I meant to be doing'. Reads only their own list." +
+    " If the result has needs_permission, that capability hasn't been approved yet: give them the approve_url exactly as returned, say in one line what it would let you do, and do NOT claim to have searched or found anything.",
   parameters: { type: "object", properties: {}, required: [] },
 };
 
@@ -1589,7 +1594,8 @@ const M365_ADD_TASK_DECL: FunctionDeclaration = {
   description:
     "Add a task to the asking person's OWN Microsoft To Do list. Use it when they ask you to remind " +
     "them or note something to do. Confirm the wording with them first, then call it. Optionally " +
-    "pass `due` as YYYY-MM-DD.",
+    "pass `due` as YYYY-MM-DD." +
+    " If the result has needs_permission, that capability hasn't been approved yet: give them the approve_url exactly as returned, say in one line what it would let you do, and do NOT claim to have searched or found anything.",
   parameters: {
     type: "object",
     properties: {
@@ -1607,7 +1613,8 @@ const M365_SEND_MAIL_DECL: FunctionDeclaration = {
     "cannot be undone, so: draft it, show them the recipient, subject and full body, get an explicit " +
     "yes, and only then call this. Never invent a recipient - look the person up first if you only " +
     "have a name. The organisation may require a colleague to approve it, in which case the result " +
-    "will say so and nothing has been sent; tell them that plainly rather than implying it went.",
+    "will say so and nothing has been sent; tell them that plainly rather than implying it went." +
+    " If the result has needs_permission, that capability hasn't been approved yet: give them the approve_url exactly as returned, say in one line what it would let you do, and do NOT claim to have searched or found anything.",
   parameters: {
     type: "object",
     properties: {

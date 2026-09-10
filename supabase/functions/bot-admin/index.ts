@@ -836,6 +836,37 @@ Deno.serve(async (req) => {
       // Resolving a held action runs the approved call, which needs the tool
       // executors and the credentials they decrypt — both of which live here, not
       // in the console. The console does the authorization and calls this.
+      // Microsoft 365 capabilities. Connecting asks only for the low-impact set;
+      // each further capability is approved separately, either here by an
+      // administrator or from a chat by the person who needs it.
+      case "m365_capabilities": {
+        const { M365_BUNDLES, enabledBundles } = await import("../_shared/graph.ts");
+        const on = new Set(await enabledBundles(db, store.id, ""));
+        const connected = !!(await db.from("oauth_connection")
+          .select("provider").eq("store_id", store.id).eq("provider", "microsoft")
+          .eq("user_key", "").eq("status", "connected").maybeSingle()).data;
+        return json({
+          connected,
+          bundles: Object.entries(M365_BUNDLES).map(([key, spec]) => ({
+            key, label: spec.label, why: spec.why,
+            optional: spec.scopes.length > 0,
+            enabled: on.has(key as keyof typeof M365_BUNDLES),
+          })),
+        });
+      }
+      case "m365_consent_url": {
+        const bundle = String(body.bundle ?? "").trim();
+        const { M365_BUNDLES } = await import("../_shared/graph.ts");
+        if (!(bundle in M365_BUNDLES)) return json({ error: "unknown capability" }, 400);
+        const { consentUrl, grantedScopes } = await import("../_shared/connections.ts");
+        const have = await grantedScopes(db, store.id, "microsoft", "");
+        const need = M365_BUNDLES[bundle as keyof typeof M365_BUNDLES].scopes as readonly string[];
+        // Ask for what is already granted plus the new capability, so approving one
+        // more thing never narrows a connection that was already working.
+        const url = await consentUrl("microsoft", store.id, "", [...new Set([...have, ...need])]);
+        if (!url) return json({ error: "Microsoft isn't configured yet — the app credentials aren't set." }, 503);
+        return json({ url });
+      }
       case "resolve_action": {
         const reqId = String(body.request_id ?? "").trim();
         const decision = String(body.decision ?? "") === "declined" ? "declined" : "approved";

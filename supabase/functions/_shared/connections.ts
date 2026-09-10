@@ -98,28 +98,19 @@ export const PROVIDERS: Record<ProviderId, ProviderSpec> = {
     id: "microsoft", label: "Microsoft",
     authorizeUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
     tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-    // Microsoft 365 is the connector that decides whether "without opening ten
-    // applications" is a real claim, so it reaches past the calendar: documents in
-    // SharePoint and OneDrive, the staff directory, mail, and tasks.
+    // What CONNECTING asks for, and nothing more. The capabilities that need a
+    // heavier permission — documents, mail, calendar, tasks — are requested the
+    // first time somebody actually uses them (see M365_BUNDLES in graph.ts).
     //
-    // Every scope here is one a person can consent to for themselves — no tenant
-    // admin required — which is what keeps the connector self-serve. The obvious
-    // omission is User.Read.All: it would give job titles and departments for the
-    // whole directory, and it needs admin consent. User.ReadBasic.All does not, so
-    // the directory lookup degrades to name and address rather than failing.
-    //
-    // Whether these can be consented to at all still depends on the tenant: an
-    // organisation that has turned user consent off requires an admin either way.
+    // The set below is exactly Microsoft's own "low impact" classification, which
+    // is what the common tenant policy — allow user consent for verified-publisher
+    // apps, low-impact permissions only — will let a person approve for themselves
+    // with no administrator involved. Adding one more scope here would drop the
+    // whole connector below that bar and turn every first connection into a ticket.
     scope: [
       "offline_access", "openid", "email", "profile",
-      "User.ReadBasic.All",     // find a colleague by name
-      "People.Read",            // richer "who is this" when the tenant allows it
-      "Files.Read.All",         // documents in OneDrive
-      "Sites.Read.All",         // documents in SharePoint
-      "Mail.Read",              // find a message
-      "Mail.Send",              // send as the person who connected — held by policy
-      "Calendars.ReadWrite",    // check availability, book
-      "Tasks.ReadWrite",        // To Do
+      "User.Read",              // who the connecting person is
+      "User.ReadBasic.All",     // find a colleague's name and address in the directory
     ].join(" "),
     scopeSep: " ",
     authParams: { prompt: "select_account" },
@@ -256,7 +247,14 @@ export async function decrypt(b64: string): Promise<string> {
 }
 
 /* ── authorize URL + token exchanges ───────────────────────────────────────── */
-export function buildAuthorizeUrl(id: ProviderId, clientId: string, state: string): string {
+/**
+ * `scopeOverride` asks for something other than the provider's connect-time set —
+ * used to request one more capability later, once somebody needs it. Pass the
+ * scopes already granted ALONGSIDE the new ones: the identity platform returns a
+ * token for what this request asks for, so dropping the old ones would quietly
+ * downgrade a working connection.
+ */
+export function buildAuthorizeUrl(id: ProviderId, clientId: string, state: string, scopeOverride?: string): string {
   const p = PROVIDERS[id];
   const u = new URL(p.authorizeUrl);
   u.searchParams.set("client_id", clientId);
@@ -264,11 +262,12 @@ export function buildAuthorizeUrl(id: ProviderId, clientId: string, state: strin
   u.searchParams.set("response_type", "code");
   u.searchParams.set("state", state);
   for (const [k, v] of Object.entries(p.authParams)) u.searchParams.set(k, v);
+  const requested = scopeOverride ?? p.scope;
   // Some providers (Calendly) grant access per user and take no scope param.
-  if (!p.scope) return u.toString();
+  if (!requested) return u.toString();
   // scope is joined the provider's way (Square wants '+', which URLSearchParams
   // would double-encode) — append it manually.
-  const scope = p.scope.split(" ").join(p.scopeSep);
+  const scope = requested.split(" ").filter(Boolean).join(p.scopeSep);
   const sep = u.search ? "&" : "?";
   return `${u.toString()}${sep}scope=${encodeURIComponent(scope).replace(/%2B/g, "+")}`;
 }
@@ -428,26 +427,55 @@ export async function hasPersonalConnection(
   return !!data;
 }
 
+/** What a connection was actually granted. Requested scopes and granted scopes are
+ *  not the same thing — a tenant can approve some and withhold others — so every
+ *  capability check reads this rather than assuming what we asked for. */
+export async function grantedScopes(
+  db: SupabaseClient, storeId: string, id: ProviderId, userKey = "",
+): Promise<string[]> {
+  const { data } = await db.from("oauth_connection")
+    .select("scope").eq("store_id", storeId).eq("provider", id)
+    .eq("user_key", userKey.trim().toLowerCase()).eq("status", "connected").maybeSingle();
+  const raw = (data as { scope?: string | null } | null)?.scope ?? "";
+  // Microsoft returns scopes fully qualified (https://graph.microsoft.com/Mail.Read);
+  // compare on the last segment so both forms match.
+  return raw.split(/[\s,]+/).filter(Boolean).map((s) => s.split("/").pop() ?? s);
+}
+
 /**
- * A one-off link this person can follow to connect their own account.
+ * A one-off link to connect an account, or to add one more capability to an
+ * account already connected.
  *
- * Minted server-side with their channel-verified email already inside the signed
- * state, so the assistant can offer it in chat without the link being something
- * anyone can retarget. It expires in fifteen minutes, which is long enough to
- * switch to a browser and short enough not to sit usable in a Teams history.
+ * Minted server-side with the target already inside the signed state — a verified
+ * email for a personal connection, empty for the organisation's — so the assistant
+ * can offer it in chat without the link being something anyone can retarget at
+ * somebody else. Fifteen minutes: long enough to switch to a browser, short enough
+ * not to sit usable in a Teams history.
+ *
+ * `scopes` asks for something beyond the connect-time set. Always pass what is
+ * already granted along with the new capability, or the returned token comes back
+ * narrower than the one it replaces.
  *
  * Returns null when the provider has no app credentials configured, so the caller
  * can say that plainly rather than handing out a link that dead-ends.
  */
-export async function personalConnectUrl(id: ProviderId, storeId: string, email: string): Promise<string | null> {
+export async function consentUrl(
+  id: ProviderId, storeId: string, userKey = "", scopes?: string[],
+): Promise<string | null> {
   const client = providerClient(id);
   if (!client) return null;
-  const key = email.trim().toLowerCase();
-  if (!key) return null;
+  const key = userKey.trim().toLowerCase();
   const state = await signState({
     sid: storeId, prov: id, uid: "", ukey: key,
     exp: Math.floor(Date.now() / 1000) + 900,
     n: crypto.randomUUID(),
   });
-  return buildAuthorizeUrl(id, client.clientId, state);
+  return buildAuthorizeUrl(id, client.clientId, state, scopes?.length ? scopes.join(" ") : undefined);
+}
+
+/** Connect a person's own account, with nothing beyond the connect-time set. */
+export async function personalConnectUrl(id: ProviderId, storeId: string, email: string): Promise<string | null> {
+  const key = email.trim().toLowerCase();
+  if (!key) return null;
+  return await consentUrl(id, storeId, key);
 }
