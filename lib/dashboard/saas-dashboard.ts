@@ -17,10 +17,10 @@ export type LeadRow = { type: string | null; created_at: string; status: string 
 
 /**
  * The SaaS/product dashboard: how the embedded assistant is performing as a
- * front line — conversations handled, leads captured, how well it self-serves,
- * and how fast it answers — over the last DASHBOARD_DAYS. Orders never appear;
- * a SaaS account doesn't take them. Reuses the shared conversation helpers so
- * this stays in lock-step with the rest of the analytics.
+ * front line — conversations handled, requests captured, how often it answers
+ * without needing a person, and how fast — over the last DASHBOARD_DAYS. Reuses
+ * the shared conversation helpers so this stays in lock-step with the rest of the
+ * analytics.
  */
 export function computeSaasDashboard(convs: ConvRow[], leads: LeadRow[]) {
   const days = lastNDays(DASHBOARD_DAYS);
@@ -67,6 +67,13 @@ export function computeSaasDashboard(convs: ConvRow[], leads: LeadRow[]) {
 
 export type SaasDashboardMetrics = ReturnType<typeof computeSaasDashboard>;
 
+/**
+ * Friendly names for request types we already know about. Everything else falls
+ * back to the type's own name, because the types are whatever the organisation
+ * defined — an access request, a leave request, an expense query. The old list
+ * named only an outbound sales funnel, which quietly implied that was the
+ * universe of things an assistant collects.
+ */
 const LEAD_TYPE_LABEL: Record<string, string> = {
   demo: "Demo requests",
   quote: "Quote / pricing",

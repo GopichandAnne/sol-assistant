@@ -38,7 +38,7 @@ export default async function LinkPage() {
       <header>
         <h1 className="font-display text-2xl">{isSaas ? "Embed & install" : "Web chat link"}</h1>
         <p className="text-muted-foreground text-sm">
-          {store.name} — {isSaas ? "your embed snippet, QR, and shareable chat link" : "your in-store QR and shareable chat link"}
+          {store.name} — your embed snippet, QR code, and shareable chat link
         </p>
       </header>
       <div className="bg-card rounded-lg border p-5">

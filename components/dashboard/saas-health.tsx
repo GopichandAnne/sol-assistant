@@ -62,8 +62,8 @@ export function SaasHealthView({ health, storeName }: { health: SaasHealth; stor
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Kpi icon={MessagesSquare} label="Conversations" value={String(h.totalConversations)} />
-            <Kpi icon={Gauge} label="Self-serve rate" value={h.selfServeRate == null ? "—" : `${h.selfServeRate}%`} hint="answered without a gap" />
-            <Kpi icon={UserPlus} label="Leads captured" value={String(h.leadsCaptured)} />
+            <Kpi icon={Gauge} label="Answered on its own" value={h.selfServeRate == null ? "—" : `${h.selfServeRate}%`} hint="no person needed" />
+            <Kpi icon={UserPlus} label="Requests captured" value={String(h.leadsCaptured)} />
             <Kpi icon={Clock} label="Avg response" value={fmtMs(h.avgResponseMs)} />
           </div>
 

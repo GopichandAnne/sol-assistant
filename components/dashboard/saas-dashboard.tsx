@@ -123,8 +123,8 @@ export function SaasDashboard({ metrics, storeName }: { metrics: SaasDashboardMe
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Conversations" value={m.totalConversations} />
-        <StatCard label="Leads captured" value={m.totalLeads} sub="demo · sales · support · careers" />
-        <StatCard label="Self-serve rate" value={m.selfServePct === null ? "—" : `${m.selfServePct}%`} sub="answered without a gap" />
+        <StatCard label="Requests captured" value={m.totalLeads} sub="things it collected for a person" />
+        <StatCard label="Answered on its own" value={m.selfServePct === null ? "—" : `${m.selfServePct}%`} sub="no person needed" />
         <StatCard label="Avg response" value={fmtResponse(m.avgResponseMs)} />
       </div>
 
@@ -132,15 +132,15 @@ export function SaasDashboard({ metrics, storeName }: { metrics: SaasDashboardMe
         <Card title="Conversations per day">
           <DailyChart days={m.days} values={m.convsPerDay} color="var(--teal)" />
         </Card>
-        <Card title="Leads captured per day">
+        <Card title="Requests per day">
           <DailyChart days={m.days} values={m.leadsPerDay} color="var(--coral)" />
         </Card>
       </div>
 
-      <Card title="Leads by type">
+      <Card title="Requests by type">
         <Bars
           rows={m.leadsByType.map((t) => ({ label: leadTypeLabel(t.type), count: t.count }))}
-          empty="No leads captured yet — they'll appear here once the assistant starts capturing demo, sales, support, or careers requests."
+          empty="Nothing captured yet — requests appear here once you define what the assistant should collect."
         />
       </Card>
 

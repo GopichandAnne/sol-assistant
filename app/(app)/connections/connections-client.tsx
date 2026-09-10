@@ -13,10 +13,12 @@ export type ConnStatus = { label: string | null };
 
 type Provider = { id: string; name: string; blurb: string; accent: string };
 
+// What an organisation can connect in one click. Square, a retail point-of-sale,
+// used to sit here offering "catalog & orders" — the provider still exists for any
+// account that had it, it simply is not something this product offers to set up.
 const CATALOG: Provider[] = [
   { id: "google", name: "Google", blurb: "Calendar — the assistant checks availability and books appointments.", accent: "#4285F4" },
   { id: "microsoft", name: "Microsoft 365", blurb: "Documents in SharePoint and OneDrive, the staff directory, and calendars. Each person connects their own account for their mail and tasks.", accent: "#0067b8" },
-  { id: "square", name: "Square", blurb: "Catalog & orders — stock lookups and order status in chat.", accent: "#111827" },
   { id: "hubspot", name: "HubSpot", blurb: "CRM — captured leads flow straight into your pipeline.", accent: "#ff7a59" },
   { id: "calendly", name: "Calendly", blurb: "Scheduling — the assistant shares your booking link and event types.", accent: "#006bff" },
 ];

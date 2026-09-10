@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronsUpDown, Store } from "lucide-react";
+import { Bot, Check, ChevronsUpDown } from "lucide-react";
 import { useStore } from "@/components/store/store-provider";
 import { setActiveStore } from "@/app/(app)/actions";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,12 @@ export function StoreSwitcher() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  // Single store: no switcher, just a label.
+  // One assistant: no switcher, just a label. The glyph names what is being
+  // switched between — assistants — and a shopfront said something else entirely.
   if (stores.length <= 1) {
     return (
       <div className="text-foreground flex items-center gap-2 px-2 text-sm font-medium">
-        <Store className="text-muted-foreground size-4" />
+        <Bot className="text-muted-foreground size-4" />
         {active.name}
       </div>
     );
@@ -49,7 +50,7 @@ export function StoreSwitcher() {
           disabled={pending}
         >
           <span className="flex min-w-0 items-center gap-2">
-            <Store className="text-muted-foreground size-4 shrink-0" />
+            <Bot className="text-muted-foreground size-4 shrink-0" />
             <span className="truncate">{active.name}</span>
           </span>
           <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />

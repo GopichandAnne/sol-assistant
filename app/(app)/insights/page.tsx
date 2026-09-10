@@ -6,7 +6,7 @@ import { ExternalLink, Telescope } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 const ERRORS: Record<string, string> = {
-  not_enabled: "Insights isn't enabled for this store.",
+  not_enabled: "Insights isn't enabled for this account.",
   not_configured: "Insights isn't configured yet. Contact support.",
   no_email: "Your account has no email on file, which Insights needs to sign you in.",
 };
@@ -51,7 +51,7 @@ export default async function InsightsPage({
       ) : (
         <p className="text-muted-foreground text-sm">
           {(error && ERRORS[error]) ||
-            "Ask your The Assistant admin to switch Insights on for this store."}
+            "Ask your administrator to switch Insights on for this account."}
         </p>
       )}
     </div>

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getActiveStore } from "@/lib/store/active-store";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { profileFor, homeHrefFor } from "@/lib/console-profile";
-import { ShieldCheck, UserCheck, Store as StoreIcon } from "lucide-react";
+import { ShieldCheck, UserCheck, Building2 as OrgIcon } from "lucide-react";
 import { Approvals, type Approval } from "@/components/activity/approvals";
 
 export const metadata: Metadata = { title: "Activity · The Assistant" };
@@ -109,7 +109,7 @@ export default async function ActivityPage() {
                     {r.acted_as ? (
                       <span className="text-teal-deep inline-flex items-center gap-1"><UserCheck className="size-3.5" /> {r.acted_as}</span>
                     ) : (
-                      <span className="text-muted-foreground inline-flex items-center gap-1"><StoreIcon className="size-3.5" /> the account</span>
+                      <span className="text-muted-foreground inline-flex items-center gap-1"><OrgIcon className="size-3.5" /> the account</span>
                     )}
                   </td>
                   <td className="p-3">

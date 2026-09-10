@@ -239,7 +239,7 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
                 <div className="flex items-center gap-2">
                   <span className="truncate font-medium text-sm">{t.name}</span>
                   {t.side_effect && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">writes</span>}
-                  {t.auth?.type === "identity" && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">as customer{t.auth.claim && t.auth.claim !== "token" ? ` · ${t.auth.claim}` : ""}</span>}
+                  {t.auth?.type === "identity" && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">as the person{t.auth.claim && t.auth.claim !== "token" ? ` · ${t.auth.claim}` : ""}</span>}
                   {t.auth?.type === "oauth" && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">via {provName(t.auth.provider)}</span>}
                 </div>
                 <p className="text-muted-foreground truncate text-xs">{t.description}</p>

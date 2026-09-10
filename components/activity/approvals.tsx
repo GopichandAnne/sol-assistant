@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, X, ShieldAlert, UserCheck, Store as StoreIcon, Loader2 } from "lucide-react";
+import { Check, X, ShieldAlert, UserCheck, Building2 as OrgIcon, Loader2 } from "lucide-react";
 import { decideActionRequest } from "@/app/(app)/activity/actions";
 
 export type Approval = {
@@ -82,7 +82,7 @@ export function Approvals({ initial }: { initial: Approval[] }) {
                   </span>
                 ) : (
                   <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-                    <StoreIcon className="size-3.5" /> the account
+                    <OrgIcon className="size-3.5" /> the account
                   </span>
                 )}
               </div>
