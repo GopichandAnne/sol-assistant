@@ -106,8 +106,8 @@ Deno.serve(async () => {
     new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString(),
   );
 
-  if (wasOk && !ok) await alert("🔴 Ask Rani health check FAILING", checks);
-  else if (!wasOk && ok) await alert("🟢 Ask Rani recovered", checks);
+  if (wasOk && !ok) await alert("🔴 The Assistant health check FAILING", checks);
+  else if (!wasOk && ok) await alert("🟢 The Assistant recovered", checks);
 
   return new Response(JSON.stringify({ ok, checks, at: new Date().toISOString() }), {
     status: ok ? 200 : 503,

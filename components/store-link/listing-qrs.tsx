@@ -167,7 +167,7 @@ function ListingRow({
   return (
     <div className="flex items-center gap-3 rounded-lg border p-2.5">
       <div ref={qrRef} className="bg-card shrink-0 rounded-md border p-1">
-        <QRCodeCanvas value={url} size={56} level="M" fgColor="#0f766e" />
+        <QRCodeCanvas value={url} size={56} level="M" fgColor="#e05a2b" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">

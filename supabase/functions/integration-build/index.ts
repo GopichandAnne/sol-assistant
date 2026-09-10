@@ -1,4 +1,4 @@
-// integration-build — the builder brain. The owner points Rani at an API (an
+// integration-build — the builder brain. The owner points the assistant at an API (an
 // OpenAPI/Swagger JSON URL + what they want it to do); we read the spec, let the
 // model pick the relevant operations, and turn each into a callable tool
 // (http_tool rows) the bot picks up automatically. Also lists/deletes tools.

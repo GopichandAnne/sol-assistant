@@ -17,7 +17,14 @@ export type TeamMember = {
   isSelf: boolean;
 };
 
-const APP_URL = "https://app.askrani.ai";
+/**
+ * Where an invited person lands when they follow the link in their email.
+ *
+ * This was hardcoded to the console of the product this one was carved out of, so
+ * every invitation sent a colleague to a different application entirely. Read from
+ * the environment, with this product's own deployment as the fallback.
+ */
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://sol-assistant.vercel.app").replace(/\/$/, "");
 
 /** Platform admin OR an owner of this store may manage its team. */
 async function requireTeamManage(storeId: string) {

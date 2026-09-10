@@ -1,5 +1,5 @@
 // teams-messages — Microsoft Teams front door (Bot Framework messaging endpoint).
-// Rani as a teammate in Teams: DMs + @mentions reach the same core (generateTurnReply)
+// The assistant as a teammate in Teams: DMs + @mentions reach the same core (generateTurnReply)
 // and the user's Azure AD identity flows through resolveIdentity.
 //
 // SETUP (when an Azure bot is ready):

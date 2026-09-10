@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
   if (!store) return json({ error: "unknown store" }, 404);
 
   // Authorize: OWNER of this store, or a platform admin. Connecting third-party
-  // accounts is owner-level (it grants Rani access to their systems).
+  // accounts is owner-level (it grants the assistant access to their systems).
   const [staffRes, adminRes] = await Promise.all([
     db.from("staff").select("role").eq("store_id", store.id).eq("user_id", userId).eq("status", "active").maybeSingle(),
     db.from("platform_admins").select("user_id").eq("user_id", userId).maybeSingle(),

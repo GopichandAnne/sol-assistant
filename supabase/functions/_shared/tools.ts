@@ -304,7 +304,7 @@ async function executeSearchKnowledge(
     }),
   );
   // Nothing relevant on file → the customer wanted something we haven't taught
-  // Rani. Log it so the owner can fill exactly this gap (Lever B).
+  // the assistant. Log it so the owner can fill exactly this gap (Lever B).
   if (snippets.length === 0) await logKnowledgeGap(db, store, sessionId, query);
   return { snippets, count: snippets.length };
 }
@@ -1119,7 +1119,7 @@ const REDEEM_CREDIT_DECL: FunctionDeclaration = {
 };
 
 /** This customer's spendable store-credit balance (+ what's still in the hold
- *  window, and the soonest expiry) so Rani can answer "how much credit do I have". */
+ *  window, and the soonest expiry) so it can answer "how much credit do I have". */
 async function executeMyCredit(
   db: SupabaseClient,
   store: Store,
@@ -1918,7 +1918,7 @@ export function buildToolset(
     };
     declarations.push(httpToolDeclaration(t));
   }
-  // MCP tools — discovered from the owner's connected MCP servers. Rani picks
+  // MCP tools — discovered from the owner's connected MCP servers. The model picks
   // them by context like any other tool; execution proxies to the server.
   for (const t of mcpTools) {
     if (executors[t.name]) continue; // never override a built-in / connector / http tool

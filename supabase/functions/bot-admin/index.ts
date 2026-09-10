@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
         if (!/^https?:\/\//i.test(url)) return json({ error: "A valid http(s) URL is required" }, 400);
         let html = "";
         try {
-          const r = await fetch(url, { headers: { "user-agent": "AskRani-KB/1.0 (+https://askrani.ai)", accept: "text/html" } });
+          const r = await fetch(url, { headers: { "user-agent": "TheAssistant-KB/1.0 (+https://wearesol.com)", accept: "text/html" } });
           if (!r.ok) return json({ error: `Couldn't fetch that URL (HTTP ${r.status}).` }, 200);
           html = (await r.text()).slice(0, 500_000);
         } catch (e) {

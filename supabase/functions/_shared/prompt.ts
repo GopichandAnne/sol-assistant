@@ -325,7 +325,7 @@ export function buildSystemInstruction(
   if (c.offTopicHandling) out.push(`\n## Off-topic requests\n${c.offTopicHandling}`);
 
   // Promotions: owner-authored, woven in naturally. Guardrails travel WITH the
-  // section so an owner can't accidentally turn Rani into a billboard, and so
+  // section so an owner can't accidentally turn it into a billboard, and so
   // request-mode price safety still holds.
   if (c.promotions && c.promotions.trim()) {
     out.push(

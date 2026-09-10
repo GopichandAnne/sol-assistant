@@ -2,7 +2,7 @@
 //
 // UNLIKE Stripe (store's own key, store's cost), TTS is billed to OUR platform
 // key, so cost control is load-bearing: every clip is cached in Storage keyed by
-// (voice, text), and the caller caps text length. Rani's stock serving lines
+// (voice, text), and the caller caps text length. The stock lines
 // repeat constantly, so the cache absorbs most of the volume and only her unique
 // per-question menu explanations ever hit OpenAI.
 

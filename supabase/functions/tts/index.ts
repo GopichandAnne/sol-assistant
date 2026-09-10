@@ -1,6 +1,6 @@
 // tts — premium voice for the diner surface (OpenAI text-to-speech).
 //
-// Returns MP3 audio for one of Rani's lines, in the store's chosen female voice.
+// Returns MP3 audio for one of the assistant's lines, in the chosen voice.
 // Token-validated like web-cart (verify_jwt stays on; the browser sends the anon
 // key). Premium voice is ON for all catalogue stores; an owner can opt out with
 // agent_config tts_enabled=false, in which case the diner falls back to the free
@@ -21,7 +21,7 @@ function json(obj: unknown, status = 200): Response {
   return new Response(JSON.stringify(obj), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 }
 
-const MAX_CHARS = 600; // cost guard — Rani's lines are short; long input is truncated
+const MAX_CHARS = 600; // cost guard — replies are short; long input is truncated
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });

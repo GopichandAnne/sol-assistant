@@ -1,9 +1,13 @@
-import { RaniMark } from "@/components/app-shell/rani-mark";
+import { SunMark } from "@/components/app-shell/sun-mark";
 import { cn } from "@/lib/utils";
 
 /**
- * Branded loading state — a spinning teal ring around a bobbing the assistant. Used as the
+ * Branded loading state — Sol's badge, with a ring turning around it. Used as the
  * route-transition overlay (app/(app)/loading.tsx) and anywhere a page waits.
+ *
+ * The ring turns rather than the badge: the mark carries the sun motif and reads
+ * as itself only the right way up, so spinning it would be a small piece of brand
+ * vandalism on the screen people see most often.
  */
 export function BrandLoader({
   label = "Loading…",
@@ -20,11 +24,17 @@ export function BrandLoader({
       )}
     >
       <div className="relative grid size-20 place-items-center">
-        {/* spinning gradient ring */}
-        <span className="border-teal-mist border-t-teal absolute inset-0 animate-spin rounded-full border-4" />
-        {/* soft glow */}
-        <span className="bg-teal/10 absolute inset-1 rounded-full blur-md" />
-        <RaniMark className="animate-bob w-9" />
+        {/* the turning ring, in Sol orange */}
+        <span
+          className="absolute inset-0 animate-spin rounded-full border-4"
+          style={{ borderColor: "var(--sol-orange-pale)", borderTopColor: "var(--sol-orange)" }}
+        />
+        {/* a soft warmth behind the badge */}
+        <span
+          className="absolute inset-1 rounded-full blur-md"
+          style={{ background: "color-mix(in srgb, var(--sol-orange) 12%, transparent)" }}
+        />
+        <SunMark className="animate-bob w-9" />
       </div>
       <p className="text-muted-foreground animate-pulse text-sm">{label}</p>
     </div>

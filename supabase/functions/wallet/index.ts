@@ -1,7 +1,7 @@
 // wallet — the shared credit wallet API for the "one account, one wallet" umbrella.
 //
-// Rani is the billing hub: every store has a credit wallet (migration 0080) that
-// the chatbot debits locally. This endpoint lets Ask Rani INSIGHTS (a separate
+// This project is the billing hub: every store has a credit wallet (migration 0080) that
+// the chatbot debits locally. This endpoint lets a partner service (a separate
 // Supabase project) read and debit that SAME wallet, so a business's monitoring /
 // deep-read / report spends draw from the one purse its chatbot usage draws from.
 //

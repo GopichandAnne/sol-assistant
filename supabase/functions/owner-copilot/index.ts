@@ -1,8 +1,8 @@
 // owner-copilot — the always-on in-panel Setup & Help Copilot.
 //
-// The owner chats with Rani to (a) get help ("how do I get my QR?", "what are
+// The administrator chats with the copilot to (a) get help ("how do I get my QR?", "what are
 // credits?") and (b) CHANGE their store by natural language ("make the greeting
-// friendlier", "we're closed Sundays now", "we do delivery too"). Rani answers and
+// friendlier", "it should never promise a date"). The copilot answers and
 // EXECUTES config edits through owner-scoped tools — so a non-technical owner never
 // touches a settings screen. Same function-calling engine as the customer bot, with
 // an owner toolset. Metered against the store's wallet (kind owner_copilot).
@@ -24,29 +24,37 @@ const CORS = {
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 
 // The product knowledge the copilot answers "how do I / what is" from. Kept short
-// and plain — this is what a non-technical owner needs, in the copilot's words.
-const PRODUCT_HELP = `About Ask Rani (answer owner questions from this):
-- Rani is the AI assistant that serves this store's customers on a web page/QR link (works today) and on WhatsApp (see below).
-- Catalog: add what you sell under Catalog — you can snap a photo of a menu/price list and Rani reads it in. Prices/photos live there.
-- Agent: your bot's personality, greeting and knowledge — but you can just tell ME to change these.
-- Web Chat / QR: under "Web Chat" you get a shareable link + a printable QR customers scan to chat with Rani.
-- Members, Campaigns, Redemptions, Post-reviews: loyalty + "promote & earn" (customers share/post for store credit).
-- Credits: usage runs on credits; you started with 150 free. Monitoring competitors (Ask Rani Insights) also uses the same credits.
-- Going live on WhatsApp is a guided, DONE-FOR-YOU setup (a person helps you connect your number) — offer to note their interest so the team reaches out; don't tell them to do it themselves.`;
+// and plain — this is what a non-technical administrator needs, in the copilot's
+// own words.
+//
+// It was still describing the product this one was carved out of: a catalogue you
+// photograph, a QR code customers scan, WhatsApp go-live, loyalty campaigns, 150
+// free credits, a competitor-monitoring add-on. An administrator asking "what are
+// credits?" was being told about another company's product. Rewritten for what
+// this one actually is.
+const PRODUCT_HELP = `About The Assistant (answer questions from this):
+- The Assistant answers questions for the people inside this organisation and takes action in the systems it is connected to. It works in Microsoft Teams, in Slack, and in a web chat.
+- Knowledge: the documents and policies it answers from. Upload a file, paste text, or point it at a page. It never answers from anything you have not given it.
+- Agent: its brief, its personality and how it should sound — but you can just tell ME to change these.
+- Connections: the systems it can reach. Paste one endpoint, point it at an API spec, connect an MCP server, or connect Microsoft 365 in a click. No developer needed for any of those.
+- Approvals: a connected action can be set to Hold, so it never runs on its own — a named person approves it, and approving actually performs it.
+- Escalations: when it cannot answer, it opens a request and reaches the people you have named, in Teams, Slack or by email. Their answer goes back to whoever asked, and it learns from it.
+- Channels: Embed & install has the one-line snippet for a web page. Teams and Slack are connected from the same place.
+- Credits: usage runs on credits from the account's shared pool. Every answer and every tool call is metered, and you can set a threshold to be warned before you run low.`;
 
 function sys(storeName: string, isOwner: boolean): string {
-  return `You are Rani, the friendly in-app assistant helping the OWNER/STAFF of "${storeName}" run their store.
+  return `You are the setup assistant for "${storeName}", helping the people who ADMINISTER it get it working.
 
 You do TWO things:
-1) ANSWER their questions about the product and their store, simply and warmly.
-2) CHANGE their store settings when they ask, by calling the tools — then confirm in plain words what you changed.
+1) ANSWER their questions about the product and their own assistant, simply and clearly.
+2) CHANGE their settings when they ask, by calling the tools — then confirm in plain words what you changed.
 
 RULES:
-- Detect the language they write in and reply in it. Be warm, simple, non-technical (no jargon).
+- Detect the language they write in and reply in it. Be direct, plain, non-technical (no jargon).
 - Before reading or changing anything, you may call read_settings to see the current state.
-- For any CHANGE, call the right tool, then tell them clearly what's now set. For a big or destructive change, confirm first.
-- ${isOwner ? "This user is the OWNER — they can change settings." : "This user is STAFF, not the owner — you can answer questions but you CANNOT change settings; if they ask to change something, kindly say only the owner can."}
-- If they want to add products, guide them to Catalog (they can snap a photo of their menu) — you don't edit the catalog yourself.
+- For any CHANGE, call the right tool, then tell them clearly what is now set. For a big or destructive change, confirm first.
+- ${isOwner ? "This user is the OWNER — they can change settings." : "This user is STAFF, not the owner — you can answer questions but you CANNOT change settings; if they ask to change something, say plainly that only the owner can."}
+- To give it something to answer from, guide them to Knowledge. To let it reach a system, guide them to Connections. You do not edit either yourself.
 - Keep replies short.
 
 ${PRODUCT_HELP}`;
@@ -76,7 +84,7 @@ const DECLARATIONS: FunctionDeclaration[] = [
   },
   {
     name: "set_persona",
-    description: "Set how Rani talks to this store's customers (tone/personality), e.g. warmer, more professional, more playful.",
+    description: "Set how the assistant talks to people (tone/personality), e.g. warmer, more direct, more formal.",
     parameters: { type: "object", properties: { text: { type: "string", description: "2-3 sentences describing the tone/persona." } }, required: ["text"] },
   },
   {
@@ -98,17 +106,17 @@ const DECLARATIONS: FunctionDeclaration[] = [
   },
   {
     name: "list_open_questions",
-    description: "List real questions customers recently asked Rani that it could NOT answer (they aren't in the store's knowledge yet), most-asked first. Each has a short `code`. Use it to show the owner what shoppers want, then help them fill the gaps.",
+    description: "List real questions colleagues recently asked that the assistant could NOT answer (they aren't in the knowledge base yet), most-asked first. Each has a short `code`. Use it to show the administrator what people need, then help them fill the gaps.",
     parameters: { type: "object", properties: {}, required: [] },
   },
   {
     name: "answer_customer_question",
-    description: "Save the owner's answer to one of the open customer questions from list_open_questions. Pass its `code` and the `answer` in the store's voice. This makes Rani answer that question automatically from now on, and clears it from the open list.",
+    description: "Save the administrator's answer to one of the open questions from list_open_questions. Pass its `code` and the `answer` in the organisation's voice. This makes the assistant answer that question automatically from now on, and clears it from the open list.",
     parameters: {
       type: "object",
       properties: {
         code: { type: "string", description: "The code of the question from list_open_questions, e.g. 'g1'." },
-        answer: { type: "string", description: "The answer, in plain language — what Rani should tell customers who ask this." },
+        answer: { type: "string", description: "The answer, in plain language — what the assistant should tell anyone who asks this." },
       },
       required: ["code", "answer"],
     },
@@ -167,7 +175,7 @@ Deno.serve(async (req) => {
   }
 
   // ── Lever B: the store's open knowledge gaps (questions customers asked that
-  // Rani couldn't answer), grouped by near-identical wording, most-asked first.
+  // the assistant couldn't answer), grouped by near-identical wording, most-asked first.
   // The code→rows map lets answer_customer_question resolve exactly what it shows.
   const gapIndex = new Map<string, { ids: string[]; question: string }>();
   const gapList: { code: string; question: string; times: number }[] = [];
@@ -262,7 +270,7 @@ Deno.serve(async (req) => {
         try { await db.from("knowledge_gap").update({ status: "resolved", resolved_at: new Date().toISOString() }).in("id", g.ids); } catch { /* non-fatal */ }
         try { await syncSavedQaToIndex(db, store.id); await reindexKnowledge(db, store.id, 200); } catch { /* index best-effort */ }
         changed.push("answered_question");
-        return { ok: true, note: `Saved — Rani will now answer "${g.question}" on its own.` };
+        return { ok: true, note: `Saved — it will now answer "${g.question}" on its own.` };
       }
       return { ok: false, note: "unknown tool" };
     },
@@ -278,18 +286,18 @@ Deno.serve(async (req) => {
   if (contents.length === 0) {
     if (openCount > 0 && isOwner) {
       const top = gapList.slice(0, 3).map((g) => `“${g.question}”`).join(", ");
-      const lead = openCount === 1 ? "a customer recently asked something" : `${openCount} things came up that customers recently asked`;
+      const lead = openCount === 1 ? "someone recently asked something" : `${openCount} things came up that people recently asked`;
       return json({
         reply: `Hi! Heads-up: ${lead} that I couldn't answer — like ${top}. Want to add answers so I can handle them next time? Or ask me anything, or tell me what to change.`,
         changed: [],
       });
     }
-    return json({ reply: "Hi! I'm Rani. Ask me anything about your store, or tell me what to change — like 'make the greeting friendlier' or 'we're closed Sundays now'.", changed: [] });
+    return json({ reply: "Hi. Ask me anything about your assistant, or tell me what to change — like 'make the greeting friendlier' or 'it should never promise a delivery date'.", changed: [] });
   }
 
   // When gaps exist, tell the copilot to champion them proactively.
   const gapNudge = openCount > 0 && isOwner
-    ? `\n\nDEMAND SIGNAL — HIGHEST VALUE: ${openCount} question(s) customers recently asked that you could NOT answer (they aren't in this store's knowledge yet). Filling these is the single most useful thing the owner can do. When it fits the conversation, bring it up: call list_open_questions, show the owner the top few in plain words, and offer to answer them. When the owner gives an answer, call answer_customer_question(code, answer) so Rani handles it automatically next time. Always frame it as opportunity ("shoppers asked X — want to add an answer?"), never as a failure.`
+    ? `\n\nDEMAND SIGNAL — HIGHEST VALUE: ${openCount} question(s) customers recently asked that you could NOT answer (they aren't in this store's knowledge yet). Filling these is the single most useful thing the owner can do. When it fits the conversation, bring it up: call list_open_questions, show the owner the top few in plain words, and offer to answer them. When the owner gives an answer, call answer_customer_question(code, answer) so it is handled automatically next time. Always frame it as an opportunity ("people asked X — want to add an answer?"), never as a failure.`
     : "";
 
   const { text } = await generateReply(sys(store.store_display_name ?? store.slug, isOwner) + gapNudge, contents, toolset, {

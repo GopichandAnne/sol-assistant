@@ -70,7 +70,7 @@ export function pickRuleForPlatform(rules: PostRule[], platform: string | null):
     rules.find((r) => !r.platform) ?? null;
 }
 
-/** One-line payout summary for a platform rule, for Rani to quote the offer. */
+/** One-line payout summary for a platform rule, for the assistant to quote the offer. */
 export function describeRuleOffer(rule: PostRule): string {
   const name = rule.platform ? rule.platform[0].toUpperCase() + rule.platform.slice(1) : "Any platform";
   const base = (rule.amount_model === "tier" || rule.amount_model === "format")

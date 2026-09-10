@@ -56,7 +56,7 @@ export async function composeCardPng(spec: CardSpec): Promise<Uint8Array> {
             ],
           },
         },
-        textNode("Ask Rani", { fontSize: 30, color: "#aaaaaa" }),
+        textNode("The Assistant", { fontSize: 30, color: "#aaaaaa" }),
       ],
     },
   };

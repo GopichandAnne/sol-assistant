@@ -1,6 +1,6 @@
-// mcp — connect & manage remote MCP servers for a store. The owner points Rani
+// mcp — connect & manage remote MCP servers for a store. The owner points the assistant
 // at an MCP server URL; we handshake + discover its tools (tools/list) and
-// register them so Rani can call them by context at chat time (see _shared/mcp.ts).
+// register them so they can be called by context at chat time (see _shared/mcp.ts).
 // Owner-authed (verify_jwt ON). Store-level auth only: an API key is AES-GCM
 // encrypted into the vault, or a broker OAuth provider is referenced — the model
 // never sees a credential.

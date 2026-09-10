@@ -120,7 +120,7 @@ async function processOne(db: any, row: any): Promise<"sent" | "skipped"> {
 function buildNudgeInstruction(storeName: string, config: any): string {
   const out: string[] = [];
   out.push(
-    `You are Rani, the assistant for ${storeName}. A customer chatted with you and then ` +
+    `You are the assistant for ${storeName}. Someone chatted with you and then ` +
       `went quiet for a few minutes. The conversation so far is shown.`,
   );
   out.push(

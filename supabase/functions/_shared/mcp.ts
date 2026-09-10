@@ -1,4 +1,4 @@
-// MCP runtime — lets Rani call remote (Streamable-HTTP) MCP servers as tools.
+// MCP runtime — lets the assistant call remote (Streamable-HTTP) MCP servers as tools.
 // An owner connects a server; we discover its tools (tools/list) and register
 // them; at chat time the model picks one by context and we proxy the call
 // (tools/call). Store-level auth only, reusing the vault (encrypted api key) and
@@ -140,7 +140,7 @@ async function openSession(
     params: {
       protocolVersion: PROTOCOL_VERSION,
       capabilities: {},
-      clientInfo: { name: "AskRani", version: "1.0" },
+      clientInfo: { name: "TheAssistant", version: "1.0" },
     },
   });
   if (!init.message || init.message.error) {

@@ -1,11 +1,11 @@
 // detect-business — the "one question" onboarding auto-fill.
 //
-// Rani's setup interview learns a single identifier from the owner — a street
+// The setup interview learns a single identifier from the owner — a street
 // ADDRESS (a local storefront) or a WEBSITE (an online/product company) — and calls
 // this to fill in everything else from public data, so the owner CONFIRMS instead
 // of typing it all out. We borrow Insights' discovery (Google Places + a homepage
-// read) via the shared-secret contract, exactly like Insights borrows Rani's
-// Whisper: Rani holds no Places/crawl stack, Insights holds no Rani session.
+// read) via the shared-secret contract, exactly like the partner service borrows our
+// Whisper: we hold no Places/crawl stack, it holds no session of ours.
 //
 // Un-metered on purpose: a place-details lookup is a few tenths of a cent, and
 // eating that to make setup frictionless is worth more than the charge. The deep,

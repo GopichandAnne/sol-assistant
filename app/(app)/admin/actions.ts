@@ -81,7 +81,14 @@ export async function onboardStore(input: OnboardInput): Promise<ActionResult<{ 
 // If the person already has an account, they're linked immediately. If not, we
 // invite them (creates the account + emails a sign-in link) and link the store,
 // so they land straight in it the first time they log in.
-const APP_URL = "https://app.askrani.ai";
+/**
+ * Where an invited person lands when they follow the link in their email.
+ *
+ * This was hardcoded to the console of the product this one was carved out of, so
+ * every invitation sent a colleague to a different application entirely. Read from
+ * the environment, with this product's own deployment as the fallback.
+ */
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://sol-assistant.vercel.app").replace(/\/$/, "");
 
 export async function assignOwner(input: {
   storeId: string;

@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
   if (pausedRow?.web_chat_paused) {
     return json({
       reply:
-        "🌙 Rani is taking a break right now and will be back soon. In the meantime, please ask a store associate for help. Thanks for your patience!",
+        "The assistant is paused right now and will be back soon. In the meantime, please ask your team directly. Thanks for your patience.",
       paused: true,
     });
   }

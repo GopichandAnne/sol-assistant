@@ -57,8 +57,8 @@ export default function GlobalError({
         style={{
           margin: 0,
           fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
-          background: "#faf9f6",
-          color: "#1b1a17",
+          background: "#f4f4f2",
+          color: "#242f36",
         }}
       >
         <div style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 24, textAlign: "center" }}>
@@ -68,7 +68,7 @@ export default function GlobalError({
                 width: 22,
                 height: 22,
                 margin: "0 auto 14px",
-                border: "2px solid #0f766e",
+                border: "2px solid #e05a2b",
                 borderTopColor: "transparent",
                 borderRadius: "50%",
                 animation: "arspin .8s linear infinite",
@@ -80,7 +80,7 @@ export default function GlobalError({
               onClick={() => window.location.reload()}
               style={{
                 fontSize: 14,
-                color: "#0f766e",
+                color: "#e05a2b",
                 background: "none",
                 border: "none",
                 cursor: "pointer",

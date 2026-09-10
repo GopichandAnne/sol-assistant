@@ -88,9 +88,9 @@ export function TableQrs({
       `<!doctype html><html><head><title>${storeName} — dine-in QR codes</title><style>` +
         `body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:24px;color:#0c1222}` +
         `.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}` +
-        `.cell{border:1px solid #ccfbf1;border-radius:14px;padding:16px;text-align:center;page-break-inside:avoid}` +
+        `.cell{border:1px solid #ffe1d1;border-radius:14px;padding:16px;text-align:center;page-break-inside:avoid}` +
         `.cell img{width:100%;max-width:190px;height:auto}` +
-        `.lbl{font-weight:600;font-size:18px;margin-top:10px;color:#0f766e}` +
+        `.lbl{font-weight:600;font-size:18px;margin-top:10px;color:#e05a2b}` +
         `.sub{color:#6b7280;font-size:11px;margin-top:3px}` +
         `</style></head><body><div class="grid">${cells}</div></body></html>`,
     );
@@ -205,7 +205,7 @@ function SpotCard({ storeSlug, label, url }: { storeSlug: string; label: string;
   return (
     <div className="tqr-card flex flex-col items-center gap-2 rounded-lg border p-3" data-label={label}>
       <div ref={ref} className="bg-card rounded-md border p-1.5">
-        <QRCodeCanvas value={url} size={92} level="M" fgColor="#0f766e" />
+        <QRCodeCanvas value={url} size={92} level="M" fgColor="#e05a2b" />
       </div>
       <p className="text-center text-xs font-medium">{label}</p>
       <div className="flex gap-1">

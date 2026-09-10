@@ -1,5 +1,5 @@
 // The OAuth broker — connect a store to third-party providers (Google, Square,
-// HubSpot, …) so Rani can act in their systems. This module holds the provider
+// HubSpot, …) so the assistant can act in their systems. This module holds the provider
 // CATALOG, the signed-state helpers, AES-GCM token encryption, the code→token and
 // refresh exchanges, and the token vault (oauth_connection).
 //
@@ -374,7 +374,7 @@ export async function getAccessToken(
 }
 
 export async function disconnect(db: SupabaseClient, storeId: string, id: ProviderId, userKey = ""): Promise<void> {
-  // Best-effort: tell the provider to forget the grant, so "Disconnect" in Rani
+  // Best-effort: tell the provider to forget the grant, so "Disconnect" in the console
   // actually revokes access upstream — not just deletes our stored token. Never
   // let a revoke failure (already-expired token, network) block the local delete.
   try {

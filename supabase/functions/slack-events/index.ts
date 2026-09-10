@@ -1,4 +1,4 @@
-// slack-events — Slack front door (Events API). Rani as a teammate in Slack: DMs and
+// slack-events — Slack front door (Events API). The assistant as a teammate in Slack: DMs and
 // @mentions reach the SAME core as web/WhatsApp (generateTurnReply), and the Slack
 // user's verified identity flows through resolveIdentity so the bot can act as them.
 //

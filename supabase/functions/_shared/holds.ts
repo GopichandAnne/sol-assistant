@@ -1,12 +1,12 @@
 // Hold → ticket → notify. When a WRITE tool is held by policy (action_policy =
 // 'hold'), the executor returns { held: true } and never runs the action. This
 // module turns that hold into something real: a durable APPROVAL REQUEST a person
-// can see and resolve, plus a notification to the team — so the promise Rani makes
+// can see and resolve, plus a notification to the team — so the promise the assistant makes
 // ("I've opened a request and flagged it for your team, nothing's changed") is
 // literally true, not a polite fiction.
 //
 // Never stores credentials or tokens — a delegated-identity hold records a human
-// label for who Rani was acting as, never the token. Best-effort: a routing or
+// label for who it was acting as, never the token. Best-effort: a routing or
 // notify failure must never break the chat (the write was already safely blocked).
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";

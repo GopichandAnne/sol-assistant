@@ -29,7 +29,7 @@ Deno.test("classify: a Teams message is answered + fields extracted", () => {
 });
 
 Deno.test("classify: @mention chips are stripped from text", () => {
-  const c = classifyActivity({ ...base, text: "<at>Rani</at> what's my plan?" });
+  const c = classifyActivity({ ...base, text: "<at>Assistant</at> what's my plan?" });
   assertEquals(c.event?.text, "what's my plan?");
 });
 

@@ -5,9 +5,9 @@
 // here so voice works on every owner's phone.
 //
 // Two callers, two auth paths (verify_jwt=false; we authenticate ourselves):
-//   • Rani's own browser users  → Authorization: Bearer <user JWT> (validated).
-//   • Ask Rani INSIGHTS (server) → the shared secret INSIGHTS_OPS_SECRET
-//     (x-ops-secret or Bearer), so Insights borrows Rani's OpenAI key instead of
+//   • our own browser users     → Authorization: Bearer <user JWT> (validated).
+//   • a partner service (server) → the shared secret INSIGHTS_OPS_SECRET
+//     (x-ops-secret or Bearer), so it borrows this project's OpenAI key instead of
 //     needing its own — same governed-contract pattern as ops-slice / wallet.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -19,8 +19,8 @@ const CORS = {
 };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 
-/** Validate a Rani end-user's JWT (the browser path). */
-async function isRaniUser(token: string): Promise<boolean> {
+/** Validate a console user's JWT (the browser path). */
+async function isConsoleUser(token: string): Promise<boolean> {
   try {
     const url = Deno.env.get("SUPABASE_URL");
     const anon = Deno.env.get("SUPABASE_ANON_KEY");
@@ -35,13 +35,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
-  // ── auth: shared secret (Insights server) OR a valid Rani user JWT (browser) ──
+  // ── auth: shared secret (partner server) OR a valid console user JWT (browser) ──
   const secret = Deno.env.get("INSIGHTS_OPS_SECRET");
   const authz = req.headers.get("Authorization") ?? "";
   const bearer = authz.startsWith("Bearer ") ? authz.slice(7) : "";
   const providedSecret = req.headers.get("x-ops-secret") ?? bearer;
   let authed = !!secret && providedSecret === secret;
-  if (!authed && bearer) authed = await isRaniUser(bearer);
+  if (!authed && bearer) authed = await isConsoleUser(bearer);
   if (!authed) return json({ error: "unauthorized" }, 401);
 
   const key = Deno.env.get("OPENAI_API_KEY");

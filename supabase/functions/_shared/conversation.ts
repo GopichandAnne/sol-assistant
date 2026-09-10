@@ -44,7 +44,7 @@ import {
 } from "./followup.ts";
 
 /**
- * Produce Rani's reply for one turn: load config + history, assemble the
+ * Produce the assistant's reply for one turn: load config + history, assemble the
  * prefix-first prompt, and run the Gemini function-calling loop with the store's
  * toolset (search_products; search_knowledge in 3b). No routing gate, logging,
  * or WhatsApp send — callers layer those on. Reused by the webhook and the

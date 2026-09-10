@@ -462,7 +462,7 @@ export function StoreLinkPanel({
       <div className={active ? "" : "pointer-events-none opacity-50"}>
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
           <div ref={qrRef} className="bg-card rounded-xl border p-3">
-            <QRCodeCanvas value={url || site} size={168} level="M" includeMargin fgColor="#0f766e" />
+            <QRCodeCanvas value={url || site} size={168} level="M" includeMargin fgColor="#e05a2b" />
           </div>
 
           <div className="min-w-0 flex-1 space-y-3">
