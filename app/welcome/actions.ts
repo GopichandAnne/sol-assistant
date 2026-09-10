@@ -51,7 +51,7 @@ const REQUEST_TYPE_PRESETS: Record<string, { key: string; label: string; descrip
  *   • seed the agent from the business-type preset (sensible bot from day one)
  *   • the credit wallet + 150 trial are created automatically by the 0080 trigger
  * Optionally attaches an email to the auth user so the umbrella can key the account
- * by email (the Insights SSO link). Sets the new store active and returns its slug.
+ * by email. Sets the new assistant active and returns its slug.
  */
 export async function createMyStore(input: {
   businessName: string;

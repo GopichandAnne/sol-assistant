@@ -14,7 +14,6 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
-  Telescope,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -34,8 +33,6 @@ export type NavItem = {
   vocabKey?: "catalogNav";
   /** when set, shown only for these stores.business_type values. */
   businessTypes?: string[];
-  /** when set, shown only for stores granted this entitlement (see StoreAccess). */
-  entitlement?: "insights";
   /** when set, shown only for these console profiles (local | saas). Absent = all. */
   profiles?: ConsoleProfile[];
   /** optional per-profile label override (e.g. "Web Chat" → "Embed & install" for saas). */
@@ -59,7 +56,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Activity", href: "/activity", icon: ScrollText, available: true, ownerOnly: true },
   { label: "Inbox", href: "/inbox", icon: Inbox, available: true },
   { label: "Dashboard", href: "/dashboard", icon: BarChart3, available: true, ownerOnly: true },
-  { label: "Insights", href: "/insights", icon: Telescope, available: true, ownerOnly: true, entitlement: "insights" },
   { label: "Credits", href: "/billing", icon: Coins, available: true, ownerOnly: true },
   { label: "Settings", href: "/settings", icon: Settings, available: true, ownerOnly: true },
   // ── Platform admin (super admin) — store-agnostic ──

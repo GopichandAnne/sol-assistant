@@ -3,12 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { onboardStore, setInsightsAccess } from "@/app/(app)/admin/actions";
+import { onboardStore } from "@/app/(app)/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -28,7 +27,7 @@ import {
 import { StoreLinkPanel } from "@/components/store-link/store-link-panel";
 import { TeamManager } from "@/components/team/team-manager";
 import { BUSINESS_PRESETS, presetFor } from "@/lib/business-presets";
-import { Building2, Plus, QrCode, Telescope, Users } from "lucide-react";
+import { Building2, Plus, QrCode, Users } from "lucide-react";
 
 export type StoreRow = {
   id: string;
@@ -39,9 +38,6 @@ export type StoreRow = {
   whatsappStatus: string | null;
   createdAt: string | null;
   owners: string[];
-  insightsEnabled: boolean;
-  /** Most recent Insights access change (audit) for this store, if any. */
-  lastAccessChange: { email: string | null; at: string; enabled: boolean } | null;
 };
 
 export function StoresView({ initial }: { initial: StoreRow[] }) {
@@ -101,16 +97,8 @@ export function StoresView({ initial }: { initial: StoreRow[] }) {
                       <span className="text-destructive">No owner assigned yet</span>
                     )}
                   </p>
-                  {s.lastAccessChange && (
-                    <p className="text-muted-foreground text-xs">
-                      Insights {s.lastAccessChange.enabled ? "granted" : "revoked"}
-                      {s.lastAccessChange.email ? ` by ${s.lastAccessChange.email}` : ""} ·{" "}
-                      {timeAgo(s.lastAccessChange.at)}
-                    </p>
-                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <InsightsToggle storeId={s.id} initial={s.insightsEnabled} />
                   <Button variant="outline" size="sm" onClick={() => setLinkFor(s)}>
                     <QrCode className="size-4" /> Link &amp; QR
                   </Button>
@@ -167,54 +155,6 @@ export function StoresView({ initial }: { initial: StoreRow[] }) {
   );
 }
 
-/** Relative "2h ago" / "3d ago" label from an ISO timestamp. */
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.round(diff / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.round(h / 24);
-  if (d < 30) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
-
-/** Platform-admin switch that grants/revokes Insights access per store. */
-function InsightsToggle({ storeId, initial }: { storeId: string; initial: boolean }) {
-  const router = useRouter();
-  const [on, setOn] = useState(initial);
-  const [pending, setPending] = useState(false);
-
-  async function toggle(next: boolean) {
-    setOn(next); // optimistic
-    setPending(true);
-    const res = await setInsightsAccess(storeId, next);
-    setPending(false);
-    if (res.ok) {
-      toast.success(next ? "Insights access granted" : "Insights access revoked");
-      router.refresh(); // pull the fresh audit line
-    } else {
-      setOn(!next); // roll back
-      toast.error("Couldn't update Insights access", { description: res.error });
-    }
-  }
-
-  return (
-    <div className="flex items-center gap-2 rounded-md border px-2.5 py-1.5">
-      <Telescope className="text-muted-foreground size-4" />
-      <Label htmlFor={`insights-${storeId}`} className="text-xs">
-        Insights
-      </Label>
-      <Switch
-        id={`insights-${storeId}`}
-        checked={on}
-        disabled={pending}
-        onCheckedChange={toggle}
-      />
-    </div>
-  );
-}
 
 function OnboardDialog({ onDone }: { onDone: () => void }) {
   const [open, setOpen] = useState(false);

@@ -139,39 +139,6 @@ export async function assignOwner(input: {
   return { ok: true, invited };
 }
 
-// ── Grant / revoke embedded Insights access for a store ─────────────────────
-export async function setInsightsAccess(
-  storeId: string,
-  enabled: boolean,
-): Promise<ActionResult> {
-  const ctx = await requireAdmin();
-  const db = createAdminClient();
-  const { error } = await db
-    .from("stores")
-    .update({ insights_enabled: enabled })
-    .eq("id", storeId);
-  if (error) return { ok: false, error: error.message };
-
-  // Audit trail: who changed it, for which store, to what state. Best-effort —
-  // never block the grant if the audit table (migration 0066) isn't present yet.
-  // Cast: the table isn't in the generated Database types until they're regenerated.
-  await (db as unknown as { from: (t: string) => { insert: (r: unknown) => PromiseLike<unknown> } })
-    .from("insights_access_audit")
-    .insert({
-      store_id: storeId,
-      enabled,
-      actor_user_id: ctx.user.id,
-      actor_email: ctx.user.email,
-    })
-    .then(
-      () => {},
-      () => {},
-    );
-
-  revalidatePath("/admin/stores");
-  return { ok: true };
-}
-
 // ── Waitlist management ──────────────────────────────────────────────────────
 export async function deleteWaitlistEntry(id: string): Promise<ActionResult> {
   await requireAdmin();
