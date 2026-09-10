@@ -1,20 +1,21 @@
-// transcribe — server-side speech-to-text (OpenAI Whisper), shared across the
-// umbrella. The copilot mic tries the browser's on-device Web Speech API first
-// (Chrome/Edge/Android); everywhere else — iOS Safari, the WhatsApp in-app
-// browser, WebViews — the client records audio with MediaRecorder and POSTs it
-// here so voice works on every owner's phone.
+// transcribe — server-side speech-to-text (OpenAI Whisper).
 //
-// Two callers, two auth paths (verify_jwt=false; we authenticate ourselves):
-//   • our own browser users     → Authorization: Bearer <user JWT> (validated).
-//   • a partner service (server) → the shared secret INSIGHTS_OPS_SECRET
-//     (x-ops-secret or Bearer), so it borrows this project's OpenAI key instead of
-//     needing its own — same governed-contract pattern as ops-slice / wallet.
+// The copilot mic tries the browser's on-device Web Speech API first
+// (Chrome/Edge/Android); everywhere else — iOS Safari, WebViews — the client
+// records audio with MediaRecorder and POSTs it here, so voice works on every
+// phone rather than only the ones with the API.
+//
+// One caller, one auth path: a signed-in console user (verify_jwt=false, so we
+// validate the JWT ourselves). It used to accept a shared secret as well, which
+// let a separate product borrow this project's OpenAI key. That product is not
+// part of this one, and an endpoint that spends our key for an unauthenticated
+// caller holding a static secret is not something to leave switched on.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, x-ops-secret, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -35,14 +36,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
-  // ── auth: shared secret (partner server) OR a valid console user JWT (browser) ──
-  const secret = Deno.env.get("INSIGHTS_OPS_SECRET");
+  // ── auth: a valid console user JWT, and nothing else ──
   const authz = req.headers.get("Authorization") ?? "";
   const bearer = authz.startsWith("Bearer ") ? authz.slice(7) : "";
-  const providedSecret = req.headers.get("x-ops-secret") ?? bearer;
-  let authed = !!secret && providedSecret === secret;
-  if (!authed && bearer) authed = await isConsoleUser(bearer);
-  if (!authed) return json({ error: "unauthorized" }, 401);
+  if (!bearer || !(await isConsoleUser(bearer))) return json({ error: "unauthorized" }, 401);
 
   const key = Deno.env.get("OPENAI_API_KEY");
   if (!key) return json({ error: "voice transcription isn't configured" }, 503);
