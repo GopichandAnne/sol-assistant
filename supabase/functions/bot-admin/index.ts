@@ -867,6 +867,66 @@ Deno.serve(async (req) => {
         if (!url) return json({ error: "Microsoft isn't configured yet — the app credentials aren't set." }, 503);
         return json({ url });
       }
+      // The account's own mail sender. Handled here because the password must be
+      // encrypted with a key the console does not hold.
+      case "set_mail_setup": {
+        const companyId = String(body.company_id ?? "").trim();
+        if (!companyId) return json({ error: "company_id required" }, 400);
+        const { encrypt } = await import("../_shared/connections.ts");
+        const row: Record<string, unknown> = {
+          company_id: companyId,
+          host: String(body.host ?? "").trim(),
+          port: Number(body.port ?? 587) || 587,
+          username: String(body.username ?? "").trim(),
+          from_address: body.from_address ?? null,
+          from_name: body.from_name ?? null,
+          active: true,
+          updated_at: new Date().toISOString(),
+        };
+        const pwd = String(body.password ?? "");
+        if (pwd) {
+          row.password_cipher = await encrypt(pwd);
+          // A changed credential is unproven until it sends something, so the
+          // "working" mark is cleared rather than carried over.
+          row.verified_at = null;
+          row.last_error = null;
+        } else {
+          // Editing the other fields must not wipe a working password.
+          const { data: existing } = await db.from("notification_email")
+            .select("password_cipher").eq("company_id", companyId).maybeSingle();
+          const keep = (existing as { password_cipher?: string } | null)?.password_cipher;
+          if (!keep) return json({ error: "A password is needed the first time." }, 400);
+          row.password_cipher = keep;
+        }
+        const { error } = await db.from("notification_email").upsert(row, { onConflict: "company_id" });
+        if (error) return json({ error: error.message }, 500);
+        return json({ ok: true });
+      }
+      case "test_mail_setup": {
+        const to = String(body.to ?? "").trim();
+        if (!to.includes("@")) return json({ error: "a recipient is required" }, 400);
+        const { accountSmtp, sendEmail } = await import("../_shared/email.ts");
+        const smtp = await accountSmtp(db, store.id);
+        const sent = await sendEmail(
+          to,
+          `Test from ${store.store_display_name ?? store.slug}`,
+          "This is the assistant checking it can reach people by email. " +
+          "If you are reading this, escalations and approvals will arrive the same way.",
+          store.store_display_name ?? store.slug,
+          smtp,
+        );
+        // Record the outcome against the account, so the panel can say "working"
+        // or show exactly what went wrong last time.
+        const { data: s2 } = await db.from("stores").select("company_id").eq("id", store.id).maybeSingle();
+        const companyId = (s2 as { company_id?: string } | null)?.company_id;
+        if (companyId && smtp) {
+          await db.from("notification_email").update({
+            verified_at: sent ? new Date().toISOString() : null,
+            last_error: sent ? null : "The last test message did not go out.",
+          }).eq("company_id", companyId);
+        }
+        return json({ sent, ...(sent ? {} : { error: smtp ? "The server refused it — check the host, port and password." : "No mail sender is configured for this account." }) });
+      }
       case "resolve_action": {
         const reqId = String(body.request_id ?? "").trim();
         const decision = String(body.decision ?? "") === "declined" ? "declined" : "approved";

@@ -15,12 +15,14 @@
 
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
-interface SmtpConfig {
+export interface SmtpConfig {
   host: string;
   port: number;
   user: string;
   pass: string;
   from: string;
+  /** Display name to send as. Null means fall back to naming the assistant. */
+  fromName?: string | null;
 }
 
 /** Read SMTP settings, falling back to the legacy GMAIL_* names so an existing
@@ -42,15 +44,57 @@ function config(): SmtpConfig | null {
   };
 }
 
+/**
+ * An account's own mail setup, when it has one.
+ *
+ * Looked up once per notification rather than per recipient, and handed to
+ * sendEmail. Notifications from a client's own domain are both better branded and
+ * far likelier to survive their spam filter than mail from ours.
+ */
+export async function accountSmtp(
+  // deno-lint-ignore no-explicit-any
+  db: any, storeId: string,
+): Promise<SmtpConfig | null> {
+  try {
+    const { data: store } = await db.from("stores").select("company_id").eq("id", storeId).maybeSingle();
+    const companyId = (store as { company_id?: string } | null)?.company_id;
+    if (!companyId) return null;
+    const { data } = await db.from("notification_email")
+      .select("host, port, username, password_cipher, from_address, from_name, active")
+      .eq("company_id", companyId).maybeSingle();
+    const row = data as {
+      host: string; port: number; username: string; password_cipher: string;
+      from_address: string | null; from_name: string | null; active: boolean;
+    } | null;
+    if (!row || !row.active) return null;
+    const { decrypt } = await import("./connections.ts");
+    return {
+      host: row.host,
+      port: row.port || 587,
+      user: row.username,
+      pass: await decrypt(row.password_cipher),
+      from: row.from_address || row.username,
+      fromName: row.from_name ?? null,
+    };
+  } catch (e) {
+    // A broken account setup must not silently become "mail from us instead":
+    // say so, and fall through to the platform sender rather than sending nothing.
+    console.warn(`[email] account mail setup unusable: ${(e as Error)?.message ?? e}`);
+    return null;
+  }
+}
+
 export async function sendEmail(
   to: string,
   subject: string,
   body: string,
   fromName?: string,
+  /** The account's own sender, when configured. Falls back to the platform's. */
+  override?: SmtpConfig | null,
 ): Promise<boolean> {
-  const cfg = config();
+  const cfg = override ?? config();
   if (!cfg) {
-    console.warn("[email] SMTP_USER/SMTP_PASSWORD not set — skipping email");
+    console.warn("[email] no mail sender configured — skipping email");
     return false;
   }
   // Brand the From per account when given a name. Strip header-breaking chars.

@@ -481,6 +481,41 @@ const REPORT_WRONG_DECL: FunctionDeclaration = {
   },
 };
 
+/**
+ * Escalation, with a subject when the account has named some.
+ *
+ * Responders already subscribe to topics, but every unanswerable question used
+ * the single topic "escalation", so all of them went to everyone. An account that
+ * has named its subjects — HR, IT, Finance — gets them as a choice here, and the
+ * person who receives the question is the person who can answer it.
+ *
+ * The list is the account's own words, so it is passed through verbatim rather
+ * than mapped onto anything: a topic nobody subscribed to simply falls back.
+ */
+function escalateDeclaration(topics: { key: string; label: string }[]): FunctionDeclaration {
+  const base = { ...ESCALATE_DECL };
+  if (topics.length === 0) return base;
+  return {
+    ...base,
+    description:
+      base.description +
+      " Set `topic` to whichever subject this belongs to, so it reaches the people who handle it. " +
+      "If none of them fits, leave it out rather than forcing one.",
+    parameters: {
+      type: "object",
+      properties: {
+        ...(base.parameters as { properties: Record<string, unknown> }).properties,
+        topic: {
+          type: "string",
+          enum: topics.map((t) => t.key),
+          description: `Which area this belongs to: ${topics.map((t) => `${t.key} (${t.label})`).join(", ")}.`,
+        },
+      },
+      required: ["question"],
+    },
+  };
+}
+
 const ESCALATE_DECL: FunctionDeclaration = {
   name: "escalate_to_owner",
   description:
@@ -561,8 +596,13 @@ async function executeEscalate(
   // Reach the responders wherever they work: Teams, Slack, or email (notify.ts).
   // Written in the assistant's voice, because in a Teams or Slack DM that is who
   // it appears to be from, not a system alert from an address nobody recognises.
+  // The subject the model chose, when the account named any. An unknown or absent
+  // topic falls back to the general one, so a bad guess still reaches somebody
+  // rather than nobody.
+  const chosen = String(args.topic ?? "").trim();
+  const topic = chosen || "escalation";
   const notified = await notifyResponders(
-    db, store, "escalation",
+    db, store, topic,
     `Someone asked me something I couldn't answer, and they're waiting:
 
 "${question}"
@@ -1745,6 +1785,8 @@ export function buildToolset(
   httpTools: HttpTool[] = [],
   visitor?: Visitor,
   mcpTools: McpTool[] = [],
+  /** Subjects this account named, so an escalation can carry one. */
+  escalationTopics: { key: string; label: string }[] = [],
 ): Toolset {
   // One calendar tool pair serves whichever calendar the store connected — prefer
   // Google if both are on. (Most stores connect just one.)
@@ -1861,7 +1903,7 @@ export function buildToolset(
     SEND_IMAGE_DECL,
     SEND_PHOTOS_DECL,
     SEND_PHOTO_URLS_DECL,
-    ESCALATE_DECL,
+    escalateDeclaration(escalationTopics),
     REPORT_WRONG_DECL,
   ];
   // Connected-provider tools — attached only when that provider is connected.

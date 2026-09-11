@@ -45,5 +45,8 @@ export async function loadAgentConfig(
     // Request mode by default (generic + price-safe) unless a catalogue is set.
     catalogEnabled: (m.get("catalog_enabled") ?? "").toLowerCase() === "true",
     kbPricesOk: (m.get("kb_prices_ok") ?? "").toLowerCase() === "true",
+    // Subjects this account routes escalations by, one per line. Absent means the
+    // single general topic, which is how it behaved before.
+    escalationTopics: m.get("escalation_topics") ?? null,
   };
 }

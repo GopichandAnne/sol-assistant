@@ -1256,6 +1256,56 @@ export type Database = {
           },
         ]
       }
+      notification_email: {
+        Row: {
+          active: boolean
+          company_id: string
+          from_address: string | null
+          from_name: string | null
+          host: string
+          last_error: string | null
+          password_cipher: string
+          port: number
+          updated_at: string
+          username: string
+          verified_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          from_address?: string | null
+          from_name?: string | null
+          host: string
+          last_error?: string | null
+          password_cipher: string
+          port?: number
+          updated_at?: string
+          username: string
+          verified_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          from_address?: string | null
+          from_name?: string | null
+          host?: string
+          last_error?: string | null
+          password_cipher?: string
+          port?: number
+          updated_at?: string
+          username?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_email_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oauth_connection: {
         Row: {
           access_token: string
@@ -3660,6 +3710,7 @@ export type Database = {
         | "white_label"
         | "answers_published"
         | "credits_enforced"
+        | "escalation_topics"
       attribution_type:
         | "link_click"
         | "chat_started"
@@ -3857,6 +3908,7 @@ export const Constants = {
         "white_label",
         "answers_published",
         "credits_enforced",
+        "escalation_topics",
       ],
       attribution_type: [
         "link_click",

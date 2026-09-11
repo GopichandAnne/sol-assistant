@@ -30,9 +30,23 @@ export default async function AgentPage() {
   const config: Record<string, string> = {};
   for (const r of rows ?? []) config[r.key] = r.value ?? "";
 
-  // Built-in topics + any request types this store defined (dynamic).
+  // What a responder can subscribe to: the two built-in events, whatever subjects
+  // this account routes escalations by, and any request types it defined.
+  //
+  // "approval" was missing, which meant held actions notified a topic nobody could
+  // ever be subscribed to — the notification went out and reached no one.
+  const escalationTopics = (config["escalation_topics"] ?? "")
+    .split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 12)
+    .map((label) => ({
+      key: label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 30),
+      label,
+    }))
+    .filter((t) => t.key);
+
   const topics = [
-    { key: "escalation", label: "Escalations" },
+    { key: "escalation", label: "Anything it can't answer" },
+    { key: "approval", label: "Actions awaiting approval" },
+    ...escalationTopics,
     ...requestTypes.map((t) => ({ key: t.key, label: t.label })),
   ];
 

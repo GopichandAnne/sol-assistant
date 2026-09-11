@@ -63,6 +63,9 @@ export interface AgentConfig {
   /** Request-mode opt-in: prices PUBLISHED in the KB (a listing price, a fixed
    *  service price) may be stated. Off = the strict no-price rule. */
   kbPricesOk: boolean;
+  /** Subjects escalations are routed by, one per line as the owner typed them.
+   *  Null = the single general topic. */
+  escalationTopics: string | null;
 }
 
 // Baked-in operating rules — part of the stable prefix, identical across

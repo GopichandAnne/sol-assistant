@@ -20,7 +20,7 @@
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import type { Store } from "./types.ts";
-import { sendEmail } from "./email.ts";
+import { accountSmtp, sendEmail } from "./email.ts";
 import { slackLookupByEmail, slackPostMessage } from "./slack-api.ts";
 import { postTeamsReply } from "./teams-auth.ts";
 
@@ -123,6 +123,9 @@ export async function deliverToPeople(
   }
 
   const reach = await loadReach(db, store);
+  // Resolved once, not per recipient: it is the same sender for everyone in this
+  // notification and a lookup each time would be wasted work at the worst moment.
+  const smtp = await accountSmtp(db, store.id);
   const name = store.store_display_name ?? store.slug;
   const subject = opts?.subject ?? `Someone needs a hand — ${name}`;
   const body = opts?.emailBody ?? `${text}\n\nOpen the console to respond: ${PANEL_URL}/tickets`;
@@ -132,12 +135,12 @@ export async function deliverToPeople(
     const email = person.email!;
     if (await viaTeams(db, reach, email, text)) { reached++; continue; }
     if (await viaSlack(reach, email, text)) { reached++; continue; }
-    if (await sendEmail(email, subject, body, name)) reached++;
+    if (await sendEmail(email, subject, body, name, smtp)) reached++;
   }
   if (reached === 0) {
     console.warn(
       `[notify] ${store.slug}: ${people.length} responder(s) but none reachable — ` +
-      `no Teams or Slack install and no SMTP configured`,
+      `no Teams or Slack install and no mail sender configured`,
     );
   }
   return reached;

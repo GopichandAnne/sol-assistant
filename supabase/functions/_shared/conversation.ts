@@ -135,9 +135,12 @@ export async function generateTurnReply(
   // show_products writes the filtered view here; the caller hands it to the
   // client (a grid in the web chat, a browse link on WhatsApp).
   const ui: UiDirectives = {};
+  // The subjects this account named for escalations, so the assistant can hand a
+  // question to the people who handle that area rather than to everyone.
+  const escalationTopics = parseEscalationTopics(config.escalationTopics);
   const toolset = buildToolset(
     db, store, opts.sessionId, config.ordersEnabled, hasProposal, config.catalogEnabled, today, integrations,
-    requestTypes, ui, config.timezone, connectedProviders, httpTools, opts.visitor, mcpTools,
+    requestTypes, ui, config.timezone, connectedProviders, httpTools, opts.visitor, mcpTools, escalationTopics,
   );
   // Which model answers is a per-store choice (null → Gemini, the default). One
   // light read; the dispatcher swaps providers behind the same contract.
@@ -150,6 +153,22 @@ export async function generateTurnReply(
     svc: db, storeId: store.id, kind: "bot_chat", ref: { sessionId: opts.sessionId },
   });
   return { ...reply, catalogView: ui.catalog_view };
+}
+
+/** One subject per line, as the owner typed them. The key is a slug so it can sit
+ *  in a responder's topic list; the label is their own wording, which is what the
+ *  model reads when choosing. */
+export function parseEscalationTopics(raw: string | null | undefined): { key: string; label: string }[] {
+  return (raw ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(0, 12)
+    .map((label) => ({
+      key: label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 30),
+      label,
+    }))
+    .filter((t) => t.key);
 }
 
 export interface ConversationContext {

@@ -316,3 +316,102 @@ export async function deleteCharge(id: string): Promise<SaveResult> {
   revalidatePath("/agent");
   return { ok: true };
 }
+
+/* ── The account's own mail sender ───────────────────────────────────────────
+ * Notifications leave from the platform's address unless an account configures
+ * its own. Its own is better on both counts that matter: a colleague recognises
+ * mail from their own domain, and their spam filter trusts it.
+ *
+ * The password is encrypted before it is stored and never returned. The panel can
+ * only learn whether one is set, and replace it.
+ * -------------------------------------------------------------------------- */
+
+export type MailSetup = {
+  configured: boolean;
+  host: string;
+  port: number;
+  username: string;
+  fromAddress: string | null;
+  fromName: string | null;
+  verifiedAt: string | null;
+  lastError: string | null;
+};
+
+async function companyOf(storeId: string): Promise<string | null> {
+  const db = createAdminClient();
+  const { data } = await db.from("stores").select("company_id").eq("id", storeId).maybeSingle();
+  return (data as { company_id?: string } | null)?.company_id ?? null;
+}
+
+export async function getMailSetup(): Promise<MailSetup | null> {
+  const ctx = await getActiveStore();
+  if (!ctx?.active) return null;
+  const companyId = await companyOf(ctx.active.id);
+  if (!companyId) return null;
+  const db = createAdminClient();
+  // deno-lint ignore: the table isn't in the generated types yet.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const from = db.from as unknown as (t: string) => any;
+  const { data } = await from("notification_email")
+    .select("host, port, username, from_address, from_name, verified_at, last_error")
+    .eq("company_id", companyId).maybeSingle();
+  if (!data) {
+    return { configured: false, host: "", port: 587, username: "", fromAddress: null, fromName: null, verifiedAt: null, lastError: null };
+  }
+  return {
+    configured: true,
+    host: data.host, port: data.port, username: data.username,
+    fromAddress: data.from_address, fromName: data.from_name,
+    verifiedAt: data.verified_at, lastError: data.last_error,
+  };
+}
+
+/**
+ * Save the account's mail sender. Owner-only: it is a credential, and it decides
+ * whose name is on every notification the assistant sends.
+ */
+export async function saveMailSetup(input: {
+  host: string; port: number; username: string;
+  /** Omitted when only the other fields are being edited. */
+  password?: string;
+  fromAddress?: string; fromName?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const ctx = await getActiveStore();
+  if (!ctx?.active) return { ok: false, error: "No active assistant." };
+  if (!(ctx.active.role === "owner" || ctx.isPlatformAdmin)) return { ok: false, error: "Owners only." };
+  const companyId = await companyOf(ctx.active.id);
+  if (!companyId) return { ok: false, error: "This assistant isn't on an account yet." };
+
+  const host = input.host.trim();
+  const username = input.username.trim();
+  if (!host || !username) return { ok: false, error: "Server and username are both needed." };
+
+  const res = await callBotAdmin({
+    action: "set_mail_setup",
+    store_slug: ctx.active.slug,
+    company_id: companyId,
+    host,
+    port: Number(input.port) || 587,
+    username,
+    password: input.password ?? "",
+    from_address: input.fromAddress?.trim() || null,
+    from_name: input.fromName?.trim() || null,
+  });
+  if (!res.ok) return { ok: false, error: res.error };
+  revalidatePath("/agent");
+  return { ok: true };
+}
+
+/** Send one message to the signed-in person, so "saved" can become "working". */
+export async function testMailSetup(): Promise<{ ok: true; to: string } | { ok: false; error: string }> {
+  const ctx = await getActiveStore();
+  if (!ctx?.active) return { ok: false, error: "No active assistant." };
+  const to = ctx.user.email;
+  if (!to) return { ok: false, error: "Your account has no email address to send to." };
+  const res = await callBotAdmin({ action: "test_mail_setup", store_slug: ctx.active.slug, to });
+  if (!res.ok) return { ok: false, error: res.error };
+  const d = res.data as { sent?: boolean; error?: string };
+  if (!d.sent) return { ok: false, error: d.error ?? "The message didn't go out." };
+  revalidatePath("/agent");
+  return { ok: true, to };
+}

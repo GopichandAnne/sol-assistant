@@ -7,6 +7,7 @@ import { VoiceCard } from "@/components/agent/voice-card";
 import { ModelPicker } from "@/components/agent/model-picker";
 import { profileFor } from "@/lib/console-profile";
 import { RespondersSection } from "./responders-section";
+import { MailSetup } from "./mail-setup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -188,7 +189,31 @@ export function AgentView({
       </div>
 
 
+      {/* What the assistant hands over, and to whom. The subjects come first
+          because they are what the responder list below routes on. */}
+      <div className="bg-card space-y-2 rounded-lg border p-5">
+        <Label htmlFor="esc-topics" className="text-sm font-medium">Subjects it routes by</Label>
+        <p className="text-muted-foreground text-sm">
+          One per line — HR, IT, Finance, Facilities. When the assistant hands a question over it
+          picks the closest one, so it reaches the people who handle that area instead of
+          everybody. Leave it empty and everything goes to whoever is subscribed to
+          &ldquo;anything it can&apos;t answer&rdquo;.
+        </p>
+        <Textarea
+          id="esc-topics"
+          rows={4}
+          value={values["escalation_topics"] ?? ""}
+          onChange={(e) => set("escalation_topics", e.target.value)}
+          placeholder={"HR and people\nIT and access\nFinance"}
+        />
+        <p className="text-muted-foreground text-xs">
+          Add a subject here, then tick it for the right people below. Saving reloads the list.
+        </p>
+      </div>
+
       <RespondersSection initial={initialResponders} topics={topics} />
+
+      <MailSetup />
     </div>
   );
 }
