@@ -2965,6 +2965,7 @@ export type Database = {
         Row: {
           active: boolean
           approvals_email: string | null
+          consent_missing_at: string | null
           created_at: string
           store_id: string
           team_name: string | null
@@ -2973,6 +2974,7 @@ export type Database = {
         Insert: {
           active?: boolean
           approvals_email?: string | null
+          consent_missing_at?: string | null
           created_at?: string
           store_id: string
           team_name?: string | null
@@ -2981,6 +2983,7 @@ export type Database = {
         Update: {
           active?: boolean
           approvals_email?: string | null
+          consent_missing_at?: string | null
           created_at?: string
           store_id?: string
           team_name?: string | null

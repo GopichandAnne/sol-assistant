@@ -100,12 +100,15 @@ async function handleEvent(body: Record<string, unknown>): Promise<void> {
   // users:read.email scope), then resolve/JIT them through the shared identity path.
   const profile = await slackUserInfo(botToken, ev.user);
   const sessionId = slackSessionId(ev.teamId, ev.user);
+  // Slack has already authenticated this person, so identity is always available —
+  // the audit trail and anything acting as them need it. Admission stays gated on
+  // access control (see the same note in teams-messages).
   let visitor;
-  if (store.access_control) {
-    const raw = buildRawIdentity(ev.user, ev.teamId, profile?.email, profile?.name);
-    const resolved = await resolveIdentity(db, store, sessionId, { channel: "slack", raw });
-    if (resolved) visitor = resolved.visitor;
-  }
+  const raw = buildRawIdentity(ev.user, ev.teamId, profile?.email, profile?.name);
+  const resolved = await resolveIdentity(db, store, sessionId, {
+    channel: "slack", raw, admit: !!store.access_control,
+  });
+  if (resolved) visitor = resolved.visitor;
 
   const nowIso = new Date().toISOString();
   const threadId = `thr_${sessionId}_${store.slug}`;

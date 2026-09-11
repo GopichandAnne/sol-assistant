@@ -53,6 +53,10 @@ export type TeamsStatus = {
   /** Tenant-agnostic consent URL, available before anything is installed, so the
    *  install instructions and the approval can go to their IT in one message. */
   setupConsentUrl?: string | null;
+  /** Set when a directory lookup was refused for want of admin consent. The
+   *  assistant still answers; it just cannot tell anyone apart, which is why this
+   *  is worth saying out loud rather than leaving in a log. */
+  consentMissing?: boolean;
   /** People who have messaged the bot, so we have a conversation to reach them on.
    *  Only these can receive approval cards. */
   reachable?: { email: string; name: string | null }[];
@@ -75,7 +79,7 @@ export async function getTeamsStatus(storeId: string): Promise<TeamsStatus> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const from = db.from as unknown as (t: string) => any;
   const { data } = await from("teams_installs")
-    .select("tenant_id, approvals_email").eq("store_id", storeId).eq("active", true).maybeSingle();
+    .select("tenant_id, approvals_email, consent_missing_at").eq("store_id", storeId).eq("active", true).maybeSingle();
   const configured = !!(process.env.MICROSOFT_APP_ID && process.env.MICROSOFT_APP_PASSWORD);
 
   // Only people the bot has already spoken to can be sent a card: Bot Framework
@@ -107,6 +111,7 @@ export async function getTeamsStatus(storeId: string): Promise<TeamsStatus> {
     approvalsEmail: data?.approvals_email ?? null,
     consentUrl: data?.tenant_id ? consentUrlFor(data.tenant_id) : null,
     setupConsentUrl: commonConsentUrl(),
+    consentMissing: !!data?.consent_missing_at,
     reachable,
     pending,
   };

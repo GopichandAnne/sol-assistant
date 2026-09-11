@@ -17,7 +17,7 @@ import { splitBubbles } from "../_shared/prompt.ts";
 import { buildTeamsRawIdentity, classifyActivity, teamsSessionId } from "../_shared/teams.ts";
 import { rememberChannel, resolveStoreForChannel } from "../_shared/routing.ts";
 import { resolveActionRequest } from "../_shared/resolve.ts";
-import { graphEmail, postTeamsReply, verifyBotFrameworkToken } from "../_shared/teams-auth.ts";
+import { graphEmailDetailed, postTeamsReply, verifyBotFrameworkToken } from "../_shared/teams-auth.ts";
 
 // deno-lint-ignore no-explicit-any
 declare const EdgeRuntime: any;
@@ -118,7 +118,14 @@ async function handleActivity(activity: Record<string, unknown>, appId: string, 
   // them later possible at all. Best-effort: never block a reply for it.
   let email: string | null = null;
   try {
-    email = await graphEmail(appId, appPassword, ev.tenantId, ev.aadObjectId);
+    const look = await graphEmailDetailed(appId, appPassword, ev.tenantId, ev.aadObjectId);
+    email = look.email;
+    // Record (or clear) a missing consent on the install, so the console can say
+    // why everyone is anonymous and offer the link that fixes it, instead of the
+    // owner discovering it when an approval goes nowhere.
+    await db.from("teams_installs")
+      .update({ consent_missing_at: look.problem === "consent" ? new Date().toISOString() : null })
+      .eq("tenant_id", ev.tenantId);
     await db.from("teams_user").upsert({
       tenant_id: ev.tenantId,
       teams_user_id: ev.userId,
@@ -133,12 +140,17 @@ async function handleActivity(activity: Record<string, unknown>, appId: string, 
     console.warn(`[teams] remember user: ${(e as Error)?.message ?? e}`);
   }
 
+  // Entra has already authenticated this person, so we ALWAYS know who they are —
+  // that is what the audit trail, the personal Microsoft 365 tools and any call
+  // made as them depend on. Membership is the separate question, and stays gated
+  // on access control: admitting everyone who ever sent a message would hand out
+  // members-only knowledge the moment an owner switched that on.
   let visitor;
-  if (store.access_control) {
-    const raw = buildTeamsRawIdentity(ev.aadObjectId, ev.userId, ev.name, email);
-    const resolved = await resolveIdentity(db, store, sessionId, { channel: "teams", raw });
-    if (resolved) visitor = resolved.visitor;
-  }
+  const raw = buildTeamsRawIdentity(ev.aadObjectId, ev.userId, ev.name, email);
+  const resolved = await resolveIdentity(db, store, sessionId, {
+    channel: "teams", raw, admit: !!store.access_control,
+  });
+  if (resolved) visitor = resolved.visitor;
 
   const threadId = `thr_${sessionId}_${store.slug}`;
   await db.from("thread_messages").insert({

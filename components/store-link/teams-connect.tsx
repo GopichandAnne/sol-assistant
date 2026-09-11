@@ -6,7 +6,7 @@ import { getTeamsStatus, linkPendingTenant, setTeamsApprover, setTeamsTenant, ty
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, Copy, Loader2, Users } from "lucide-react";
+import { Check, Copy, Download, Loader2, Users } from "lucide-react";
 import { ChannelRouting } from "@/components/store-link/channel-routing";
 
 export function TeamsConnect({ storeId }: { storeId: string }) {
@@ -116,6 +116,19 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
               thing to send is both at once. Without this the approval link only
               existed AFTER a tenant had messaged us, which forced a second
               round-trip with the same administrator. */}
+          <div className="space-y-1.5 border-t pt-2">
+            <Label className="text-xs">The app package</Label>
+            <p className="text-muted-foreground text-xs">
+              The zip their Teams admin uploads. Built for this assistant, so the tile
+              carries its name.
+            </p>
+            <Button size="sm" variant="outline" asChild>
+              <a href="/api/teams-package" download>
+                <Download className="size-3.5" /> Download the Teams app
+              </a>
+            </Button>
+          </div>
+
           {status.setupConsentUrl && (
             <div className="space-y-1.5 border-t pt-2">
               <Label className="text-xs">Send this to their IT</Label>
@@ -158,6 +171,29 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Connected but anonymous: the install works, the directory lookup does not,
+          and every symptom of that shows up somewhere else (no approver to send a
+          card to, no personal Microsoft 365, no name on an audited action). Say it
+          here, next to the link that fixes it. */}
+      {status?.connected && status.consentMissing && (
+        <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+          <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+            It can&apos;t tell people apart yet
+          </p>
+          <p className="text-xs text-amber-800 dark:text-amber-300">
+            The app is installed and answering, but this organisation hasn&apos;t approved it,
+            so the directory lookup is refused and everyone arrives anonymous. Until it is
+            approved there is nobody to send an approval to, no one&apos;s own calendar or mail,
+            and no name against anything it does.
+          </p>
+          {status.consentUrl && (
+            <Button size="sm" variant="outline" onClick={() => copyConsent(status.consentUrl!)}>
+              <Copy className="size-3.5" /> Copy the approval link
+            </Button>
+          )}
         </div>
       )}
 

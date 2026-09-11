@@ -123,7 +123,25 @@ export async function resolveIdentity(
   db: SupabaseClient,
   store: Store,
   sessionId: string,
-  opts: { channel: string; identityToken?: string; raw?: RawIdentity },
+  opts: {
+    channel: string;
+    identityToken?: string;
+    raw?: RawIdentity;
+    /**
+     * Whether to ADMIT this person as a member, not merely identify them.
+     *
+     * These are two different questions and conflating them was a real bug.
+     * Knowing who is asking is what the audit trail, the personal connector tools
+     * and identity-forwarded calls all need, and in Teams or Slack the channel has
+     * already proved it. Membership is narrower: it is what unlocks members-only
+     * knowledge, so provisioning one for everybody who ever sent a message would
+     * hand out gated content the moment an owner turned that feature on.
+     *
+     * Defaults true, which is the web-embed behaviour: there, being recognised at
+     * all IS the act of signing in.
+     */
+    admit?: boolean;
+  },
 ): Promise<ResolvedIdentity | null> {
   let claim: IdentityClaim | null = null;
   let rawToken = "";
@@ -154,11 +172,15 @@ export async function resolveIdentity(
 
   if (!claim || (!claim.email && !claim.phone)) return null;
 
-  let member = await findMemberByIdentity(db, store.id, claim.email, claim.phone);
-  if (!member && autoAdmit) {
-    member = await provisionMember(db, store.id, { ...claim, role: claim.role || defaultRole || undefined });
+  // Identify always; admit only when membership means something here.
+  let member = null as Awaited<ReturnType<typeof findMemberByIdentity>>;
+  if (opts.admit !== false) {
+    member = await findMemberByIdentity(db, store.id, claim.email, claim.phone);
+    if (!member && autoAdmit) {
+      member = await provisionMember(db, store.id, { ...claim, role: claim.role || defaultRole || undefined });
+    }
+    if (member) await bindMemberSession(db, sessionId, store.id, member.id);
   }
-  if (member) await bindMemberSession(db, sessionId, store.id, member.id);
 
   const meta = claim.metadata as Record<string, unknown> | undefined;
   const sub = meta ? (meta.sub ?? meta.id) : undefined;

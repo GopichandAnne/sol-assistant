@@ -183,17 +183,44 @@ export async function postTeamsActivity(appId: string, appPassword: string, serv
 }
 
 /** Best-effort email for a Teams user via Graph (needs User.Read.All app permission). */
-export async function graphEmail(appId: string, appPassword: string, tenantId: string, aadObjectId: string): Promise<string | null> {
-  if (!tenantId || !aadObjectId) return null;
+/**
+ * Why a directory lookup failed, when it did.
+ *
+ * "consent" is the one that matters and the one that used to be invisible: the
+ * organisation has installed the app but nobody has approved it, so every person
+ * arrives anonymous and the console shows a working assistant that cannot tell
+ * anyone apart. That reads as a product fault and is a two-minute fix, so it has
+ * to be distinguishable from a network blip.
+ */
+export type GraphEmailResult =
+  | { email: string | null; problem?: undefined }
+  | { email: null; problem: "consent" | "unreachable" };
+
+export async function graphEmailDetailed(
+  appId: string, appPassword: string, tenantId: string, aadObjectId: string,
+): Promise<GraphEmailResult> {
+  if (!tenantId || !aadObjectId) return { email: null };
   const tok = await appToken(appId, appPassword, "https://graph.microsoft.com/.default", tenantId);
-  if (!tok) return null;
+  // No app token for this tenant at all is the signature of an unconsented
+  // organisation: the application permission has never been granted there.
+  if (!tok) return { email: null, problem: "consent" };
   try {
     const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(aadObjectId)}?$select=mail,userPrincipalName`, {
       headers: { authorization: `Bearer ${tok}` },
     });
+    if (res.status === 401 || res.status === 403) {
+      console.warn(`[teams] directory lookup refused in tenant ${tenantId} — admin consent not granted`);
+      return { email: null, problem: "consent" };
+    }
+    if (!res.ok) return { email: null, problem: "unreachable" };
     const j = await res.json();
-    return j?.mail ?? j?.userPrincipalName ?? null;
+    return { email: j?.mail ?? j?.userPrincipalName ?? null };
   } catch {
-    return null;
+    return { email: null, problem: "unreachable" };
   }
+}
+
+/** Back-compatible shape for callers that only want the address. */
+export async function graphEmail(appId: string, appPassword: string, tenantId: string, aadObjectId: string): Promise<string | null> {
+  return (await graphEmailDetailed(appId, appPassword, tenantId, aadObjectId)).email;
 }
