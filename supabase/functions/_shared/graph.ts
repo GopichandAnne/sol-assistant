@@ -8,14 +8,18 @@
 // The design rule that runs through the whole file is WHOSE ACCOUNT a call goes
 // out as, and it splits the tools cleanly in two:
 //
-//   Shared     A document in SharePoint, a colleague in the directory. The answer
-//              does not depend on who is asking, so these use the organisation's
-//              connection, made once by an owner.
+//   Shared     The staff directory. The answer genuinely does not depend on who is
+//              asking, so it uses the organisation's connection, made once by an
+//              owner.
 //
-//   Personal   My mail, my calendar, my tasks, mail sent as me. These use THAT
-//              PERSON'S own connection and nothing else. There is no fallback to
-//              the organisation's token, because the fallback is the bug: it would
-//              answer "find my email from Finance" out of somebody else's mailbox.
+//   Personal   My mail, my calendar, my tasks, mail sent as me — and document
+//              search, because Files.Read.All reads "all files the SIGNED-IN USER
+//              can access" and so inherits the reach of whoever's token is used.
+//              These use THAT PERSON'S own connection and nothing else. There is
+//              no silent fallback to the organisation's token, because the
+//              fallback is the bug: it would answer "find my email from Finance"
+//              out of somebody else's mailbox, and "find the salary review" out of
+//              an administrator's drives.
 //
 // A person with no connection of their own gets an offer to make one, not a
 // borrowed answer. That is also why the personal tools are only attached for
@@ -161,11 +165,38 @@ async function graph(
  * a single query covers every site instead of only the one somebody guessed.
  */
 export async function findDocument(
-  db: SupabaseClient, store: Store, query: string,
+  db: SupabaseClient, store: Store, query: string, email?: string | null,
 ): Promise<Json> {
-  const token = await getAccessToken(db, store.id, "microsoft");
-  if (!token) return { ok: false, note: "Microsoft 365 isn't connected for this assistant." };
-  const allowed = await requireBundle(db, store.id, "documents", "");
+  // Searches as the ASKING person, not as whoever connected the account.
+  //
+  // Files.Read.All is delegated: it reads "all files the signed-in user can
+  // access". Running it on the organisation's connection therefore searches the
+  // reach of whoever clicked Connect — usually an administrator, usually able to
+  // see HR, finance and board material. Anyone asking would have been searching
+  // that person's access rather than their own, which is a disclosure, not a
+  // feature. The same rule already governed mail and calendar; documents were the
+  // gap.
+  const who = (email ?? "").trim().toLowerCase();
+  const personalToken = who ? await getAccessToken(db, store.id, "microsoft", who) : null;
+
+  let token = personalToken;
+  let scopeKey = who;
+  if (!token) {
+    // An organisation may deliberately connect a SERVICE account whose reach is
+    // exactly the material everyone is allowed to search. That is a legitimate
+    // setup, so it is available — but only when it has been turned on knowingly,
+    // never as a silent fallback to an administrator's mailbox and drives.
+    const shared = await sharedDocumentsAllowed(db, store.id);
+    if (!shared) {
+      const p = await personal(db, store, email, "documents");
+      return "offer" in p ? p.offer : { ok: false, note: "Couldn't reach Microsoft 365." };
+    }
+    token = await getAccessToken(db, store.id, "microsoft");
+    scopeKey = "";
+    if (!token) return { ok: false, note: "Microsoft 365 isn't connected for this assistant." };
+  }
+
+  const allowed = await requireBundle(db, store.id, "documents", scopeKey);
   if (!allowed.ok) return allowed.offer;
 
   const res = await graph(token, "/search/query", {
@@ -234,6 +265,19 @@ export async function findPerson(
   }));
   if (people.length === 0) return { ok: true, found: 0, note: "Nobody in the directory matched that." };
   return { ok: true, found: people.length, people };
+}
+
+/** Whether this account has deliberately turned on searching documents through the
+ *  organisation's own connection. Off by default: the safe reading of a shared
+ *  connection is "an administrator's access", not "what everyone may see". */
+async function sharedDocumentsAllowed(db: SupabaseClient, storeId: string): Promise<boolean> {
+  try {
+    const { data } = await db.from("agent_config")
+      .select("value").eq("store_id", storeId).eq("key", "m365_shared_documents").maybeSingle();
+    return (data as { value?: string } | null)?.value === "on";
+  } catch {
+    return false;
+  }
 }
 
 /* ── personal: this person's own connection ───────────────────────────────── */

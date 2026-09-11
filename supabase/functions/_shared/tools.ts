@@ -1758,7 +1758,7 @@ export function buildToolset(
     redeem_credit: (args) => executeRedeemCredit(db, store, sessionId, args),
     submit_post_url: (args) => executeSubmitPost(db, store, sessionId, args),
     search_knowledge: (args) => executeSearchKnowledge(db, store, sessionId, args, today),
-    find_document: (args) => m365FindDocument(db, store, String(args.query ?? "")),
+    find_document: (args) => m365FindDocument(db, store, String(args.query ?? ""), visitor?.email),
     find_person: (args) => m365FindPerson(db, store, String(args.query ?? "")),
     my_schedule: (args) => m365MySchedule(db, store, visitor?.email, args.date ? String(args.date) : undefined),
     search_my_mail: (args) => m365SearchMyMail(db, store, visitor?.email, String(args.query ?? "")),
