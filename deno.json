@@ -1,0 +1,20 @@
+{
+  "//": "Deno settings for the edge functions (supabase/functions).",
+
+  "//nodeModulesDir": [
+    "'none' keeps Deno out of ./node_modules, and that matters more than it looks.",
+    "Running `deno check --node-modules-dir=auto` on a function made Deno lay out its",
+    "OWN tree there: a second React beside npm's, and node_modules/.bin/next pointed",
+    "into node_modules/.deno. The Next build then ran Deno's Next against npm's React",
+    "and died prerendering the error pages with 'Cannot read properties of null",
+    "(reading useContext)' — a failure with no visible connection to its cause, which",
+    "cost an hour to trace. With this set, Deno resolves npm specifiers in its own",
+    "global cache and the two toolchains stop sharing a directory.",
+    "Recovery, if it happens again: rm -rf node_modules && npm install."
+  ],
+  "nodeModulesDir": "none",
+
+  "imports": {},
+  "lint": { "exclude": ["node_modules", ".next"] },
+  "fmt": { "exclude": ["node_modules", ".next"] }
+}

@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Building2, Coins, Bot, Plus, TriangleAlert, UserPlus } from "lucide-react";
+import { AssistantReadiness } from "./assistant-readiness";
+import { ProvisionClient } from "./provision-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,8 +51,13 @@ export function CompaniesAdmin({
         </p>
       </header>
 
+      <ProvisionClient />
+
       <section className="bg-card rounded-xl border p-5">
-        <h2 className="font-display mb-3 font-bold">New account</h2>
+        <h2 className="font-display mb-1 font-bold">Empty account</h2>
+        <p className="text-muted-foreground mb-3 text-xs">
+          Just the credit pool, for attaching an assistant that already exists.
+        </p>
         <div className="flex gap-2">
           <Input
             placeholder="Company name"
@@ -176,7 +183,7 @@ function CompanyCard({ company: c }: { company: CompanyRow }) {
           <p className="text-muted-foreground mt-0.5 text-xs">
             {c.assistants.length === 0
               ? "No assistants yet"
-              : c.assistants.map((a) => a.name).join(" · ")}
+              : `${c.assistants.length} assistant${c.assistants.length === 1 ? "" : "s"}`}
           </p>
         </div>
         <div className="text-right">
@@ -196,6 +203,8 @@ function CompanyCard({ company: c }: { company: CompanyRow }) {
           {c.warned ? " — warning sent" : ""}.
         </p>
       )}
+
+      <AssistantReadiness assistants={c.assistants} />
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
