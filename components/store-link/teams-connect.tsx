@@ -16,6 +16,11 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
   const [approver, setApprover] = useState("");
   const [savingApprover, setSavingApprover] = useState(false);
   const [linking, setLinking] = useState<string | null>(null);
+  /** Why the status couldn't be read, when that is the actual problem. Kept apart
+   *  from `configured`: "we haven't set this up" and "your request failed" are
+   *  different facts, and showing the first when the second happened sends
+   *  whoever is setting it up to check settings that were never wrong. */
+  const [problem, setProblem] = useState<string | null>(null);
 
   /** The whole ask, in one paste: what to install, what to approve, and why. An
    *  administrator who receives a bare URL asks what it is; one who receives this
@@ -50,7 +55,10 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
   useEffect(() => {
     getTeamsStatus(storeId)
       .then((s) => { setStatus(s); setTenant(s.tenantId ?? ""); setApprover(s.approvalsEmail ?? ""); })
-      .catch(() => setStatus({ configured: false, connected: false }));
+      .catch((e: unknown) => {
+        setProblem(e instanceof Error ? e.message : String(e));
+        setStatus({ configured: false, connected: false });
+      });
   }, [storeId]);
 
   async function save() {
@@ -94,7 +102,13 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
 
       {status === null && <p className="text-muted-foreground text-sm">Checking…</p>}
 
-      {status && !status.configured && (
+      {problem && (
+        <p className="text-destructive rounded-md border border-dashed p-3 text-xs">
+          Couldn&apos;t read the Teams status: {problem}
+        </p>
+      )}
+
+      {status && !status.configured && !problem && (
         <p className="text-muted-foreground rounded-md border border-dashed p-3 text-xs">
           Teams isn&apos;t switched on for this deployment yet. That&apos;s a one-time job on our
           side (an Azure bot and its credentials), not something you set up per organisation.

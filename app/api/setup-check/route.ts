@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getActiveStore } from "@/lib/store/active-store";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * What this deployment can actually see.
@@ -39,6 +40,25 @@ export async function GET() {
   const slackStateSecret = !!shown(process.env.SLACK_STATE_SECRET);
   const slackRedirect = shown(process.env.SLACK_REDIRECT_URL);
 
+  // The panels don't only need their own variables — they read the database with
+  // the service-role client first. When that throws, every channel panel reports
+  // "not switched on" at once, which reads like a configuration gap and isn't one.
+  // So probe the same path the panels take, and say what actually failed.
+  let adminClient = "ok";
+  let teamsTable = "not reached";
+  let slackTable = "not reached";
+  try {
+    const db = createAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const from = db.from as unknown as (t: string) => any;
+    const t = await from("teams_installs").select("store_id").limit(1);
+    teamsTable = t.error ? `error: ${t.error.message}` : "ok";
+    const k = await from("slack_installs").select("store_id").limit(1);
+    slackTable = k.error ? `error: ${k.error.message}` : "ok";
+  } catch (e) {
+    adminClient = `FAILED: ${e instanceof Error ? e.message : String(e)}`;
+  }
+
   return NextResponse.json(
     {
       build: {
@@ -59,6 +79,16 @@ export async function GET() {
       },
       supabase: {
         NEXT_PUBLIC_SUPABASE_URL: shown(process.env.NEXT_PUBLIC_SUPABASE_URL),
+        SUPABASE_INTERNAL_URL: shown(process.env.SUPABASE_INTERNAL_URL),
+        SUPABASE_SERVICE_ROLE_KEY: shown(process.env.SUPABASE_SERVICE_ROLE_KEY) ? "set" : "MISSING",
+        adminClient,
+        teamsTable,
+        slackTable,
+      },
+      you: {
+        store: ctx.active.slug ?? ctx.active.id,
+        role: ctx.active.role,
+        platformAdmin: ctx.isPlatformAdmin,
       },
       note:
         "panelAppears false means the console hides that channel. Anything MISSING " +

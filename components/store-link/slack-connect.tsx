@@ -21,6 +21,9 @@ export function SlackConnect({ storeId }: { storeId: string }) {
   const [status, setStatus] = useState<SlackStatus | null>(null);
   const [channel, setChannel] = useState("");
   const [savingCh, setSavingCh] = useState(false);
+  /** See the same field on TeamsConnect: a failed read must not be reported as an
+   *  unconfigured deployment. */
+  const [problem, setProblem] = useState<string | null>(null);
 
   useEffect(() => {
     // Surface the OAuth callback result (?slack=…) once, then clean the URL.
@@ -36,7 +39,10 @@ export function SlackConnect({ storeId }: { storeId: string }) {
     } catch { /* ignore */ }
     getSlackStatus(storeId)
       .then((s) => { setStatus(s); setChannel(s.approvalsChannel ?? ""); })
-      .catch(() => setStatus({ configured: false, connected: false }));
+      .catch((e: unknown) => {
+        setProblem(e instanceof Error ? e.message : String(e));
+        setStatus({ configured: false, connected: false });
+      });
   }, [storeId]);
 
   async function saveChannel() {
@@ -92,7 +98,13 @@ export function SlackConnect({ storeId }: { storeId: string }) {
         </Button>
       )}
 
-      {status && !status.connected && !status.configured && (
+      {problem && (
+        <p className="text-destructive rounded-md border border-dashed p-3 text-xs">
+          Couldn&apos;t read the Slack status: {problem}
+        </p>
+      )}
+
+      {status && !status.connected && !status.configured && !problem && (
         <div className="space-y-2 rounded-md border border-dashed p-3">
           <p className="text-muted-foreground text-xs">
             Slack isn&apos;t switched on for this deployment yet. That&apos;s a one-time job on our
