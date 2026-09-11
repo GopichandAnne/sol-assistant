@@ -15,8 +15,27 @@ export type PendingTenant = {
   consentUrl: string | null;
 };
 
+/**
+ * The admin-consent URL to send an organisation's IT BEFORE anything is installed.
+ *
+ * The per-tenant form below needs a tenant id, which only arrives once someone has
+ * installed the app and messaged the bot — so it could not be part of the pack you
+ * send their IT in the first place, and consent became a second round-trip with the
+ * same person. The /common form needs no id: the administrator signs in and consent
+ * is granted for whichever directory they belong to.
+ *
+ * Module-private: this file is "use server", where every export must be an async
+ * server action. It is read through getTeamsStatus like the rest.
+ */
+function commonConsentUrl(): string | null {
+  const appId = process.env.MICROSOFT_APP_ID;
+  if (!appId) return null;
+  return `https://login.microsoftonline.com/common/adminconsent?client_id=${encodeURIComponent(appId)}`;
+}
+
 /** The per-tenant admin-consent URL. Formulaic, so the console builds it rather
- *  than sending someone to read Microsoft's docs. */
+ *  than sending someone to read Microsoft's docs. Preferred once the tenant is
+ *  known, because it names the organisation being consented for. */
 function consentUrlFor(tenantId: string): string | null {
   const appId = process.env.MICROSOFT_APP_ID;
   if (!appId || !tenantId) return null;
@@ -31,6 +50,9 @@ export type TeamsStatus = {
   /** Consent URL for the CONNECTED tenant, so it can be re-sent if identity
    *  isn't resolving (the usual cause of everyone showing up anonymous). */
   consentUrl?: string | null;
+  /** Tenant-agnostic consent URL, available before anything is installed, so the
+   *  install instructions and the approval can go to their IT in one message. */
+  setupConsentUrl?: string | null;
   /** People who have messaged the bot, so we have a conversation to reach them on.
    *  Only these can receive approval cards. */
   reachable?: { email: string; name: string | null }[];
@@ -84,6 +106,7 @@ export async function getTeamsStatus(storeId: string): Promise<TeamsStatus> {
     tenantId: data?.tenant_id ?? null,
     approvalsEmail: data?.approvals_email ?? null,
     consentUrl: data?.tenant_id ? consentUrlFor(data.tenant_id) : null,
+    setupConsentUrl: commonConsentUrl(),
     reachable,
     pending,
   };

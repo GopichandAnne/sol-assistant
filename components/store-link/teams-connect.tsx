@@ -17,6 +17,29 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
   const [savingApprover, setSavingApprover] = useState(false);
   const [linking, setLinking] = useState<string | null>(null);
 
+  /** The whole ask, in one paste: what to install, what to approve, and why. An
+   *  administrator who receives a bare URL asks what it is; one who receives this
+   *  can act on it without a call. */
+  function copyPack(consent: string) {
+    const note = [
+      "Setting up our assistant in Microsoft Teams. Two things, both one-off:",
+      "",
+      "1. Install the app package we sent, in Teams admin centre:",
+      "   Teams apps → Manage apps → Upload new app, then allow it in your app permission policy.",
+      "",
+      "2. Approve it for the organisation, once:",
+      `   ${consent}`,
+      "",
+      "The second link opens Microsoft's own consent screen. It lets the assistant",
+      "identify who is talking to it, so it can reach the right person when something",
+      "needs a human. No account with us is needed, and nothing is shared until then.",
+    ].join("\n");
+    navigator.clipboard.writeText(note).then(
+      () => toast.success("Setup note copied", { description: "Paste it to whoever administers their Microsoft 365." }),
+      () => toast.error("Couldn't copy"),
+    );
+  }
+
   function copyConsent(url: string) {
     navigator.clipboard.writeText(url).then(
       () => toast.success("Consent link copied", { description: "Send it to whoever administers Microsoft 365 there." }),
@@ -80,12 +103,32 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
       )}
 
       {status?.configured && !status.connected && (
-        <ol className="text-muted-foreground list-decimal space-y-1 rounded-md border border-dashed p-3 pl-7 text-xs">
-          <li>Your Teams admin installs the app for your organisation.</li>
-          <li>Anyone opens it in Teams and sends it one message. It will say it isn&apos;t
-            connected yet, which is expected.</li>
-          <li>Their organisation appears above. Click Connect.</li>
-        </ol>
+        <div className="space-y-2 rounded-md border border-dashed p-3">
+          <ol className="text-muted-foreground list-decimal space-y-1 pl-4 text-xs">
+            <li>Their Teams admin installs the app for the organisation.</li>
+            <li>Their directory admin approves it once, using the link below.</li>
+            <li>Anyone opens it in Teams and sends it one message. It will say it isn&apos;t
+              connected yet, which is expected.</li>
+            <li>Their organisation appears here. Click Connect.</li>
+          </ol>
+
+          {/* Steps 1 and 2 are the same person's job at most organisations, so the
+              thing to send is both at once. Without this the approval link only
+              existed AFTER a tenant had messaged us, which forced a second
+              round-trip with the same administrator. */}
+          {status.setupConsentUrl && (
+            <div className="space-y-1.5 border-t pt-2">
+              <Label className="text-xs">Send this to their IT</Label>
+              <p className="text-muted-foreground text-xs">
+                One approval, for their whole organisation. It opens Microsoft&apos;s own
+                consent screen — they need no account with us.
+              </p>
+              <Button size="sm" variant="outline" onClick={() => copyPack(status.setupConsentUrl!)}>
+                <Copy className="size-3.5" /> Copy the setup note
+              </Button>
+            </div>
+          )}
+        </div>
       )}
 
       {status?.configured && !status.connected && (status.pending ?? []).length > 0 && (
