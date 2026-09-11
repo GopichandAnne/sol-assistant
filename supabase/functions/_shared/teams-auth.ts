@@ -58,17 +58,23 @@ export async function verifyJwtRs256(
 
 // ── Network: JWKS + tokens + outbound ────────────────────────────────────────
 //
-// A bot is registered either MULTI-TENANT, where Bot Framework itself is the
-// issuer and the authority is botframework.com, or SINGLE-TENANT, where the
-// organisation's own directory issues and signs everything. The two are not
-// interchangeable in either direction: a single-tenant bot's inbound tokens fail
-// verification against the Bot Framework issuer, and its outbound token request is
-// refused by the botframework.com authority.
+// Two things carry a "tenant" here and they are NOT the same thing:
 //
-// Azure no longer offers the multi-tenant type when creating a bot in the portal,
-// so single-tenant is the shape new deployments actually get. Setting
-// MICROSOFT_APP_TENANT_ID switches both halves to that directory; leaving it unset
-// keeps the multi-tenant behaviour for any bot already registered that way.
+//   The Azure Bot resource type   Since multi-tenant bot creation was retired in
+//                                 July 2025 (enforced in the API, not just the
+//                                 portal), every new bot is Single Tenant.
+//
+//   The Entra app registration    This is what actually governs which directories
+//                                 the bot can reach. A multi-tenant registration
+//                                 behind a single-tenant bot resource still works
+//                                 cross-tenant, and is the shape Microsoft points
+//                                 ISVs at.
+//
+// Which of the two issued an inbound token therefore depends on a registration we
+// do not control from here. So rather than guess from configuration, verification
+// tries the Bot Framework issuer first and falls back to the bot's own directory
+// when MICROSOFT_APP_TENANT_ID names one. Both paths pin the audience to our app
+// id and check a real signature; accepting either issuer widens nothing.
 const BF_OPENID = "https://login.botframework.com/v1/.well-known/openidconfiguration";
 const BF_ISSUER = "https://api.botframework.com";
 
@@ -79,39 +85,45 @@ function botTenant(): string | null {
 }
 
 // deno-lint-ignore no-explicit-any
-let jwksCache: { keys: any[]; exp: number; src: string } | null = null;
+const jwksCache = new Map<string, { keys: any[]; exp: number }>();
 
-/** Signing keys for whoever issues this bot's inbound tokens. Cached by source, so
- *  flipping the tenant setting cannot serve keys fetched for the other issuer. */
-async function botFrameworkJwks(): Promise<{ keys: unknown[] }> {
-  const tenant = botTenant();
-  const src = tenant
-    ? `https://login.microsoftonline.com/${tenant}/v2.0/.well-known/openid-configuration`
-    : BF_OPENID;
-  if (jwksCache && jwksCache.exp > Date.now() && jwksCache.src === src) return jwksCache;
-  const cfg = await (await fetch(src)).json();
+/** Signing keys from one OpenID metadata document, cached per source so the two
+ *  issuers can never be served each other's keys. */
+async function jwksFrom(metadataUrl: string): Promise<{ keys: unknown[] }> {
+  const hit = jwksCache.get(metadataUrl);
+  if (hit && hit.exp > Date.now()) return hit;
+  const cfg = await (await fetch(metadataUrl)).json();
   const jwks = await (await fetch(cfg.jwks_uri)).json();
-  jwksCache = { keys: jwks.keys ?? [], exp: Date.now() + 12 * 60 * 60 * 1000, src }; // 12h
-  return jwksCache;
-}
-
-/** Who is allowed to have issued an inbound activity's token. */
-function expectedIssuer(): string | string[] {
-  const tenant = botTenant();
-  if (!tenant) return BF_ISSUER;
-  // Both forms are accepted: the directory issues v2.0, while some paths still
-  // present the v1 sts.windows.net form for the same tenant.
-  return [
-    `https://login.microsoftonline.com/${tenant}/v2.0`,
-    `https://sts.windows.net/${tenant}/`,
-  ];
+  const entry = { keys: jwks.keys ?? [], exp: Date.now() + 12 * 60 * 60 * 1000 }; // 12h
+  jwksCache.set(metadataUrl, entry);
+  return entry;
 }
 
 /** Verify an incoming Bot Framework request token → its claims, or null. */
 export async function verifyBotFrameworkToken(token: string, appId: string): Promise<Record<string, unknown> | null> {
   if (!token || !appId) return null;
-  const jwks = await botFrameworkJwks();
-  return await verifyJwtRs256(token, jwks as { keys: unknown[] } & { keys: unknown[] }, { issuer: expectedIssuer(), audience: appId });
+
+  // Bot Framework's own issuer: what a multi-tenant app registration produces, and
+  // still the common case.
+  const bf = await jwksFrom(BF_OPENID);
+  const viaBf = await verifyJwtRs256(
+    token, bf as { keys: unknown[] }, { issuer: BF_ISSUER, audience: appId },
+  );
+  if (viaBf) return viaBf;
+
+  // Otherwise the bot's own directory, when one is configured. Both issuer forms
+  // are accepted: the directory issues v2.0, while some paths still present the
+  // legacy sts.windows.net form for the same tenant.
+  const tenant = botTenant();
+  if (!tenant) return null;
+  const dir = await jwksFrom(`https://login.microsoftonline.com/${tenant}/v2.0/.well-known/openid-configuration`);
+  return await verifyJwtRs256(token, dir as { keys: unknown[] }, {
+    issuer: [
+      `https://login.microsoftonline.com/${tenant}/v2.0`,
+      `https://sts.windows.net/${tenant}/`,
+    ],
+    audience: appId,
+  });
 }
 
 /** Client-credentials token for a scope (outbound Bot Framework or Graph). */
