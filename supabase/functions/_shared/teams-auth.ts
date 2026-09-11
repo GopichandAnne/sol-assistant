@@ -89,7 +89,7 @@ const jwksCache = new Map<string, { keys: any[]; exp: number }>();
 
 /** Signing keys from one OpenID metadata document, cached per source so the two
  *  issuers can never be served each other's keys. */
-async function jwksFrom(metadataUrl: string): Promise<{ keys: unknown[] }> {
+export async function jwksFrom(metadataUrl: string): Promise<{ keys: unknown[] }> {
   const hit = jwksCache.get(metadataUrl);
   if (hit && hit.exp > Date.now()) return hit;
   const cfg = await (await fetch(metadataUrl)).json();

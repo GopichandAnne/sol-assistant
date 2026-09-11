@@ -90,6 +90,11 @@ const manifest = {
     },
   ],
   permissions: ["identity", "messageTeamMembers"],
+  // What makes single sign-on possible: Teams will only mint a token for an app
+  // that declares its own API here, and `resource` must match the App ID URI on
+  // the registration EXACTLY — a trailing slash is enough to make Teams hand back
+  // a token with the wrong audience and the exchange then fails silently.
+  webApplicationInfo: { id: appId, resource: `api://${appId}` },
   // The tenants allowed to install it. Left open because the app is multi-tenant
   // by design; a client that wants it locked to their own directory restricts it
   // in their own admin centre, not here.

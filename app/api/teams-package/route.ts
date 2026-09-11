@@ -75,6 +75,11 @@ export async function GET(req: Request) {
       },
     ],
     permissions: ["identity", "messageTeamMembers"],
+    // What makes single sign-on possible: Teams will only mint a token for an app
+    // that declares its own API here, and `resource` must match the App ID URI on
+    // the registration EXACTLY — a trailing slash is enough to make Teams hand back
+    // a token with the wrong audience, after which the exchange fails silently.
+    webApplicationInfo: { id: appId, resource: `api://${appId}` },
     validDomains: [],
   };
 

@@ -1760,10 +1760,10 @@ export function buildToolset(
     search_knowledge: (args) => executeSearchKnowledge(db, store, sessionId, args, today),
     find_document: (args) => m365FindDocument(db, store, String(args.query ?? ""), visitor?.email),
     find_person: (args) => m365FindPerson(db, store, String(args.query ?? "")),
-    my_schedule: (args) => m365MySchedule(db, store, visitor?.email, args.date ? String(args.date) : undefined),
-    search_my_mail: (args) => m365SearchMyMail(db, store, visitor?.email, String(args.query ?? "")),
-    my_tasks: () => m365MyTasks(db, store, visitor?.email),
-    add_task: (args) => m365AddTask(db, store, visitor?.email, String(args.title ?? ""), args.due ? String(args.due) : undefined),
+    my_schedule: (args) => m365MySchedule(db, store, visitor?.email, args.date ? String(args.date) : undefined, visitor?.channel),
+    search_my_mail: (args) => m365SearchMyMail(db, store, visitor?.email, String(args.query ?? ""), visitor?.channel),
+    my_tasks: () => m365MyTasks(db, store, visitor?.email, visitor?.channel),
+    add_task: (args) => m365AddTask(db, store, visitor?.email, String(args.title ?? ""), args.due ? String(args.due) : undefined, visitor?.channel),
     send_email: async (args) => {
       // Governance does not depend on how a tool was built. A held write here goes
       // through exactly the same approval path as a held HTTP or MCP call, and the
@@ -1780,7 +1780,7 @@ export function buildToolset(
       }
       const out = await m365SendMail(
         db, store, visitor?.email,
-        String(args.to ?? ""), String(args.subject ?? ""), String(args.body ?? ""),
+        String(args.to ?? ""), String(args.subject ?? ""), String(args.body ?? ""), visitor?.channel,
       );
       void logToolCall(db, store, sessionId, {
         tool: "send_email", kind: "connector", actedAs: visitor?.email ?? null,

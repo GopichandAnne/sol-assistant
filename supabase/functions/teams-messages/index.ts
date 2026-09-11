@@ -16,8 +16,9 @@ import { resolveIdentity } from "../_shared/identity.ts";
 import { splitBubbles } from "../_shared/prompt.ts";
 import { buildTeamsRawIdentity, classifyActivity, teamsSessionId } from "../_shared/teams.ts";
 import { rememberChannel, resolveStoreForChannel } from "../_shared/routing.ts";
+import { handleTokenExchange, oauthCard, ssoConfigured, ssoConnectionName } from "../_shared/teams-sso.ts";
 import { resolveActionRequest } from "../_shared/resolve.ts";
-import { graphEmailDetailed, postTeamsReply, verifyBotFrameworkToken } from "../_shared/teams-auth.ts";
+import { graphEmailDetailed, postTeamsActivity, postTeamsReply, verifyBotFrameworkToken } from "../_shared/teams-auth.ts";
 
 // deno-lint-ignore no-explicit-any
 declare const EdgeRuntime: any;
@@ -41,11 +42,88 @@ Deno.serve(async (req) => {
     return new Response("bad json", { status: 400 });
   }
 
+  // Single sign-on token exchange is the one activity whose HTTP STATUS is the
+  // answer: 200 means the token was accepted, 412 tells the Teams client to fall
+  // back to asking the person to consent. So it cannot go through the background
+  // path below, which always answers 200 before the work has happened.
+  if (activity.type === "invoke" && activity.name === "signin/tokenExchange") {
+    const status = await handleSsoExchange(activity);
+    return new Response(null, { status });
+  }
+  // A failed sign-in arrives as its own activity. Nothing to do but notice it:
+  // Teams has already told the person, and a log line is what turns "it didn't
+  // work" into something answerable later.
+  if (activity.type === "invoke" && activity.name === "signin/failure") {
+    console.warn(`[teams] sign-in failed: ${JSON.stringify(activity.value ?? {}).slice(0, 200)}`);
+    return new Response(null, { status: 200 });
+  }
+
   const work = handleActivity(activity, appId, appPassword).catch((e) => console.error("[teams] handleActivity:", e));
   if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) EdgeRuntime.waitUntil(work);
   else await work;
   return new Response(null, { status: 200 });
 });
+
+/**
+ * Complete a single sign-on exchange for whichever assistant this organisation is
+ * linked to, and store the result as that person's own connection.
+ *
+ * An unlinked tenant returns 412 rather than 200: there is no assistant to hold
+ * the connection, and claiming success would leave the person believing they are
+ * connected to something that does not exist.
+ */
+async function handleSsoExchange(activity: Record<string, unknown>): Promise<number> {
+  const conv = (activity.conversation ?? {}) as Record<string, unknown>;
+  const tenantId = String(
+    (activity.channelData as Record<string, unknown> | undefined)?.tenant &&
+      ((activity.channelData as Record<string, unknown>).tenant as Record<string, unknown>)?.id ||
+      conv.tenantId || "",
+  );
+  if (!tenantId) return 412;
+
+  const db = serviceClient();
+  const { data: install } = await db
+    .from("teams_installs")
+    .select("store_id")
+    .eq("tenant_id", tenantId)
+    .eq("active", true)
+    .maybeSingle();
+  const storeId = (install as { store_id?: string } | null)?.store_id;
+  if (!storeId) {
+    console.warn(`[teams-sso] exchange from unlinked tenant ${tenantId}`);
+    return 412;
+  }
+  return await handleTokenExchange(db, storeId, activity);
+}
+
+/**
+ * Offer single sign-on to somebody who has not connected their own account yet.
+ *
+ * Best-effort and silent by design: no connection configured, no card; card
+ * fails, nothing said. The person still has every shared capability, and the
+ * personal ones explain themselves when asked. A failure here must never surface
+ * as noise in a conversation that was about something else.
+ */
+async function maybeStartSso(
+  // deno-lint-ignore no-explicit-any
+  db: any, storeId: string, email: string,
+  appId: string, appPassword: string, serviceUrl: string, conversationId: string,
+): Promise<void> {
+  try {
+    const connection = ssoConnectionName();
+    if (!connection || !ssoConfigured()) return;
+    const { data } = await db.from("oauth_connection")
+      .select("provider").eq("store_id", storeId).eq("provider", "microsoft")
+      .eq("user_key", email.toLowerCase()).eq("status", "connected").maybeSingle();
+    if (data) return; // already connected
+    await postTeamsActivity(appId, appPassword, serviceUrl, conversationId, {
+      type: "message",
+      attachments: [oauthCard(connection, appId, "Connecting your Microsoft 365 so I can see your own calendar, mail and tasks.")],
+    });
+  } catch (e) {
+    console.warn(`[teams-sso] could not offer sign-on: ${(e as Error)?.message ?? e}`);
+  }
+}
 
 async function handleActivity(activity: Record<string, unknown>, appId: string, appPassword: string): Promise<void> {
   // An Approve / Decline tap on an approval card comes back as an ordinary message
@@ -166,6 +244,13 @@ async function handleActivity(activity: Record<string, unknown>, appId: string, 
   });
 
   const { text: reply } = await generateTurnReply(db, store, { sessionId, inboundText: ev.text, visitor });
+
+  // If this person has no Microsoft 365 connection of their own, start the silent
+  // sign-on now. Deliberately AFTER the reply is composed: the card is a
+  // background convenience and must never make somebody wait for an answer. Teams
+  // resolves it without showing them anything once their organisation has
+  // consented, so the next time they ask for their own calendar it is simply there.
+  if (email) void maybeStartSso(db, store.id, email, appId, appPassword, ev.serviceUrl, ev.conversationId);
   const finalReply = reply || "Sorry, I had a brief hiccup — could you send that again?";
 
   for (const bubble of splitBubbles(finalReply)) {

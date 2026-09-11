@@ -28,6 +28,7 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import type { Store } from "./types.ts";
 import { consentUrl, getAccessToken, grantedScopes, personalConnectUrl } from "./connections.ts";
+import { ssoConfigured } from "./teams-sso.ts";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
 const TIMEOUT_MS = 8000;
@@ -288,6 +289,7 @@ async function sharedDocumentsAllowed(db: SupabaseClient, storeId: string): Prom
  *  this" is decided. */
 async function personal(
   db: SupabaseClient, store: Store, email: string | null | undefined, bundle: M365Bundle,
+  channel?: string,
 ): Promise<{ token: string } | { offer: Json }> {
   const who = (email ?? "").trim().toLowerCase();
   if (!who) {
@@ -297,6 +299,24 @@ async function personal(
   if (token) {
     const allowed = await requireBundle(db, store.id, bundle, who);
     return allowed.ok ? { token } : { offer: allowed.offer };
+  }
+
+  // In Teams, single sign-on can settle this without the person doing anything:
+  // the client exchanges a token and the connection appears. Say so rather than
+  // handing them a link, because the link would be the second time their
+  // organisation was asked to approve the same app.
+  if (channel === "teams" && ssoConfigured()) {
+    return {
+      offer: {
+        ok: false,
+        needs_connection: true,
+        sign_in_pending: true,
+        note:
+          "I can't see their own Microsoft 365 yet. Tell them Teams will connect it for them " +
+          "in a moment and to ask again — there is no link to follow and nothing to fill in. " +
+          "Do not claim to have looked.",
+      },
+    };
   }
 
   const url = await personalConnectUrl("microsoft", store.id, who);
@@ -318,9 +338,9 @@ async function personal(
 
 /** What is on this person's calendar for a day. */
 export async function mySchedule(
-  db: SupabaseClient, store: Store, email: string | null | undefined, day?: string,
+  db: SupabaseClient, store: Store, email: string | null | undefined, day?: string, channel?: string,
 ): Promise<Json> {
-  const p = await personal(db, store, email, "calendar");
+  const p = await personal(db, store, email, "calendar", channel);
   if ("offer" in p) return p.offer;
 
   const base = day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? new Date(`${day}T00:00:00Z`) : new Date();
@@ -348,9 +368,9 @@ export async function mySchedule(
 
 /** Search this person's own mailbox. */
 export async function searchMyMail(
-  db: SupabaseClient, store: Store, email: string | null | undefined, query: string,
+  db: SupabaseClient, store: Store, email: string | null | undefined, query: string, channel?: string,
 ): Promise<Json> {
-  const p = await personal(db, store, email, "mail");
+  const p = await personal(db, store, email, "mail", channel);
   if ("offer" in p) return p.offer;
 
   const path =
@@ -374,9 +394,9 @@ export async function searchMyMail(
 
 /** This person's open tasks, from their default To Do list. */
 export async function myTasks(
-  db: SupabaseClient, store: Store, email: string | null | undefined,
+  db: SupabaseClient, store: Store, email: string | null | undefined, channel?: string,
 ): Promise<Json> {
-  const p = await personal(db, store, email, "tasks");
+  const p = await personal(db, store, email, "tasks", channel);
   if ("offer" in p) return p.offer;
 
   const listId = await defaultTaskList(p.token);
@@ -400,9 +420,9 @@ export async function myTasks(
  *  set to hold, and it is declared as having a side effect. */
 export async function addTask(
   db: SupabaseClient, store: Store, email: string | null | undefined,
-  title: string, due?: string,
+  title: string, due?: string, channel?: string,
 ): Promise<Json> {
-  const p = await personal(db, store, email, "tasks");
+  const p = await personal(db, store, email, "tasks", channel);
   if ("offer" in p) return p.offer;
   if (!title.trim()) return { ok: false, note: "A task needs a title." };
 
@@ -427,9 +447,9 @@ export async function addTask(
  */
 export async function sendMail(
   db: SupabaseClient, store: Store, email: string | null | undefined,
-  to: string, subject: string, bodyText: string,
+  to: string, subject: string, bodyText: string, channel?: string,
 ): Promise<Json> {
-  const p = await personal(db, store, email, "mail_send");
+  const p = await personal(db, store, email, "mail_send", channel);
   if ("offer" in p) return p.offer;
 
   const recipients = to.split(/[;,]/).map((a) => a.trim()).filter((a) => a.includes("@"));
