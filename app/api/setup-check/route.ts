@@ -3,6 +3,7 @@ import { getActiveStore } from "@/lib/store/active-store";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTeamsStatus } from "@/app/(app)/link/teams-actions";
 import { getSlackStatus } from "@/app/(app)/link/slack-actions";
+import { untyped } from "@/lib/supabase/untyped";
 
 /**
  * What this deployment can actually see.
@@ -51,8 +52,7 @@ export async function GET() {
   let slackTable = "not reached";
   try {
     const db = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const from = db.from as unknown as (t: string) => any;
+    const from = untyped(db);
     const t = await from("teams_installs").select("store_id").limit(1);
     teamsTable = t.error ? `error: ${t.error.message}` : "ok";
     const k = await from("slack_installs").select("store_id").limit(1);

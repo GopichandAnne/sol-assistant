@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getActiveStore } from "@/lib/store/active-store";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { untyped } from "@/lib/supabase/untyped";
 
 /**
  * Answers colleagues said were wrong.
@@ -33,8 +34,7 @@ async function requireOwner() {
 export async function listOpenFeedback(): Promise<Feedback[]> {
   const ctx = await requireOwner();
   const db = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
   const { data } = await from("answer_feedback")
     .select("id, question, answer, note, channel, reported_by, created_at")
     .eq("store_id", ctx.active!.id).eq("status", "open")
@@ -51,8 +51,7 @@ export async function listOpenFeedback(): Promise<Feedback[]> {
 export async function markReviewed(id: string): Promise<{ ok: boolean; error?: string }> {
   const ctx = await requireOwner();
   const db = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
   const { error } = await from("answer_feedback")
     .update({ status: "reviewed", reviewed_at: new Date().toISOString(), reviewed_by: ctx.user.email ?? "an owner" })
     .eq("id", id).eq("store_id", ctx.active!.id).eq("status", "open");

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getActiveStore } from "@/lib/store/active-store";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { untyped } from "@/lib/supabase/untyped";
 
 /**
  * Which assistant answers in which channel.
@@ -57,8 +58,7 @@ export async function listSeenChannels(storeId: string, kind: ChannelKind, works
   await requireOwner(storeId);
   if (!workspaceId) return [];
   const db = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
   const [{ data: seen }, { data: routes }] = await Promise.all([
     from("channel_seen").select("channel_id, name, last_seen")
       .eq("channel_kind", kind).eq("workspace_id", workspaceId)
@@ -88,8 +88,7 @@ export async function routeChannel(
 ): Promise<Result> {
   const ctx = await requireOwner(storeId);
   const db = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
 
   if (!targetStoreId) {
     const { error } = await from("channel_route").delete()

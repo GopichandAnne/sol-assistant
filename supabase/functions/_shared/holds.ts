@@ -16,6 +16,7 @@ import { buildApprovalBlocks } from "./slack.ts";
 import { slackPostMessage } from "./slack-api.ts";
 import { buildApprovalCard } from "./teams.ts";
 import { postTeamsActivity } from "./teams-auth.ts";
+import { untyped } from "./untyped.ts";
 
 /** If the store connected Slack and set an approvals channel, post Approve/Decline
  *  buttons there for this held action. Best-effort — a Slack failure never matters. */
@@ -27,8 +28,7 @@ async function postSlackApproval(
   actedAs: string | null,
 ): Promise<boolean> {
   try {
-    // deno-lint-ignore no-explicit-any
-    const from = db.from as unknown as (t: string) => any;
+    const from = untyped(db);
     const { data: install } = await from("slack_installs")
       .select("bot_token, approvals_channel")
       .eq("store_id", store.id)
@@ -61,8 +61,7 @@ async function postTeamsApproval(
     const appId = Deno.env.get("MICROSOFT_APP_ID");
     const appPassword = Deno.env.get("MICROSOFT_APP_PASSWORD");
     if (!appId || !appPassword) return false;
-    // deno-lint-ignore no-explicit-any
-    const from = db.from as unknown as (t: string) => any;
+    const from = untyped(db);
     const { data: install } = await from("teams_installs")
       .select("tenant_id, approvals_email")
       .eq("store_id", store.id)

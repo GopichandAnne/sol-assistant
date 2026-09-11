@@ -16,6 +16,7 @@
 // a DM is between one person and the organisation, not a place anyone would route.
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { untyped } from "./untyped.ts";
 
 export type ChannelKind = "teams" | "slack";
 
@@ -29,8 +30,7 @@ export async function resolveStoreForChannel(
 ): Promise<string | null> {
   if (!workspaceId) return workspaceDefault;
   try {
-    // deno-lint-ignore no-explicit-any
-    const from = db.from as unknown as (t: string) => any;
+    const from = untyped(db);
     const { data } = await from("channel_route")
       .select("store_id")
       .eq("channel_kind", kind)
@@ -64,8 +64,7 @@ export async function rememberChannel(
 ): Promise<void> {
   if (!isGroup || !workspaceId || !channelId) return;
   try {
-    // deno-lint-ignore no-explicit-any
-    const from = db.from as unknown as (t: string) => any;
+    const from = untyped(db);
     await from("channel_seen").upsert({
       channel_kind: kind,
       workspace_id: workspaceId,

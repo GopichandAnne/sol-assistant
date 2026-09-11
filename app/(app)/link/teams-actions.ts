@@ -3,6 +3,7 @@
 import { getActiveStore } from "@/lib/store/active-store";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { untyped } from "@/lib/supabase/untyped";
 
 export type PendingTenant = {
   tenantId: string;
@@ -76,8 +77,7 @@ async function requireOwner(storeId: string) {
 export async function getTeamsStatus(storeId: string): Promise<TeamsStatus> {
   await requireOwner(storeId);
   const db = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
   const { data } = await from("teams_installs")
     .select("tenant_id, approvals_email, consent_missing_at").eq("store_id", storeId).eq("active", true).maybeSingle();
   const configured = !!(process.env.MICROSOFT_APP_ID && process.env.MICROSOFT_APP_PASSWORD);
@@ -123,8 +123,7 @@ export async function setTeamsTenant(storeId: string, tenantId: string): Promise
   await requireOwner(storeId);
   const t = tenantId.trim();
   const db = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
   if (!t) {
     await from("teams_installs").update({ active: false }).eq("store_id", storeId);
     return { ok: true };
@@ -146,8 +145,7 @@ export async function setTeamsApprover(storeId: string, email: string): Promise<
     return { ok: false, error: "That doesn't look like an email address." };
   }
   const db = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
   const { error } = await from("teams_installs")
     .update({ approvals_email: e || null }).eq("store_id", storeId).eq("active", true);
   if (error) return { ok: false, error: error.message };
@@ -161,8 +159,7 @@ export async function linkPendingTenant(storeId: string, tenantId: string): Prom
   const t = tenantId.trim();
   if (!t) return { ok: false, error: "No tenant given." };
   const db = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
   const { error } = await from("teams_installs")
     .upsert({ tenant_id: t, store_id: storeId, active: true }, { onConflict: "tenant_id" });
   if (error) return { ok: false, error: error.message };

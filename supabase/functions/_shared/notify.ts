@@ -23,6 +23,7 @@ import type { Store } from "./types.ts";
 import { accountSmtp, sendEmail } from "./email.ts";
 import { slackLookupByEmail, slackPostMessage } from "./slack-api.ts";
 import { postTeamsReply } from "./teams-auth.ts";
+import { untyped } from "./untyped.ts";
 
 // Where a notified person goes to act on it. Configuration, not a constant: this
 // product has its own console, and pointing people at another product's URL is
@@ -42,8 +43,7 @@ interface Reach {
 /** Load, once per notification, what this account can reach people through. */
 async function loadReach(db: SupabaseClient, store: Store): Promise<Reach> {
   const reach: Reach = {};
-  // deno-lint-ignore no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
 
   const appId = Deno.env.get("MICROSOFT_APP_ID");
   const appPassword = Deno.env.get("MICROSOFT_APP_PASSWORD");
@@ -69,8 +69,7 @@ async function loadReach(db: SupabaseClient, store: Store): Promise<Reach> {
 async function viaTeams(db: SupabaseClient, reach: Reach, email: string, text: string): Promise<boolean> {
   if (!reach.teams || !email) return false;
   try {
-    // deno-lint-ignore no-explicit-any
-    const from = db.from as unknown as (t: string) => any;
+    const from = untyped(db);
     const { data } = await from("teams_user")
       .select("service_url, conversation_id")
       .eq("tenant_id", reach.teams.tenantId)

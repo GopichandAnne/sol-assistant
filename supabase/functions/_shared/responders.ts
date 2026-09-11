@@ -14,6 +14,7 @@ import { learnFromAnswer } from "./learn.ts";
 import { noteAssistantMessage } from "./history.ts";
 import { slackPostMessage } from "./slack-api.ts";
 import { postTeamsReply } from "./teams-auth.ts";
+import { untyped } from "./untyped.ts";
 
 /**
  * Notify everyone subscribed to this topic. Topics are 'escalation', 'approval',
@@ -188,8 +189,7 @@ export async function relayToAsker(
   session: string,
   answerText: string,
 ): Promise<boolean> {
-  // deno-lint-ignore no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
   try {
     if (session.startsWith("slack_")) {
       // slack_<teamId>_<userId>. A user id is a valid channel for postMessage, so

@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import { getActiveStore } from "@/lib/store/active-store";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { untyped } from "@/lib/supabase/untyped";
 
 // Bot scopes the Slack app requests (must match the app's config).
 const SLACK_SCOPES = "chat:write,users:read,users:read.email,app_mentions:read,im:history,im:read,im:write";
@@ -36,8 +37,7 @@ export async function getSlackStatus(storeId: string): Promise<SlackStatus> {
   await requireOwner(storeId);
   const db = createAdminClient();
   // slack_installs isn't in the generated types; a scoped cast keeps this query untyped.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
   const { data: install } = await from("slack_installs").select("team_id, team_name, approvals_channel").eq("store_id", storeId).eq("active", true).maybeSingle();
 
   const clientId = process.env.SLACK_CLIENT_ID ?? "";
@@ -68,8 +68,7 @@ export async function getSlackStatus(storeId: string): Promise<SlackStatus> {
 export async function setSlackApprovalsChannel(storeId: string, channel: string): Promise<{ ok: boolean; error?: string }> {
   await requireOwner(storeId);
   const db = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
   const { error } = await from("slack_installs").update({ approvals_channel: channel.trim() || null }).eq("store_id", storeId).eq("active", true);
   if (error) return { ok: false, error: error.message };
   return { ok: true };

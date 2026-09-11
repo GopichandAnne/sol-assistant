@@ -7,6 +7,7 @@ import { getActiveStore } from "@/lib/store/active-store";
 import { callBotAdmin } from "@/lib/knowledge/bot-admin";
 import { BUSINESS_PRESETS } from "@/lib/business-presets";
 import type { Database } from "@/lib/database.types";
+import { untyped } from "@/lib/supabase/untyped";
 
 type AgentKey = Database["public"]["Enums"]["agent_config_key"];
 
@@ -350,8 +351,7 @@ export async function getMailSetup(): Promise<MailSetup | null> {
   if (!companyId) return null;
   const db = createAdminClient();
   // deno-lint ignore: the table isn't in the generated types yet.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const from = db.from as unknown as (t: string) => any;
+  const from = untyped(db);
   const { data } = await from("notification_email")
     .select("host, port, username, from_address, from_name, verified_at, last_error")
     .eq("company_id", companyId).maybeSingle();
