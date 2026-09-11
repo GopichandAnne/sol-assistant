@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getActiveStore } from "@/lib/store/active-store";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTeamsStatus } from "@/app/(app)/link/teams-actions";
+import { getSlackStatus } from "@/app/(app)/link/slack-actions";
 
 /**
  * What this deployment can actually see.
@@ -59,6 +61,25 @@ export async function GET() {
     adminClient = `FAILED: ${e instanceof Error ? e.message : String(e)}`;
   }
 
+  // The definitive probe: call the very functions the panels call. A server
+  // action that throws reaches the browser as a redacted digest, which is correct
+  // for a client's console and useless for diagnosing one's own deployment. Here
+  // the error is caught deliberately and reported, to the owner, in full.
+  let teamsStatus: unknown = null;
+  let teamsError: string | null = null;
+  try {
+    teamsStatus = await getTeamsStatus(ctx.active.id);
+  } catch (e) {
+    teamsError = e instanceof Error ? `${e.message}` : String(e);
+  }
+  let slackStatus: unknown = null;
+  let slackError: string | null = null;
+  try {
+    slackStatus = await getSlackStatus(ctx.active.id);
+  } catch (e) {
+    slackError = e instanceof Error ? `${e.message}` : String(e);
+  }
+
   return NextResponse.json(
     {
       build: {
@@ -84,6 +105,10 @@ export async function GET() {
         adminClient,
         teamsTable,
         slackTable,
+      },
+      panelCalls: {
+        getTeamsStatus: teamsError ? `THREW: ${teamsError}` : teamsStatus,
+        getSlackStatus: slackError ? `THREW: ${slackError}` : slackStatus,
       },
       you: {
         store: ctx.active.slug ?? ctx.active.id,
