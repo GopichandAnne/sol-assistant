@@ -7,7 +7,7 @@ import { ChannelRouting } from "@/components/store-link/channel-routing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, Loader2, MessageSquare } from "lucide-react";
+import { Check, Download, Loader2, MessageSquare } from "lucide-react";
 
 const NOTES: Record<string, { ok: boolean; msg: string }> = {
   connected: { ok: true, msg: "Slack connected — the assistant is now a teammate in that workspace." },
@@ -68,8 +68,13 @@ export function SlackConnect({ storeId }: { storeId: string }) {
             <Label className="text-xs">Approvals channel</Label>
             <p className="text-muted-foreground text-xs">
               Post <span className="font-medium">Approve / Decline</span> buttons for held actions to this
-              Slack channel — a manager can sign off right there. Paste the channel ID (e.g.{" "}
-              <code className="bg-muted rounded px-1">C0123ABCD</code>). Leave blank to only notify by email.
+              Slack channel, so whoever is on duty can sign off there. Paste the channel ID (e.g.{" "}
+              <code className="bg-muted rounded px-1">C0123ABCD</code>). Leave blank to notify people
+              individually instead.
+            </p>
+            <p className="text-muted-foreground text-xs">
+              Whoever raised a request can&apos;t approve it themselves — it needs somebody else in the
+              channel.
             </p>
             <div className="flex gap-2">
               <Input value={channel} onChange={(e) => setChannel(e.target.value)} placeholder="C0123ABCD" className="font-mono text-sm" />
@@ -88,11 +93,24 @@ export function SlackConnect({ storeId }: { storeId: string }) {
       )}
 
       {status && !status.connected && !status.configured && (
-        <p className="text-muted-foreground rounded-md border border-dashed p-3 text-xs">
-          Slack isn&apos;t switched on for this deployment yet. That&apos;s a one-time job on our
-          side (a Slack app and its credentials), not something you set up per workspace.
-          Ask us and it applies to everyone.
-        </p>
+        <div className="space-y-2 rounded-md border border-dashed p-3">
+          <p className="text-muted-foreground text-xs">
+            Slack isn&apos;t switched on for this deployment yet. That&apos;s a one-time job on our
+            side (a Slack app and its credentials), not something you set up per workspace — once
+            it&apos;s done, every workspace installs it with one click.
+          </p>
+          {/* Slack can create an app FROM a manifest. Downloading ours beats typing
+              seven scopes and three URLs into a form and finding the typo later,
+              when the assistant answers in Teams but silently not here. */}
+          <Button size="sm" variant="outline" asChild>
+            <a href="/api/slack-manifest" download>
+              <Download className="size-3.5" /> Download the Slack app manifest
+            </a>
+          </Button>
+          <p className="text-muted-foreground text-[11px]">
+            For whoever sets it up: api.slack.com/apps &rarr; Create New App &rarr; From a manifest.
+          </p>
+        </div>
       )}
       {status?.connected && status.teamId && (
         <ChannelRouting storeId={storeId} kind="slack" workspaceId={status.teamId} />

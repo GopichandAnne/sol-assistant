@@ -303,12 +303,28 @@ async function handleApproval(
     : { data: null };
   const slug = (storeRow as { slug?: string } | null)?.slug;
   const store = slug ? await getStoreBySlug(db, slug) : null;
+  // The address of whoever tapped it, from what we recorded when they last
+  // messaged the bot. Needed so the same person cannot raise and approve.
+  let approverEmail: string | null = null;
+  try {
+    const fromId = String(from.id ?? "");
+    const tenantId = String(((activity.channelData as Record<string, unknown> | undefined)?.tenant as Record<string, unknown> | undefined)?.id ?? "");
+    if (fromId && tenantId) {
+      const { data: u } = await db.from("teams_user")
+        .select("email").eq("tenant_id", tenantId).eq("teams_user_id", fromId).maybeSingle();
+      approverEmail = (u as { email?: string | null } | null)?.email ?? null;
+    }
+  } catch { /* best-effort; the check simply cannot run without it */ }
+
   const outcome = store
-    ? await resolveActionRequest(db, store, id, decision as "approved" | "declined", `${who} (Teams)`)
+    ? await resolveActionRequest(db, store, id, decision as "approved" | "declined", `${who} (Teams)`, approverEmail)
     : { ok: false as const };
 
+  const refusal = (outcome as { error?: string }).error;
   const note = !outcome.ok
-    ? "That one was already resolved, or I couldn't find it. The Activity page in the console has the current state."
+    ? (refusal && refusal.includes("different person")
+        ? refusal
+        : "That one was already resolved, or I couldn't find it. The Activity page in the console has the current state.")
     : decision === "declined"
       ? `Declined by ${who}. Nothing ran.`
       : (outcome as { completed?: boolean }).completed

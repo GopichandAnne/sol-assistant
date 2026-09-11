@@ -7,7 +7,7 @@
 // Env: SLACK_SIGNING_SECRET (same app secret as slack-events).
 import { serviceClient } from "../_shared/supabase.ts";
 import { parseInteraction, verifySlackSignature } from "../_shared/slack.ts";
-import { slackRespond } from "../_shared/slack-api.ts";
+import { slackRespond, slackUserInfo } from "../_shared/slack-api.ts";
 import { resolveActionRequest } from "../_shared/resolve.ts";
 import { getStoreBySlug } from "../_shared/config.ts";
 
@@ -49,8 +49,23 @@ Deno.serve(async (req) => {
   const slug = (storeRow as { slug?: string } | null)?.slug;
   const store = slug ? await getStoreBySlug(db, slug) : null;
 
+  // Who tapped it, verified with Slack rather than taken from the payload's display
+  // name. Without an address there is nothing to compare against the requester, and
+  // the separation-of-duties check would quietly pass.
+  let approverEmail: string | null = null;
+  if (store && parsed.userId) {
+    try {
+      const { data: install } = await db.from("slack_installs")
+        .select("bot_token").eq("store_id", store.id).eq("active", true).maybeSingle();
+      const botToken = (install as { bot_token?: string } | null)?.bot_token;
+      if (botToken) approverEmail = (await slackUserInfo(botToken, parsed.userId))?.email ?? null;
+    } catch (e) {
+      console.warn(`[slack] approver lookup: ${(e as Error)?.message ?? e}`);
+    }
+  }
+
   const outcome = store
-    ? await resolveActionRequest(db, store, parsed.actionRequestId, parsed.decision, `${parsed.userName} (Slack)`)
+    ? await resolveActionRequest(db, store, parsed.actionRequestId, parsed.decision, `${parsed.userName} (Slack)`, approverEmail)
     : { ok: false as const };
 
   if (parsed.responseUrl) {
@@ -60,8 +75,9 @@ Deno.serve(async (req) => {
     const note = (outcome as { note?: string }).note ?? "";
     // Say what actually happened. A green tick on a write that failed is the one
     // outcome nobody can afford to misread.
+    const refusal = (outcome as { error?: string }).error;
     const msg = !ok
-      ? "That request was already resolved."
+      ? (refusal && refusal.includes("different person") ? refusal : "That request was already resolved.")
       : parsed.decision === "declined"
         ? `🚫 ${verb} by ${parsed.userName}. Nothing ran.`
         : completed

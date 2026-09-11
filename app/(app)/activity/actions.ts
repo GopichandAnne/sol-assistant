@@ -40,7 +40,10 @@ export async function decideActionRequest(
 
   const data = res.data as { ok?: boolean; completed?: boolean; told?: boolean; note?: string; error?: string };
   if (!data.ok) {
-    return { ok: false, error: data.error === "already resolved" ? "Someone already resolved that one." : (data.error ?? "Couldn't resolve it.") };
+    // A separation-of-duties refusal is not an error to shrug at — it is the
+    // control working, so it says exactly that rather than a generic failure.
+    if (data.error === "already resolved") return { ok: false, error: "Someone already resolved that one." };
+    return { ok: false, error: data.error ?? "Couldn't resolve it." };
   }
 
   revalidatePath("/activity");

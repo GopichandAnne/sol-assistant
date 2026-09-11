@@ -152,6 +152,8 @@ export function buildApprovalBlocks(a: ApprovalReq): { text: string; blocks: unk
 }
 
 export interface ParsedInteraction {
+  /** Slack user id of whoever tapped the button. */
+  userId?: string;
   decision: "approved" | "declined";
   actionRequestId: string;
   userName: string;
@@ -170,7 +172,10 @@ export function parseInteraction(payload: any): ParsedInteraction | null {
   const id = action.value ? String(action.value) : "";
   if (!id) return null;
   const userName = String(payload.user?.name || payload.user?.username || payload.user?.id || "someone");
-  return { decision, actionRequestId: id, userName, responseUrl: payload.response_url ? String(payload.response_url) : "" };
+  // The approver's Slack id, so their address can be resolved and checked against
+  // the person who asked. A name is for display; only an id identifies anybody.
+  const userId = payload.user?.id ? String(payload.user.id) : "";
+  return { decision, actionRequestId: id, userName, userId, responseUrl: payload.response_url ? String(payload.response_url) : "" };
 }
 
 /** Split a reply to fit Slack's per-message limit (~4000 chars), breaking on a

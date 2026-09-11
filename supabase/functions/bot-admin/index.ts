@@ -873,7 +873,10 @@ Deno.serve(async (req) => {
         const by = (String(body.by ?? "").trim()) || "an owner";
         if (!reqId) return json({ error: "request_id required" }, 400);
         const { resolveActionRequest } = await import("../_shared/resolve.ts");
-        const res = await resolveActionRequest(db, store, reqId, decision as "approved" | "declined", by);
+        // `by` is the console user's email, so it doubles as the identity the
+        // separation-of-duties check compares against the requester.
+        const byEmail = by.includes("@") ? by : null;
+        const res = await resolveActionRequest(db, store, reqId, decision as "approved" | "declined", by, byEmail);
         return json(res);
       }
       case "answer_ticket": {

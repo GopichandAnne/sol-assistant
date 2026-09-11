@@ -53,13 +53,55 @@ interface Row {
   status: string;
 }
 
+/**
+ * Whether the same person may both raise and approve an action.
+ *
+ * Off by default, because "a person approves it" means a SECOND person. Teams
+ * enforced this structurally by sending the card to a named approver rather than
+ * into the conversation; Slack posts to a channel, where the requester can see
+ * their own request and tap approve. The same control should not be strong in one
+ * channel and decorative in another, so the rule moved here, where every surface
+ * passes through.
+ *
+ * A one-person account can set approval_self=allow and knowingly proceed —
+ * otherwise their held actions would deadlock with nobody else to approve them.
+ */
+async function selfApprovalAllowed(db: SupabaseClient, storeId: string): Promise<boolean> {
+  try {
+    const { data } = await db.from("agent_config")
+      .select("value").eq("store_id", storeId).eq("key", "approval_self").maybeSingle();
+    return (data as { value?: string } | null)?.value === "allow";
+  } catch {
+    return false;
+  }
+}
+
 export async function resolveActionRequest(
   db: SupabaseClient,
   store: Store,
   id: string,
   decision: "approved" | "declined",
   by: string,
+  /** The approver's verified address, where the surface knows it. Compared with
+   *  the requester's so nobody quietly signs off their own request. */
+  byEmail?: string | null,
 ): Promise<ResolveResult> {
+  // Separation of duties, checked BEFORE the row is claimed: refusing after
+  // claiming would leave a request marked decided by the very person who was not
+  // allowed to decide it.
+  const approver = (byEmail ?? "").trim().toLowerCase();
+  if (approver && decision === "approved") {
+    const { data: peek } = await db
+      .from("action_request").select("acted_as").eq("id", id).eq("store_id", store.id).maybeSingle();
+    const requester = ((peek as { acted_as?: string | null } | null)?.acted_as ?? "").trim().toLowerCase();
+    if (requester && requester === approver && !(await selfApprovalAllowed(db, store.id))) {
+      return {
+        ok: false,
+        error: "That request was raised by you, and it needs a different person to approve it.",
+      };
+    }
+  }
+
   // Claim it first. Scoped to this store and to still-pending, so a stale click
   // cannot flip somebody else's request or re-decide a settled one.
   const { data: claimed, error } = await db
