@@ -1,6 +1,6 @@
-// Microsoft Teams / Bot Framework auth. Incoming activities carry a Bearer JWT signed
-// by Bot Framework; we verify it against their published JWKS (issuer api.botframework.com,
-// audience = our bot's app id). Outbound replies + the Graph email lookup use an app
+// Microsoft Teams / Bot Framework auth. Incoming activities carry a Bearer JWT; we
+// verify it against the published JWKS of whichever directory issued it (see the
+// tenant note below), with the audience pinned to our bot's app id. Outbound replies + the Graph email lookup use an app
 // (client-credentials) token. The verify core is pure (JWKS passed in) so it's testable.
 
 const RS: Record<string, string> = { RS256: "SHA-256", RS384: "SHA-384", RS512: "SHA-512" };
@@ -57,31 +57,71 @@ export async function verifyJwtRs256(
 }
 
 // ── Network: JWKS + tokens + outbound ────────────────────────────────────────
+//
+// A bot is registered either MULTI-TENANT, where Bot Framework itself is the
+// issuer and the authority is botframework.com, or SINGLE-TENANT, where the
+// organisation's own directory issues and signs everything. The two are not
+// interchangeable in either direction: a single-tenant bot's inbound tokens fail
+// verification against the Bot Framework issuer, and its outbound token request is
+// refused by the botframework.com authority.
+//
+// Azure no longer offers the multi-tenant type when creating a bot in the portal,
+// so single-tenant is the shape new deployments actually get. Setting
+// MICROSOFT_APP_TENANT_ID switches both halves to that directory; leaving it unset
+// keeps the multi-tenant behaviour for any bot already registered that way.
 const BF_OPENID = "https://login.botframework.com/v1/.well-known/openidconfiguration";
 const BF_ISSUER = "https://api.botframework.com";
-// deno-lint-ignore no-explicit-any
-let jwksCache: { keys: any[]; exp: number } | null = null;
 
+/** The bot's home directory, when it is registered to one. */
+function botTenant(): string | null {
+  const t = (Deno.env.get("MICROSOFT_APP_TENANT_ID") ?? "").trim();
+  return t || null;
+}
+
+// deno-lint-ignore no-explicit-any
+let jwksCache: { keys: any[]; exp: number; src: string } | null = null;
+
+/** Signing keys for whoever issues this bot's inbound tokens. Cached by source, so
+ *  flipping the tenant setting cannot serve keys fetched for the other issuer. */
 async function botFrameworkJwks(): Promise<{ keys: unknown[] }> {
-  if (jwksCache && jwksCache.exp > Date.now()) return jwksCache;
-  const cfg = await (await fetch(BF_OPENID)).json();
+  const tenant = botTenant();
+  const src = tenant
+    ? `https://login.microsoftonline.com/${tenant}/v2.0/.well-known/openid-configuration`
+    : BF_OPENID;
+  if (jwksCache && jwksCache.exp > Date.now() && jwksCache.src === src) return jwksCache;
+  const cfg = await (await fetch(src)).json();
   const jwks = await (await fetch(cfg.jwks_uri)).json();
-  jwksCache = { keys: jwks.keys ?? [], exp: Date.now() + 12 * 60 * 60 * 1000 }; // 12h
+  jwksCache = { keys: jwks.keys ?? [], exp: Date.now() + 12 * 60 * 60 * 1000, src }; // 12h
   return jwksCache;
+}
+
+/** Who is allowed to have issued an inbound activity's token. */
+function expectedIssuer(): string | string[] {
+  const tenant = botTenant();
+  if (!tenant) return BF_ISSUER;
+  // Both forms are accepted: the directory issues v2.0, while some paths still
+  // present the v1 sts.windows.net form for the same tenant.
+  return [
+    `https://login.microsoftonline.com/${tenant}/v2.0`,
+    `https://sts.windows.net/${tenant}/`,
+  ];
 }
 
 /** Verify an incoming Bot Framework request token → its claims, or null. */
 export async function verifyBotFrameworkToken(token: string, appId: string): Promise<Record<string, unknown> | null> {
   if (!token || !appId) return null;
   const jwks = await botFrameworkJwks();
-  return await verifyJwtRs256(token, jwks as { keys: unknown[] } & { keys: unknown[] }, { issuer: BF_ISSUER, audience: appId });
+  return await verifyJwtRs256(token, jwks as { keys: unknown[] } & { keys: unknown[] }, { issuer: expectedIssuer(), audience: appId });
 }
 
 /** Client-credentials token for a scope (outbound Bot Framework or Graph). */
-async function appToken(appId: string, appPassword: string, scope: string, tenant = "botframework.com"): Promise<string | null> {
+async function appToken(appId: string, appPassword: string, scope: string, tenant?: string): Promise<string | null> {
+  // A single-tenant bot must ask its own directory; a multi-tenant one asks
+  // botframework.com. Callers that already know the tenant (the Graph lookup) pass it.
+  const authority = tenant ?? botTenant() ?? "botframework.com";
   try {
     const body = new URLSearchParams({ grant_type: "client_credentials", client_id: appId, client_secret: appPassword, scope });
-    const res = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
+    const res = await fetch(`https://login.microsoftonline.com/${authority}/oauth2/v2.0/token`, {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
       body,
