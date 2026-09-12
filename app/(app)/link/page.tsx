@@ -11,7 +11,7 @@ import { SsoDevTools } from "@/components/members/sso-dev-tools";
 import { SlackConnect } from "@/components/store-link/slack-connect";
 import { TeamsConnect } from "@/components/store-link/teams-connect";
 
-export const metadata: Metadata = { title: "Web chat link · The Assistant" };
+export const metadata: Metadata = { title: "Channels · The Assistant" };
 
 export default async function LinkPage() {
   const ctx = await getActiveStore();
@@ -36,7 +36,7 @@ export default async function LinkPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-5 p-6">
       <header>
-        <h1 className="font-display text-2xl">{isSaas ? "Embed & install" : "Web chat link"}</h1>
+        <h1 className="font-display text-2xl">Channels</h1>
         <p className="text-muted-foreground text-sm">
           {store.name} — your embed snippet, QR code, and shareable chat link
         </p>

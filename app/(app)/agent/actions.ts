@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveStore } from "@/lib/store/active-store";
 import { callBotAdmin } from "@/lib/knowledge/bot-admin";
-import { BUSINESS_PRESETS } from "@/lib/business-presets";
 import type { Database } from "@/lib/database.types";
 import { untyped } from "@/lib/supabase/untyped";
 
@@ -97,31 +96,6 @@ export async function saveAgentConfig(
   return { ok: true };
 }
 
-/**
- * Let an owner set their store's business type themselves (previously admin-only).
- * Drives the vertical vocabulary layer + any type-gated UI. Non-destructive: it
- * only changes stores.business_type — the owner's agent_config wording is left as
- * they've tuned it. Revalidates the whole layout so the nav + labels relabel.
- */
-export async function updateBusinessType(businessType: string): Promise<SaveResult> {
-  const ctx = await getActiveStore();
-  if (!ctx?.active) return { ok: false, error: "No active store." };
-
-  const supabase = await createClient();
-  const { data: isOwner } = await supabase.rpc("user_is_owner", { p_store_id: ctx.active.id });
-  if (!isOwner) return { ok: false, error: "Only owners can change the business type." };
-
-  if (!BUSINESS_PRESETS.some((p) => p.id === businessType)) {
-    return { ok: false, error: "Unknown business type." };
-  }
-
-  const admin = createAdminClient();
-  const { error } = await admin.from("stores").update({ business_type: businessType }).eq("id", ctx.active.id);
-  if (error) return { ok: false, error: error.message };
-
-  revalidatePath("/", "layout");
-  return { ok: true };
-}
 
 // ── Model choice: which LLM answers this store's chat ─────────────────────────
 // NULL provider ⇒ Gemini (the default). Platform keys power the alternatives.

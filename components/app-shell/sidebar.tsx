@@ -42,7 +42,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-0.5 px-3 py-2">
-        {NAV_ITEMS.map((item, i) => {
+        {(() => { let lastGroup: string | null = null; return NAV_ITEMS.map((item) => {
           if (item.ownerOnly && !isOwner) return null;
           if (item.platformAdminOnly && !isPlatformAdmin) return null;
           if (item.businessTypes && !item.businessTypes.includes(active.businessType ?? "")) return null;
@@ -54,15 +54,19 @@ export function Sidebar() {
           const label = item.labelByProfile?.[profile] ?? (item.vocabKey ? vocab[item.vocabKey] : item.label);
           const isActive =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
-          // Divider label above the first platform-admin item.
-          const startsAdminSection =
-            item.platformAdminOnly && !NAV_ITEMS[i - 1]?.platformAdminOnly;
-          const adminLabel = startsAdminSection ? (
+          // Section heading above the first VISIBLE item of each group. Computed
+          // against what actually rendered rather than the previous array entry,
+          // because owner-only and admin-only items are filtered out above — a
+          // heading keyed off the raw list disappears the moment the item that
+          // happened to be first in it is hidden from this person.
+          const startsGroup = item.group !== lastGroup;
+          if (startsGroup) lastGroup = item.group;
+          const groupLabel = startsGroup ? (
             <p
-              key="admin-label"
+              key={`group-${item.group}`}
               className="text-muted-foreground/70 mt-3 px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide"
             >
-              Admin
+              {item.group}
             </p>
           ) : null;
 
@@ -104,11 +108,11 @@ export function Sidebar() {
 
           return (
             <Fragment key={item.href}>
-              {adminLabel}
+              {groupLabel}
               {content}
             </Fragment>
           );
-        })}
+        }); })()}
       </nav>
 
       <div className="text-muted-foreground px-5 py-3 text-[11px]">

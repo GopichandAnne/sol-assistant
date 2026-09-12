@@ -6,7 +6,7 @@ import { profileFor, homeHrefFor } from "@/lib/console-profile";
 import { ShieldCheck, UserCheck, Building2 as OrgIcon } from "lucide-react";
 import { Approvals, type Approval } from "@/components/activity/approvals";
 
-export const metadata: Metadata = { title: "Activity · The Assistant" };
+export const metadata: Metadata = { title: "What it did · The Assistant" };
 export const dynamic = "force-dynamic";
 
 type Row = {
@@ -58,7 +58,7 @@ export default async function ActivityPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-5 p-6">
       <header>
-        <h1 className="font-display text-2xl">Activity</h1>
+        <h1 className="font-display text-2xl">What it did</h1>
         <p className="text-muted-foreground text-sm">
           {store.name} — every action the assistant took through a connected tool.
         </p>

@@ -9,7 +9,7 @@ import { AnswerFeedback } from "@/components/dashboard/answer-feedback";
 import { listOpenFeedback } from "./feedback-actions";
 import { SetupChecklist } from "@/components/setup/setup-checklist";
 
-export const metadata: Metadata = { title: "Assistant health · The Assistant" };
+export const metadata: Metadata = { title: "Home · The Assistant" };
 
 /** The SaaS/product console home — how the embedded assistant is doing. */
 export default async function HealthPage() {

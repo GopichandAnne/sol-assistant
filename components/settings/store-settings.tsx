@@ -64,8 +64,9 @@ export function StoreSettings({
         <div>
           <h2 className="font-display font-bold">Console type</h2>
           <p className="text-muted-foreground text-sm">
-            Sets which console this store uses and how the assistant is framed. Changing it reshapes the
-            menu — it does not touch your assistant&apos;s tuning.
+            Recorded against the assistant and used to seed its wording when the account is first
+            created. It no longer reshapes the menu — every account in this product uses the same
+            console — so changing it after setup affects new copy only, not anything already tuned.
           </p>
         </div>
 

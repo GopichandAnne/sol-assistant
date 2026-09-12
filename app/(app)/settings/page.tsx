@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getActiveStore } from "@/lib/store/active-store";
-import { createClient } from "@/lib/supabase/server";
 import { profileFor, homeHrefFor } from "@/lib/console-profile";
 import { StoreSettings } from "@/components/settings/store-settings";
 
-export const metadata: Metadata = { title: "Settings · The Assistant" };
+export const metadata: Metadata = { title: "Console type · Admin" };
 
 export default async function SettingsPage() {
   const ctx = await getActiveStore();
   if (!ctx || !ctx.active) redirect("/login");
   const store = ctx.active;
 
-  const supabase = await createClient();
-  const { data: isOwner } = await supabase.rpc("user_is_owner", { p_store_id: store.id });
-  if (!isOwner && !ctx.isPlatformAdmin) redirect(homeHrefFor(profileFor(store.businessType)));
+  // Platform admins only, and no longer in the nav. The single control here sets
+  // stores.business_type, which since profileFor was pinned to "saas" no longer
+  // reshapes anything an owner can see — leaving it in their menu offered a
+  // settings page that could not change a setting. A super-admin can still reach
+  // it from Admin → Assistants to correct a mis-set type.
+  if (!ctx.isPlatformAdmin) redirect(homeHrefFor(profileFor(store.businessType)));
 
   return (
     <StoreSettings

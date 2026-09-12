@@ -6,7 +6,7 @@ import { profileFor, homeHrefFor } from "@/lib/console-profile";
 import { getCompanyForStore, getCredits, getLedger, getSpendByAssistant } from "./actions";
 import { BillingView } from "@/components/billing/billing-view";
 
-export const metadata: Metadata = { title: "Credits · SOL Assistant" };
+export const metadata: Metadata = { title: "Credits · The Assistant" };
 
 export default async function BillingPage() {
   const ctx = await getActiveStore();

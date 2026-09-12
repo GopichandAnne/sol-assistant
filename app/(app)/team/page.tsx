@@ -4,7 +4,7 @@ import { getActiveStore } from "@/lib/store/active-store";
 import { createClient } from "@/lib/supabase/server";
 import { TeamManager } from "@/components/team/team-manager";
 
-export const metadata: Metadata = { title: "Team · The Assistant" };
+export const metadata: Metadata = { title: "Your team · The Assistant" };
 
 export default async function TeamPage() {
   const ctx = await getActiveStore();
@@ -19,7 +19,7 @@ export default async function TeamPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-5 p-6">
       <header>
-        <h1 className="font-display text-2xl">Team</h1>
+        <h1 className="font-display text-2xl">Your team</h1>
         <p className="text-muted-foreground text-sm">
           {store.name} — owners and staff who can log into this panel. (Your customers live in Members.)
         </p>

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { profileFor, homeHrefFor } from "@/lib/console-profile";
 import { MembersManager } from "@/components/members/members-manager";
 
-export const metadata: Metadata = { title: "Members · The Assistant" };
+export const metadata: Metadata = { title: "Who can use it · The Assistant" };
 
 export default async function MembersPage() {
   const ctx = await getActiveStore();
@@ -19,7 +19,7 @@ export default async function MembersPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-5 p-6">
       <header>
-        <h1 className="font-display text-2xl">Members &amp; access</h1>
+        <h1 className="font-display text-2xl">Who can use it</h1>
         <p className="text-muted-foreground text-sm">
           {store.name} — your customers/residents the assistant recognizes, their roles, and how they verify.
           (Staff who log into this panel live in Team.)

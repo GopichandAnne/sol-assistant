@@ -75,7 +75,7 @@ export function AgentView({
         <div className="flex items-center gap-2">
           <Bot className="text-muted-foreground size-5" />
           <div>
-            <h1 className="font-display text-2xl">Agent</h1>
+            <h1 className="font-display text-2xl">How it answers</h1>
             <p className="text-muted-foreground text-sm">{storeName}</p>
           </div>
         </div>
@@ -159,7 +159,7 @@ export function AgentView({
 
       {/* Settings */}
       <div className="space-y-3">
-        <h2 className="text-muted-foreground text-sm font-medium">Settings</h2>
+        <h2 className="text-muted-foreground text-sm font-medium">Memory &amp; timing</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="history_turns">History turns</Label>

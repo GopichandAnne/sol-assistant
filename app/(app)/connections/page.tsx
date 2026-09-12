@@ -8,7 +8,7 @@ import { QuickTool } from "./quick-tool";
 import { McpServers, type McpServerRow, type McpToolRow } from "./mcp-servers";
 import { listM365Capabilities, type M365Capability } from "./actions";
 
-export const metadata: Metadata = { title: "Connections · The Assistant" };
+export const metadata: Metadata = { title: "Tools & systems · The Assistant" };
 export const dynamic = "force-dynamic";
 
 /**
@@ -74,7 +74,7 @@ export default async function ConnectionsPage() {
   return (
     <div className="mx-auto max-w-2xl p-4">
       <div className="mb-5">
-        <h1 className="text-lg font-semibold">Connections</h1>
+        <h1 className="text-lg font-semibold">Tools &amp; systems</h1>
         <p className="text-muted-foreground text-sm">
           Connect the tools you already use. One click, sign in on their site — the assistant gets access, and never sees your password.
         </p>

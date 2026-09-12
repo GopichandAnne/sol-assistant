@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { getActiveStore } from "@/lib/store/active-store";
 import { AssistantChat } from "./assistant-chat";
 
-export const metadata: Metadata = { title: "The Assistant · help & setup" };
+export const metadata: Metadata = { title: "Help & setup · The Assistant" };
 export const dynamic = "force-dynamic";
 
 /**
