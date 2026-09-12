@@ -1,7 +1,21 @@
-// Turn analytics — Bot Phase 3d. Classifies a customer turn into intent /
-// language / sentiment / items for the Dashboard. Runs AFTER the reply is sent
-// (best-effort), so it never adds latency to the customer's reply. Falls back to
-// the script-based language guess if the key is missing or the call fails.
+// Turn analytics — what the assistant learns about its own coverage.
+//
+// Runs AFTER the reply is sent (best-effort), so it never adds latency. Falls
+// back to the script-based language guess if the key is missing or the call fails.
+//
+// This used to classify "a message from a customer to a store's shopping
+// assistant", extracting product names and what was out of stock. Carried over
+// from the retail engine, it meant the two panels on Home — what people ask most,
+// what it could not answer — were showing product names and stock gaps for an
+// assistant that answers HR and IT questions. The panels were not mislabelled;
+// the model was being asked the wrong question, so the data underneath was wrong.
+//
+// What it asks now is the question an operator actually has: what did this person
+// want, did they get it, and if not, what was missing. That last field is the
+// whole point — "no source of truth" is a knowledge gap, "needs a system" is an
+// integration to build, and "needs a person" may be a procedure worth automating.
+// Those are three different pieces of work, and lumping them together as "could
+// not answer" tells nobody what to do next.
 
 import { detectLanguage } from "./prompt.ts";
 
@@ -18,21 +32,31 @@ export async function classifyTurn(
   const model = Deno.env.get("GEMINI_MODEL") ?? DEFAULT_MODEL;
 
   const prompt =
-    "Classify this message from a customer to a store's shopping assistant, based " +
-    "on the customer message and the assistant's reply.\n" +
-    "- language: the actual language the customer wrote in (English, Hindi, Telugu, " +
-    "Tamil, etc.), detecting romanized text too.\n" +
+    "Classify one exchange between a person at an organisation and its internal " +
+    "assistant, from the person's message and the assistant's reply.\n" +
+    "- topic: the area of work this belongs to — IT, HR, Finance, Facilities, " +
+    "Legal, Sales, Engineering, Operations, or Other. One word.\n" +
+    "- ask: what they actually wanted, as a short generic phrase in lower case, " +
+    "with names, dates, ticket numbers and other specifics REMOVED so that two " +
+    "people asking the same thing produce the same phrase. " +
+    "\"how do I reset my MFA\" and \"MFA reset for Priya\" are both \"reset mfa\". " +
+    "Empty for greetings and small talk.\n" +
+    "- resolved: true only if the assistant actually gave them what they needed. " +
+    "False if it said it did not know, could not check, would find out, or handed " +
+    "them to a person.\n" +
+    "- gap_reason: when resolved is false, the single reason why — " +
+    "\"no_source\" (the answer is not in anything it has been given), " +
+    "\"needs_system\" (it would have to look in or change another system), " +
+    "\"needs_person\" (a judgement or approval only a human can give), " +
+    "\"unclear\" (the question was too vague to answer), " +
+    "\"out_of_scope\" (not something this assistant is for). " +
+    "Use \"none\" when resolved is true.\n" +
+    "- repeatable: true if this is routine work that recurs — the kind of request " +
+    "many people make many times. False for one-offs and novel questions.\n" +
     "- sentiment: overall tone (positive / neutral / negative).\n" +
-    "- frustrated: true if the customer sounds annoyed, impatient, upset, or angry.\n" +
-    "- complaint: true if they report a problem or dissatisfaction (wrong/expired " +
-    "item, bad service, price issue, something not as expected).\n" +
-    "- feedback: true if they give an opinion, suggestion, request, or praise about " +
-    "the store or its products.\n" +
-    "- requested_items: specific product names the customer asked for or about (empty if none).\n" +
-    "- missing_items: requested products the store does NOT have or could not confirm " +
-    "— infer from the assistant saying it's unavailable, out of stock, not carried, " +
-    "or that it will check with the store (empty if none).\n" +
-    `Customer message: ${userMessage}\n` +
+    "- frustrated: true if they sound annoyed, impatient or blocked.\n" +
+    "- language: the language they wrote in, detecting romanized text too.\n" +
+    `Person's message: ${userMessage}\n` +
     `Assistant reply: ${assistantReply}`;
 
   try {
@@ -49,19 +73,19 @@ export async function classifyTurn(
           responseSchema: {
             type: "object",
             properties: {
-              intent: {
+              topic: { type: "string" },
+              ask: { type: "string" },
+              resolved: { type: "boolean" },
+              gap_reason: {
                 type: "string",
-                enum: ["navigation", "product_search", "inquiry", "order", "feedback", "complaint", "escalation", "greeting", "other"],
+                enum: ["none", "no_source", "needs_system", "needs_person", "unclear", "out_of_scope"],
               },
-              language: { type: "string" },
+              repeatable: { type: "boolean" },
               sentiment: { type: "string", enum: ["positive", "neutral", "negative"] },
               frustrated: { type: "boolean" },
-              complaint: { type: "boolean" },
-              feedback: { type: "boolean" },
-              requested_items: { type: "array", items: { type: "string" } },
-              missing_items: { type: "array", items: { type: "string" } },
+              language: { type: "string" },
             },
-            required: ["intent", "language", "sentiment", "frustrated", "complaint", "feedback", "requested_items", "missing_items"],
+            required: ["topic", "ask", "resolved", "gap_reason", "repeatable", "sentiment", "frustrated", "language"],
           },
         },
       }),

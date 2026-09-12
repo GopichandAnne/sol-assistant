@@ -102,6 +102,8 @@ export function languageLabel(code: string): string {
 
 // ── Conversation insights (sentiment, signals, products) ─────────────────────
 type Analytics = {
+  /** Current prompt: did the assistant actually give them what they needed. */
+  resolved?: boolean;
   sentiment?: string;
   frustrated?: boolean;
   complaint?: boolean;
@@ -182,12 +184,22 @@ export function topMissing(convs: ConvRow[], limit = 8) {
   return topItemsBy(convs, (a) => toStrings(a.missing_items), limit);
 }
 
-/** Conversations where the assistant hit a gap (named something it couldn't answer). Used
- *  for the self-serve rate on the SaaS Assistant-Health home. */
+/**
+ * Conversations the assistant did not resolve. Drives the self-serve rate on Home.
+ *
+ * Prefers `resolved` from the current classifier and falls back to the retail
+ * prompt's `missing_items` for rows recorded before it changed. The fallback is
+ * not tidiness: without it, every pre-rewrite conversation would silently count
+ * as a success the moment the new prompt shipped, and the self-serve rate would
+ * jump toward 100% overnight — a number an owner would believe, and act on.
+ */
 export function gapConversationCount(convs: ConvRow[]): number {
   let n = 0;
   for (const row of convs) {
-    if (toStrings(parseA(row.analytics_json).missing_items).length > 0) n++;
+    const a = parseA(row.analytics_json);
+    if (typeof a.resolved === "boolean") {
+      if (!a.resolved) n++;
+    } else if (toStrings(a.missing_items).length > 0) n++;
   }
   return n;
 }

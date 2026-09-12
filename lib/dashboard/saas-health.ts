@@ -1,3 +1,4 @@
+import { computeDiscovery } from "./discovery";
 import {
   lastNDays,
   inWindow,
@@ -39,8 +40,12 @@ export function computeSaasHealth(convs: ConvRow[], leadsCaptured: number) {
     gapConversations: gaps,
     avgResponseMs,
     sentiment: sentimentCounts(c),
+    // The retail pair — product names asked for, and products found to be out of
+    // stock. Kept only because the old dashboard still reads them; Home now shows
+    // `discovery`, which asks the question this product is actually about.
     topAsks: topRequested(c),
     gaps: topMissing(c),
+    discovery: computeDiscovery(convs),
     convsPerDay: countPerDay(c, days),
   };
 }

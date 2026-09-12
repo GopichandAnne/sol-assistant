@@ -1,15 +1,6 @@
 import Link from "next/link";
-import {
-  MessagesSquare,
-  Gauge,
-  UserPlus,
-  Clock,
-  HelpCircle,
-  BookOpen,
-  Code2,
-  Sparkles,
-  type LucideIcon,
-} from "lucide-react";
+import { DiscoveryPanels } from "@/components/dashboard/discovery-panels";
+import { MessagesSquare, Gauge, UserPlus, Clock, BookOpen, Code2, Sparkles, type LucideIcon } from "lucide-react";
 import type { SaasHealth } from "@/lib/dashboard/saas-health";
 
 function fmtMs(ms: number | null): string {
@@ -67,46 +58,7 @@ export function SaasHealthView({ health, storeName }: { health: SaasHealth; stor
             <Kpi icon={Clock} label="Avg response" value={fmtMs(h.avgResponseMs)} />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="bg-card rounded-xl border p-5">
-              <div className="flex items-center justify-between">
-                <h3 className="font-display font-bold">Questions the assistant couldn&apos;t answer</h3>
-                <Link href="/knowledge" className="text-xs font-medium hover:underline" style={{ color: "var(--sol-orange-dark)" }}>
-                  Fill your docs →
-                </Link>
-              </div>
-              {h.gaps.length === 0 ? (
-                <p className="text-muted-foreground mt-3 text-sm">No gaps. The assistant had an answer for everything.</p>
-              ) : (
-                <ul className="mt-3 space-y-1.5">
-                  {h.gaps.map((g) => (
-                    <li key={g.item} className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2">
-                        <HelpCircle className="text-muted-foreground size-3.5 shrink-0" /> {g.item}
-                      </span>
-                      <span className="text-muted-foreground shrink-0 text-xs">{g.count}×</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="bg-card rounded-xl border p-5">
-              <h3 className="font-display font-bold">What people ask most</h3>
-              {h.topAsks.length === 0 ? (
-                <p className="text-muted-foreground mt-3 text-sm">Not enough data yet.</p>
-              ) : (
-                <ul className="mt-3 space-y-1.5">
-                  {h.topAsks.map((a) => (
-                    <li key={a.item} className="flex items-center justify-between text-sm">
-                      <span>{a.item}</span>
-                      <span className="text-muted-foreground shrink-0 text-xs">{a.count}×</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+          <DiscoveryPanels d={h.discovery} />
 
           <div className="bg-card rounded-xl border p-5">
             <h3 className="font-display font-bold">How conversations felt</h3>
