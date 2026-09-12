@@ -6,6 +6,8 @@ import { profileFor, homeHrefFor } from "@/lib/console-profile";
 import { ShieldCheck, UserCheck, Building2 as OrgIcon } from "lucide-react";
 import { Approvals, type Approval } from "@/components/activity/approvals";
 import { ConfigChanges } from "@/components/activity/config-changes";
+import { Runs } from "@/components/activity/runs";
+import { listRuns } from "@/app/(app)/scheduled/actions";
 import { listConfigAudit } from "@/app/(app)/requests/actions";
 
 export const metadata: Metadata = { title: "What it did · The Assistant" };
@@ -35,7 +37,7 @@ export default async function ActivityPage() {
   if (!isOwner) redirect(homeHrefFor(profileFor(store.businessType)));
 
   const db = createAdminClient();
-  const audit = await listConfigAudit();
+  const [audit, runs] = await Promise.all([listConfigAudit(), listRuns()]);
   const [{ data }, { data: pending }] = await Promise.all([
     db
       .from("agent_action_log")
@@ -80,6 +82,8 @@ export default async function ActivityPage() {
       </div>
 
       <Approvals initial={approvals} />
+
+      <Runs runs={runs} />
 
       <ConfigChanges audit={audit} />
 

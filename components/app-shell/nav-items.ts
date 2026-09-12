@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  CalendarClock,
   Bot,
   Building2,
   ClipboardList,
@@ -71,6 +72,7 @@ export const NAV_ITEMS: NavItem[] = [
   // ── Teach: what it knows and how it behaves ──
   { label: "Knowledge", href: "/knowledge", icon: BookOpen, group: "Teach", available: true },
   { label: "How it answers", href: "/agent", icon: Bot, group: "Teach", available: true, ownerOnly: true },
+  { label: "Scheduled work", href: "/scheduled", icon: CalendarClock, group: "Teach", available: true, ownerOnly: true },
 
   // ── Connect: where people reach it, and what it can reach ──
   { label: "Channels", href: "/link", icon: Share2, group: "Connect", available: true, ownerOnly: true },
