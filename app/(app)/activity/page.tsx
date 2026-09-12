@@ -5,6 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { profileFor, homeHrefFor } from "@/lib/console-profile";
 import { ShieldCheck, UserCheck, Building2 as OrgIcon } from "lucide-react";
 import { Approvals, type Approval } from "@/components/activity/approvals";
+import { ConfigChanges } from "@/components/activity/config-changes";
+import { listConfigAudit } from "@/app/(app)/requests/actions";
 
 export const metadata: Metadata = { title: "What it did · The Assistant" };
 export const dynamic = "force-dynamic";
@@ -33,6 +35,7 @@ export default async function ActivityPage() {
   if (!isOwner) redirect(homeHrefFor(profileFor(store.businessType)));
 
   const db = createAdminClient();
+  const audit = await listConfigAudit();
   const [{ data }, { data: pending }] = await Promise.all([
     db
       .from("agent_action_log")
@@ -77,6 +80,8 @@ export default async function ActivityPage() {
       </div>
 
       <Approvals initial={approvals} />
+
+      <ConfigChanges audit={audit} />
 
       <div className="grid grid-cols-3 gap-3">
         <Stat label="Actions logged" value={total} />

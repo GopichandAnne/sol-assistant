@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { RoutingState, Thread } from "@/lib/conversations/types";
 import { threadTitle } from "@/lib/conversations/types";
 import { needsAttention, type ThreadSignal } from "@/lib/conversations/signals";
@@ -14,13 +15,18 @@ export function ConversationsView({
   initialThreads,
   signals,
   storeName,
+  openThreadId,
 }: {
   initialThreads: Thread[];
   signals: Record<string, ThreadSignal>;
   storeName: string;
+  /** Preselected from ?thread= — how Inbox hands you the conversation a question
+   *  came out of. Without it the two surfaces describe the same event and give you
+   *  no way to get from one to the other. */
+  openThreadId?: string | null;
 }) {
   const [threads, setThreads] = useState<Thread[]>(initialThreads);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(openThreadId ?? null);
   const [query, setQuery] = useState("");
   const [attentionOnly, setAttentionOnly] = useState(false);
 
@@ -53,7 +59,9 @@ export function ConversationsView({
       <header className="border-b p-4">
         <h1 className="font-display text-2xl">Conversations</h1>
         <p className="text-muted-foreground text-sm">
-          {storeName} — every customer chat in full. Questions the assistant couldn&apos;t answer wait for you in Tickets.
+          {storeName} — every chat in full, whether or not anything came of it. The ones that
+          need a person are waiting in{" "}
+          <Link href="/inbox" className="underline underline-offset-2">Inbox</Link>.
         </p>
       </header>
 

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import type { Ticket, TicketStatus } from "@/lib/tickets/types";
 import { TICKET_STATUSES, TICKET_STATUS_LABEL } from "@/lib/tickets/types";
@@ -13,14 +14,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { BookmarkCheck, LifeBuoy, Loader2, Search, Send } from "lucide-react";
+import { BookmarkCheck, LifeBuoy, Loader2, MessagesSquare, Search, Send } from "lucide-react";
 
 export function TicketsView({
   initialTickets,
   storeName,
+  storeSlug,
 }: {
   initialTickets: Ticket[];
   storeName: string;
+  /** Needed to rebuild the thread id a question came from — see TicketCard. */
+  storeSlug: string;
 }) {
   const [status, setStatus] = useState<TicketStatus | "all">("all");
   const [query, setQuery] = useState("");
@@ -121,7 +125,7 @@ export function TicketsView({
       ) : (
         <ul className="space-y-3">
           {filtered.map((t) => (
-            <TicketCard key={t.ticket_id} ticket={t} />
+            <TicketCard key={t.ticket_id} ticket={t} storeSlug={storeSlug} />
           ))}
         </ul>
       )}
@@ -129,7 +133,7 @@ export function TicketsView({
   );
 }
 
-function TicketCard({ ticket }: { ticket: Ticket }) {
+function TicketCard({ ticket, storeSlug }: { ticket: Ticket; storeSlug: string }) {
   const router = useRouter();
   const [answer, setAnswer] = useState("");
   const [sending, startSend] = useTransition();
@@ -187,6 +191,18 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
       <p className="text-muted-foreground mt-1 text-xs">{customer}</p>
       {ticket.question && (
         <p className="mt-2 whitespace-pre-wrap text-sm">{ticket.question}</p>
+      )}
+
+      {/* A question is an excerpt of a conversation, and answering it well usually
+          needs what was said around it. Thread ids are `thr_<session>_<slug>`,
+          which is why the slug is passed down. */}
+      {ticket.session_id && (
+        <Link
+          href={`/conversations?thread=${encodeURIComponent(`thr_${ticket.session_id}_${storeSlug}`)}`}
+          className="text-muted-foreground hover:text-foreground mt-2 inline-flex items-center gap-1 text-xs underline underline-offset-2"
+        >
+          <MessagesSquare className="size-3" /> Open the conversation
+        </Link>
       )}
 
       {ticket.answer && (

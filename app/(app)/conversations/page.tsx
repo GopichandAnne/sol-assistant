@@ -7,7 +7,12 @@ import { computeThreadSignals } from "@/lib/conversations/signals";
 
 export const metadata: Metadata = { title: "Conversations · The Assistant" };
 
-export default async function ConversationsPage() {
+export default async function ConversationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ thread?: string }>;
+}) {
+  const { thread } = await searchParams;
   const ctx = await getActiveStore();
   if (!ctx || !ctx.active) redirect("/login");
   const store = ctx.active;
@@ -36,6 +41,7 @@ export default async function ConversationsPage() {
       initialThreads={threads ?? []}
       signals={signals}
       storeName={store.name}
+      openThreadId={thread ?? null}
     />
   );
 }

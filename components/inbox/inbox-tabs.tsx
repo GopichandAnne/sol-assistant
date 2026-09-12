@@ -1,14 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { TicketsView } from "@/components/tickets/tickets-view";
 import { RequestsView } from "@/components/requests/requests-view";
 import type { Ticket } from "@/lib/tickets/types";
-import type {
-  CapturedRequest,
-  ConfigAuditEntry,
-  RequestType,
-} from "@/app/(app)/requests/actions";
+import type { CapturedRequest, RequestType } from "@/app/(app)/requests/actions";
 
 /** One roof for the two "needs attention" surfaces: Questions (tickets the assistant
  *  couldn't answer) and Requests (structured captures). Each tab renders its own
@@ -17,8 +14,8 @@ export function InboxTabs({
   tickets,
   requests,
   types,
-  audit,
   storeName,
+  storeSlug,
   isOwner,
   openTickets,
   newRequests,
@@ -26,8 +23,8 @@ export function InboxTabs({
   tickets: Ticket[];
   requests: CapturedRequest[];
   types: RequestType[];
-  audit: ConfigAuditEntry[];
   storeName: string;
+  storeSlug: string;
   isOwner: boolean;
   openTickets: number;
   newRequests: number;
@@ -61,15 +58,24 @@ export function InboxTabs({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2 px-6 pt-5">
+      <header className="px-6 pt-5">
+        <h1 className="font-display text-2xl">Inbox</h1>
+        <p className="text-muted-foreground text-sm">
+          {storeName} — only what needs a person: questions the assistant couldn&apos;t answer, and
+          requests it captured. Everything said, answered or not, is in{" "}
+          <Link href="/conversations" className="underline underline-offset-2">Conversations</Link>.
+        </p>
+      </header>
+
+      <div className="flex flex-wrap items-center gap-2 px-6 pt-4">
         <Pill id="questions" label="Questions" count={openTickets} />
         {isOwner && <Pill id="requests" label="Requests" count={newRequests} />}
       </div>
 
       {tab === "questions" ? (
-        <TicketsView initialTickets={tickets} storeName={storeName} />
+        <TicketsView initialTickets={tickets} storeName={storeName} storeSlug={storeSlug} />
       ) : (
-        <RequestsView requests={requests} types={types} audit={audit} storeName={storeName} />
+        <RequestsView requests={requests} types={types} storeName={storeName} />
       )}
     </div>
   );

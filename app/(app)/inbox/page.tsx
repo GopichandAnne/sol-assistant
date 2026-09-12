@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getActiveStore } from "@/lib/store/active-store";
 import { createClient } from "@/lib/supabase/server";
 import type { Ticket } from "@/lib/tickets/types";
-import { listConfigAudit, listRequests, listRequestTypes } from "@/app/(app)/requests/actions";
+import { listRequests, listRequestTypes } from "@/app/(app)/requests/actions";
 import { InboxTabs } from "@/components/inbox/inbox-tabs";
 
 export const metadata: Metadata = { title: "Inbox · The Assistant" };
@@ -27,9 +27,9 @@ export default async function InboxPage() {
   const tickets = (ticketRows ?? []) as Ticket[];
 
   // Requests are owner-only (the list actions gate + return [] otherwise).
-  const [requests, types, audit] = isOwner
-    ? await Promise.all([listRequests(), listRequestTypes(), listConfigAudit()])
-    : [[], [], []];
+  const [requests, types] = isOwner
+    ? await Promise.all([listRequests(), listRequestTypes()])
+    : [[], []];
 
   const openTickets = tickets.filter((t) => OPEN_TICKET.has(t.status)).length;
   const newRequests = requests.filter((r) => r.status === "new").length;
@@ -40,8 +40,8 @@ export default async function InboxPage() {
       tickets={tickets}
       requests={requests}
       types={types}
-      audit={audit}
       storeName={store.name}
+      storeSlug={store.slug}
       isOwner={!!isOwner}
       openTickets={openTickets}
       newRequests={newRequests}
