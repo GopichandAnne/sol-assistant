@@ -1,0 +1,11 @@
+Name,Team,Type,Start,End,Days,Status,Approver,Notes
+Priya Shah,Engineering,Annual,2026-09-21,2026-09-25,5,Approved,Dan Okafor,
+Tom Wheeler,Finance,Annual,2026-10-05,2026-10-09,5,Pending,Ana Ruiz,Clashes with month-end close
+Ana Ruiz,Finance,Annual,2026-12-22,2026-12-31,4,Approved,Marcus Bell,Christmas closure not deducted
+Dan Okafor,Engineering,Parental,2026-11-02,2027-01-29,63,Approved,Marcus Bell,Carry-over held per HR-04 s3
+Leah Mbeki,Operations,Annual,2026-09-14,2026-09-18,5,Approved,Sam Patel,
+Sam Patel,Operations,Sick,2026-09-08,2026-09-09,2,Recorded,Marcus Bell,Fit note received
+Joe Duffy,Sales,Annual,2026-09-28,2026-10-02,5,Pending,Nina Kaur,
+Nina Kaur,Sales,Annual,2026-11-16,2026-11-20,5,Approved,Marcus Bell,
+Ellie Frost,Engineering,Unpaid,2026-10-19,2026-11-13,20,Pending,Dan Okafor,Needs department head sign-off
+Raj Menon,Customer Service,Annual,2026-09-21,2026-09-25,5,Declined,Leah Mbeki,Peak trading blackout HR-04 s5

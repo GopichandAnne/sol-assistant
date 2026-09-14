@@ -1,0 +1,9 @@
+Invoice,Supplier,Description,Amount,Currency,Received,Due,Status,Approver
+INV-2026-0431,Meridian Cloud Ltd,Hosting September,4820.00,GBP,2026-09-01,2026-09-30,Approved,Tom Wheeler
+INV-2026-0447,Brightline Design,Brand refresh phase 2,12500.00,GBP,2026-09-03,2026-10-03,Pending,Ana Ruiz
+INV-2026-0452,Kestrel Recruitment,Placement fee - Engineering,9800.00,GBP,2026-09-05,2026-10-05,Pending,Marcus Bell
+INV-2026-0455,Officeworks Facilities,Manchester office - Q3,3150.00,GBP,2026-09-07,2026-10-07,Approved,Leah Mbeki
+INV-2026-0461,Northgate Legal,Contract review,2400.00,GBP,2026-09-09,2026-10-09,Query,Ana Ruiz
+INV-2026-0388,Meridian Cloud Ltd,Hosting August,4820.00,GBP,2026-08-01,2026-08-31,Paid,Tom Wheeler
+INV-2026-0402,Vantage Travel,Team offsite,7640.00,GBP,2026-08-12,2026-09-11,Overdue,Ana Ruiz
+INV-2026-0470,Helix Analytics,Data platform licence,18000.00,GBP,2026-09-11,2026-10-11,Pending,Marcus Bell

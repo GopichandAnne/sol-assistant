@@ -1,0 +1,12 @@
+Asset ID,Type,Model,Assigned To,Location,Status,Purchased,Warranty Ends,Last Checked
+NW-LT-0412,Laptop,MacBook Pro 14,Priya Shah,London,In use,2025-03-11,2028-03-11,2026-08-02
+NW-LT-0418,Laptop,Dell Latitude 7450,Tom Wheeler,London,In use,2025-04-02,2028-04-02,2026-08-02
+NW-LT-0423,Laptop,MacBook Pro 14,Unassigned,London,Spare,2025-06-19,2028-06-19,2026-09-01
+NW-LT-0431,Laptop,Dell Latitude 7450,Leah Mbeki,Manchester,In use,2025-09-04,2028-09-04,2026-07-15
+NW-LT-0444,Laptop,MacBook Air 13,Joe Duffy,Remote,In use,2026-01-22,2029-01-22,2026-08-20
+NW-LT-0388,Laptop,MacBook Pro 13,Unassigned,London,Retired,2022-02-14,2025-02-14,2026-05-30
+NW-PH-0201,Phone,iPhone 15,Nina Kaur,Remote,In use,2025-11-08,2027-11-08,2026-08-20
+NW-PH-0207,Phone,iPhone 15,Unassigned,London,Spare,2026-02-17,2028-02-17,2026-09-01
+NW-MN-0102,Monitor,Dell U2723QE,Dan Okafor,London,In use,2024-10-01,2027-10-01,2026-06-11
+NW-MN-0119,Monitor,Dell U2723QE,Unassigned,Manchester,Spare,2025-08-13,2028-08-13,2026-09-01
+NW-LT-0450,Laptop,Dell Latitude 7450,Ellie Frost,London,Repair,2026-03-30,2029-03-30,2026-09-05
