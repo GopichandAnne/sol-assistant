@@ -10,7 +10,6 @@ import type { Store } from "./types.ts";
 import type { FunctionDeclaration } from "./tools.ts";
 import { decrypt, getAccessToken, type ProviderId } from "./connections.ts";
 import { mintAssertion } from "./assertion.ts";
-import { decideAction } from "./policy.ts";
 
 export interface HttpTool {
   id: string;
@@ -40,10 +39,6 @@ export interface HttpTool {
   timeout_ms: number;
   // Preventive governance: 'hold' blocks a write from executing (owner-set).
   action_policy?: "auto" | "hold";
-  /** Runs itself below this; at or above it, a person decides. */
-  auto_below?: number | null;
-  /** Which argument carries the number the threshold reads. */
-  amount_field?: string | null;
 }
 
 /** The verified, signed-in visitor (from the embed's data-user-token). Never set
@@ -64,7 +59,7 @@ const MAX_RESULT = 6000;
 export async function loadHttpTools(db: SupabaseClient, storeId: string): Promise<HttpTool[]> {
   const { data, error } = await db
     .from("http_tool")
-    .select("id, name, description, method, base_url, path, params, request_map, auth, api_key, side_effect, timeout_ms, action_policy, auto_below, amount_field")
+    .select("id, name, description, method, base_url, path, params, request_map, auth, api_key, side_effect, timeout_ms, action_policy")
     .eq("store_id", storeId).eq("enabled", true);
   if (error) { console.error(`[httptool] load: ${error.message}`); return []; }
   return (data ?? []) as HttpTool[];
@@ -81,19 +76,10 @@ export function httpToolDeclaration(t: HttpTool): FunctionDeclaration {
 export async function executeHttpTool(
   db: SupabaseClient, store: Store, t: HttpTool, args: Record<string, unknown>, visitor?: Visitor,
 ): Promise<Record<string, unknown>> {
-  // Preventive governance: a write the owner holds never executes — it is flagged
-  // for a person instead. Enforced here, so nothing the model says can reach past
-  // it. Where a threshold is set, size decides: small ones run, big ones wait, and
-  // anything whose amount cannot be read waits.
-  if (t.side_effect) {
-    const d = decideAction(t, args);
-    if (d.mode === "hold") {
-      return {
-        held: true,
-        ...(d.reason ? { because: d.reason } : {}),
-        note: "That needs a team member to approve — I've flagged it for them and someone will follow up.",
-      };
-    }
+  // Preventive governance: a write held by the owner never executes — flagged
+  // for a person instead. Enforced here, so the model can't override it.
+  if (t.side_effect && t.action_policy === "hold") {
+    return { held: true, note: "That needs a team member to approve — I've flagged it for them and someone will follow up." };
   }
   try {
     let path = t.path;

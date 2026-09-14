@@ -40,16 +40,12 @@ export type Workbook = {
   table_name: string;
   writable: boolean;
   connected_by: string;
-  /** hold (the default) means every write here waits for a person. */
-  action_policy?: "auto" | "hold" | null;
-  auto_below?: number | null;
-  amount_field?: string | null;
 };
 
 export async function listWorkbooks(db: SupabaseClient, storeId: string): Promise<Workbook[]> {
   const { data } = await db
     .from("workbook_source")
-    .select("id, name, purpose, file_url, drive_id, item_id, table_name, writable, connected_by, action_policy, auto_below, amount_field")
+    .select("id, name, purpose, file_url, drive_id, item_id, table_name, writable, connected_by")
     .eq("store_id", storeId)
     .eq("active", true);
   return ((data ?? []) as Workbook[]);

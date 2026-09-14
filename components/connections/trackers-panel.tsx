@@ -7,7 +7,6 @@ import {
   addTracker,
   listTrackers,
   removeTracker,
-  setTrackerThreshold,
   setTrackerWritable,
   type Tracker,
 } from "@/app/(app)/connections/workbook-actions";
@@ -34,9 +33,6 @@ export function TrackersPanel() {
   const [who, setWho] = useState("");
   const [writable, setWritable] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [limit, setLimit] = useState("");
-  const [amountCol, setAmountCol] = useState("");
   const [, start] = useTransition();
 
   useEffect(() => {
@@ -66,23 +62,6 @@ export function TrackersPanel() {
       } else if (next) {
         toast.success("Writing allowed", { description: "Changes still wait for a person to approve them." });
       }
-    });
-  }
-
-  function openThreshold(t: Tracker) {
-    setEditing(t.id === editing ? null : t.id);
-    setLimit(t.autoBelow == null ? "" : String(t.autoBelow));
-    setAmountCol(t.amountField ?? "");
-  }
-
-  function saveThreshold(t: Tracker) {
-    const n = limit.trim() === "" ? null : Number(limit.trim());
-    start(async () => {
-      const res = await setTrackerThreshold(t.id, n, amountCol);
-      if (!res.ok) { toast.error("Couldn't save that", { description: res.error }); return; }
-      setEditing(null);
-      toast.success(n == null ? "Every change waits for approval" : `Changes under ${n} run on their own`);
-      listTrackers().then(setItems).catch(() => {});
     });
   }
 
@@ -192,39 +171,6 @@ export function TrackersPanel() {
                 <p className="text-muted-foreground mt-0.5 text-xs">
                   table {t.tableName}{t.connectedBy ? ` · as ${t.connectedBy}` : ""}
                 </p>
-                {t.writable && (
-                  <button
-                    type="button"
-                    onClick={() => openThreshold(t)}
-                    className="mt-1 text-xs underline underline-offset-2"
-                    style={{ color: "var(--sol-orange-dark)" }}
-                  >
-                    {t.autoBelow == null
-                      ? "Every change waits for approval"
-                      : `Changes under ${t.autoBelow} run on their own`}
-                  </button>
-                )}
-                {editing === t.id && (
-                  <div className="mt-2 space-y-2 rounded-md border p-3">
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <div className="space-y-1">
-                        <Label htmlFor={`lim-${t.id}`} className="text-xs">Run without approval below</Label>
-                        <Input id={`lim-${t.id}`} value={limit} inputMode="decimal"
-                          onChange={(e) => setLimit(e.target.value)} placeholder="Leave empty to hold everything" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor={`col-${t.id}`} className="text-xs">Column holding the amount</Label>
-                        <Input id={`col-${t.id}`} value={amountCol}
-                          onChange={(e) => setAmountCol(e.target.value)} placeholder="Amount" />
-                      </div>
-                    </div>
-                    <p className="text-muted-foreground text-xs">
-                      Anything at or above the limit still waits, and so does any change where that
-                      column is missing or unreadable.
-                    </p>
-                    <Button size="sm" onClick={() => saveThreshold(t)}>Save</Button>
-                  </div>
-                )}
                 {t.lastError && <p className="text-destructive mt-1 text-xs">{t.lastError}</p>}
               </div>
               <div className="flex shrink-0 items-center gap-2">

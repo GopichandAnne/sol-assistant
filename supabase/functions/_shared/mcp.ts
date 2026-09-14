@@ -13,7 +13,6 @@ import type { Store } from "./types.ts";
 import type { FunctionDeclaration } from "./tools.ts";
 import { decrypt, getAccessToken, type ProviderId } from "./connections.ts";
 import type { Visitor } from "./httptool.ts";
-import { decideAction } from "./policy.ts";
 
 const PROTOCOL_VERSION = "2025-06-18";
 const MAX_RESULT = 6000;
@@ -47,8 +46,6 @@ export interface McpTool {
   input_schema: any;
   side_effect: boolean;
   action_policy?: "auto" | "hold";
-  auto_below?: number | null;
-  amount_field?: string | null;
   server: McpServer;
 }
 
@@ -179,15 +176,14 @@ export async function mcpListTools(
 export async function loadMcpTools(db: SupabaseClient, storeId: string): Promise<McpTool[]> {
   const { data, error } = await db
     .from("mcp_tool")
-    .select("id, name, remote_name, description, input_schema, side_effect, action_policy, auto_below, amount_field, enabled, mcp_server!inner(id, store_id, name, url, auth, api_key, enabled)")
+    .select("id, name, remote_name, description, input_schema, side_effect, action_policy, enabled, mcp_server!inner(id, store_id, name, url, auth, api_key, enabled)")
     .eq("store_id", storeId)
     .eq("enabled", true)
     .eq("mcp_server.enabled", true);
   if (error) { console.error(`[mcp] load: ${error.message}`); return []; }
   return (data ?? []).map((r: Any) => ({
     id: r.id, name: r.name, remote_name: r.remote_name, description: r.description,
-    input_schema: r.input_schema, side_effect: r.side_effect, action_policy: r.action_policy,
-    auto_below: r.auto_below, amount_field: r.amount_field, server: r.mcp_server as McpServer,
+    input_schema: r.input_schema, side_effect: r.side_effect, action_policy: r.action_policy, server: r.mcp_server as McpServer,
   }));
 }
 
@@ -213,18 +209,9 @@ function contentText(result: Any): string {
 export async function executeMcpTool(
   db: SupabaseClient, store: Store, t: McpTool, args: Record<string, unknown>, visitor?: Visitor,
 ): Promise<Record<string, unknown>> {
-  // Preventive governance: an owner-held write never executes, and where a
-  // threshold is set the size of the call decides. Same rule as the HTTP tools,
-  // from the same place, so the two cannot drift apart.
-  if (t.side_effect) {
-    const d = decideAction(t, args);
-    if (d.mode === "hold") {
-      return {
-        held: true,
-        ...(d.reason ? { because: d.reason } : {}),
-        note: "That needs a team member to approve — I've flagged it for them and someone will follow up.",
-      };
-    }
+  // Preventive governance: an owner-held write never executes — flagged for a person.
+  if (t.side_effect && t.action_policy === "hold") {
+    return { held: true, note: "That needs a team member to approve — I've flagged it for them and someone will follow up." };
   }
   try {
     // Delegated-identity servers can only be called for a signed-in visitor.
