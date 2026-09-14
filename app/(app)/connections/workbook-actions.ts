@@ -15,6 +15,10 @@ export type Tracker = {
   writable: boolean;
   connectedBy: string;
   lastError: string | null;
+  /** hold = every write waits for a person, whatever its size. */
+  actionPolicy: "auto" | "hold";
+  autoBelow: number | null;
+  amountField: string | null;
 };
 
 async function requireOwner() {
@@ -30,7 +34,7 @@ export async function listTrackers(): Promise<Tracker[]> {
   const store = await requireOwner();
   const from = untyped(createAdminClient());
   const { data } = await from("workbook_source")
-    .select("id, name, purpose, file_url, table_name, writable, connected_by, last_error")
+    .select("id, name, purpose, file_url, table_name, writable, connected_by, last_error, action_policy, auto_below, amount_field")
     .eq("store_id", store.id)
     .order("created_at", { ascending: true });
   return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
@@ -42,6 +46,9 @@ export async function listTrackers(): Promise<Tracker[]> {
     writable: !!r.writable,
     connectedBy: String(r.connected_by ?? ""),
     lastError: (r.last_error as string | null) ?? null,
+    actionPolicy: (r.action_policy as "auto" | "hold") ?? "hold",
+    autoBelow: r.auto_below == null ? null : Number(r.auto_below),
+    amountField: (r.amount_field as string | null) ?? null,
   }));
 }
 
@@ -103,6 +110,41 @@ export async function removeTracker(id: string): Promise<{ ok: boolean; error?: 
   const store = await requireOwner();
   const from = untyped(createAdminClient());
   const { error } = await from("workbook_source").delete().eq("id", id).eq("store_id", store.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/connections");
+  return { ok: true };
+}
+
+/**
+ * How big a write has to be before a person decides.
+ *
+ * Leaving the limit empty means every write waits, which is the safe default and
+ * the one most accounts should stay on. Setting one is the owner saying small
+ * ones are fine, and it needs the column carrying the number: without that we
+ * cannot tell a large change from a small one, and anything we cannot measure
+ * waits.
+ */
+export async function setTrackerThreshold(
+  id: string,
+  autoBelow: number | null,
+  amountField: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const store = await requireOwner();
+  const field = amountField.trim();
+  if (autoBelow != null && !field) {
+    return { ok: false, error: "Say which column holds the amount, or leave the limit empty." };
+  }
+  if (autoBelow != null && !(autoBelow > 0)) {
+    return { ok: false, error: "The limit has to be a number above zero." };
+  }
+  const from = untyped(createAdminClient());
+  const { error } = await from("workbook_source")
+    .update({
+      auto_below: autoBelow,
+      amount_field: autoBelow == null ? null : field,
+      action_policy: autoBelow == null ? "hold" : "auto",
+    })
+    .eq("id", id).eq("store_id", store.id);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/connections");
   return { ok: true };
