@@ -27,6 +27,7 @@ import { loadMcpTools, executeMcpTool } from "./mcp.ts";
 import { logToolCall } from "./audit.ts";
 import { relayToAsker } from "./responders.ts";
 import { sendMail } from "./graph.ts";
+import { appendWorkbookRow, updateWorkbookRow } from "./workbook.ts";
 import { noteAssistantMessage } from "./history.ts";
 
 export interface ResolveResult {
@@ -174,6 +175,19 @@ async function runApproved(
       );
       return finish(db, store, req, out, "m365");
     }
+    // A tracker write. Same contract as the others: approving it is what makes it
+    // happen, and it happens as the person who asked, not as the approver.
+    if (req.kind === "workbook") {
+      const tracker = String(args.tracker ?? "");
+      const values = (args.values ?? {}) as Record<string, unknown>;
+      const out = req.tool === "add_tracker_row"
+        ? await appendWorkbookRow(db, store, tracker, values)
+        : req.tool === "update_tracker_row"
+        ? await updateWorkbookRow(db, store, tracker, String(args.match ?? ""), values)
+        : null;
+      if (!out) return { completed: false, note: `cannot replay ${req.tool}` };
+      return finish(db, store, req, out, "workbook");
+    }
     return { completed: false, note: `unknown tool kind: ${req.kind}` };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -187,7 +201,7 @@ function finish(
   store: Store,
   req: Row,
   out: Record<string, unknown>,
-  kind: "http" | "mcp" | "m365",
+  kind: "http" | "mcp" | "m365" | "workbook",
 ): { completed: boolean; note: string } {
   const failed = !!out?.error || out?.ok === false;
   // Audited like any other call, so the log shows the action running at approval

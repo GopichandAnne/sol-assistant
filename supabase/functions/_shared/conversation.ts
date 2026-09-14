@@ -34,6 +34,7 @@ import { loadStoreIntegrations } from "./integrations.ts";
 import { listConnectedProviders } from "./connections.ts";
 import { loadHttpTools, type Visitor } from "./httptool.ts";
 import { loadMcpTools } from "./mcp.ts";
+import { listWorkbooks } from "./workbook.ts";
 import { loadRequestTypes } from "./requests.ts";
 import { accessMode, identityContext, resolveMember } from "./members.ts";
 import {
@@ -138,9 +139,14 @@ export async function generateTurnReply(
   // The subjects this account named for escalations, so the assistant can hand a
   // question to the people who handle that area rather than to everyone.
   const escalationTopics = parseEscalationTopics(config.escalationTopics);
+  // Spreadsheets this account registered as systems of record. Loaded here with
+  // the other tool sources so the declaration can name them — a read_tracker tool
+  // that does not say which trackers exist gets called with a hopeful guess.
+  const workbooks = await listWorkbooks(db, store.id);
   const toolset = buildToolset(
     db, store, opts.sessionId, config.ordersEnabled, hasProposal, config.catalogEnabled, today, integrations,
     requestTypes, ui, config.timezone, connectedProviders, httpTools, opts.visitor, mcpTools, escalationTopics,
+    workbooks,
   );
   // Which model answers is a per-store choice (null → Gemini, the default). One
   // light read; the dispatcher swaps providers behind the same contract.

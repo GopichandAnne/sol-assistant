@@ -7,6 +7,7 @@ import { ApiBuilder, type ApiTool } from "./api-builder";
 import { QuickTool } from "./quick-tool";
 import { McpServers, type McpServerRow, type McpToolRow } from "./mcp-servers";
 import { listM365Capabilities, type M365Capability } from "./actions";
+import { TrackersPanel } from "@/components/connections/trackers-panel";
 
 export const metadata: Metadata = { title: "Tools & systems · The Assistant" };
 export const dynamic = "force-dynamic";
@@ -91,6 +92,10 @@ export default async function ConnectionsPage() {
           <p>Steer it from the <a href="/agent" className="text-teal-deep underline">Agent</a> prompt — describe the <i>situation</i>, not the tool name: e.g. <i>&ldquo;when someone asks about their access request, look it up and answer with the real status.&rdquo;</i></p>
         </div>
       </details>
+
+      <div className="mb-5">
+        <TrackersPanel />
+      </div>
 
       <ConnectionsClient
         storeSlug={ctx.active.slug}

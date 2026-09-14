@@ -47,6 +47,7 @@ import {
   searchMyMail as m365SearchMyMail,
   sendMail as m365SendMail,
 } from "./graph.ts";
+import { listWorkbooks, readWorkbook, appendWorkbookRow, updateWorkbookRow, type Workbook } from "./workbook.ts";
 import { getStoreAccessToken } from "./config.ts";
 import { sendImage } from "./wa.ts";
 import {
@@ -1666,6 +1667,76 @@ const M365_SEND_MAIL_DECL: FunctionDeclaration = {
   },
 };
 
+/**
+ * Trackers — the spreadsheets this account has told the assistant to work in.
+ *
+ * The declaration is built from the REGISTERED list, so the model is told the
+ * real names and what each one is for rather than being invited to guess. A tool
+ * that says "read a tracker" with no idea which trackers exist gets called with
+ * a hopeful name and returns nothing.
+ */
+function trackerReadDeclaration(books: Workbook[]): FunctionDeclaration {
+  const list = books.map((b) => `"${b.name}" (${b.purpose})`).join("; ");
+  return {
+    name: "read_tracker",
+    description:
+      "Look something up in one of this organisation's trackers. Available: " + list + ". " +
+      "Use `match` to narrow to the rows that mention a person, a reference or a date - it matches " +
+      "anywhere in the row. Read before you write: if somebody asks you to change something, find " +
+      "the row first and show them what it says now.",
+    parameters: {
+      type: "object",
+      properties: {
+        tracker: { type: "string", description: "Which tracker, by name." },
+        match: { type: "string", description: "Optional. Narrow to rows mentioning this." },
+      },
+      required: ["tracker"],
+    },
+  };
+}
+
+function trackerAddDeclaration(books: Workbook[]): FunctionDeclaration {
+  const list = books.filter((b) => b.writable).map((b) => `"${b.name}"`).join(", ");
+  return {
+    name: "add_tracker_row",
+    description:
+      "Add a row to a tracker. Writable: " + list + ". This changes a real record, so: read the " +
+      "tracker first to learn its columns, show the person exactly what you are about to add, get an " +
+      "explicit yes, and only then call this. Pass `values` keyed by column name. The organisation may " +
+      "require a colleague to approve it, in which case the result says so and NOTHING has been added - " +
+      "tell them that plainly rather than implying it is done.",
+    parameters: {
+      type: "object",
+      properties: {
+        tracker: { type: "string", description: "Which tracker, by name." },
+        values: { type: "object", description: "Column name to value, e.g. {\"Name\": \"Priya Shah\", \"Start\": \"2026-10-01\"}." },
+      },
+      required: ["tracker", "values"],
+    },
+  };
+}
+
+function trackerUpdateDeclaration(books: Workbook[]): FunctionDeclaration {
+  const list = books.filter((b) => b.writable).map((b) => `"${b.name}"`).join(", ");
+  return {
+    name: "update_tracker_row",
+    description:
+      "Change an existing row in a tracker. Writable: " + list + ". Find the row with read_tracker " +
+      "first and confirm with the person which one they mean - if `match` hits more than one row this " +
+      "refuses rather than guessing. Pass only the columns that change. Like adding, this may need a " +
+      "colleague's approval, and if so nothing has changed yet.",
+    parameters: {
+      type: "object",
+      properties: {
+        tracker: { type: "string", description: "Which tracker, by name." },
+        match: { type: "string", description: "Text identifying the single row to change." },
+        values: { type: "object", description: "Column name to new value, for the columns that change." },
+      },
+      required: ["tracker", "match", "values"],
+    },
+  };
+}
+
 /** Sending mail as a person is the one action here that cannot be taken back, so
  *  it is held for approval unless the organisation has explicitly said otherwise.
  *  Adding a task to your own list is not, which is why only this one is gated. */
@@ -1787,6 +1858,8 @@ export function buildToolset(
   mcpTools: McpTool[] = [],
   /** Subjects this account named, so an escalation can carry one. */
   escalationTopics: { key: string; label: string }[] = [],
+  /** Spreadsheets registered as systems of record. */
+  workbooks: Workbook[] = [],
 ): Toolset {
   // One calendar tool pair serves whichever calendar the store connected — prefer
   // Google if both are on. (Most stores connect just one.)
@@ -1829,6 +1902,28 @@ export function buildToolset(
         sideEffect: true, status: out.ok === false ? "error" : "ok",
       });
       return out;
+    },
+    read_tracker: (args) => readWorkbook(db, store, String(args.tracker ?? ""), args.match ? String(args.match) : undefined),
+    // Writing to somebody's tracker is an action in their system, so it takes the
+    // same road as every other write: held by default, approved by a named person,
+    // and RUN by that approval (resolve.ts) rather than left as paperwork.
+    add_tracker_row: async (args) => {
+      const routed = await routeHeldAction(db, store, sessionId, {
+        tool: "add_tracker_row", kind: "workbook", actedAs: visitor?.email ?? null, args,
+      });
+      void logToolCall(db, store, sessionId, {
+        tool: "add_tracker_row", kind: "connector", actedAs: visitor?.email ?? null, sideEffect: true, status: "held",
+      });
+      return { ok: false, held: true, ...(routed.reference ? { reference: routed.reference } : {}), note: routed.note };
+    },
+    update_tracker_row: async (args) => {
+      const routed = await routeHeldAction(db, store, sessionId, {
+        tool: "update_tracker_row", kind: "workbook", actedAs: visitor?.email ?? null, args,
+      });
+      void logToolCall(db, store, sessionId, {
+        tool: "update_tracker_row", kind: "connector", actedAs: visitor?.email ?? null, sideEffect: true, status: "held",
+      });
+      return { ok: false, held: true, ...(routed.reference ? { reference: routed.reference } : {}), note: routed.note };
     },
     check_calendar_availability: (args) => executeCheckAvailability(db, store, timezone, calProvider, args),
     book_appointment: (args) => executeBookAppointment(db, store, timezone, calProvider, args),
@@ -1919,6 +2014,15 @@ export function buildToolset(
         M365_MY_SCHEDULE_DECL, M365_MY_MAIL_DECL, M365_MY_TASKS_DECL,
         M365_ADD_TASK_DECL, M365_SEND_MAIL_DECL,
       );
+    }
+  }
+  // Trackers. Offered only when this account has registered one, and the write
+  // tools only when at least one of them was made writable — a tool the model can
+  // see but can never use successfully is a tool it will keep trying.
+  if (workbooks.length > 0) {
+    declarations.push(trackerReadDeclaration(workbooks));
+    if (workbooks.some((w) => w.writable)) {
+      declarations.push(trackerAddDeclaration(workbooks), trackerUpdateDeclaration(workbooks));
     }
   }
   if (connected.includes("square")) declarations.push(SQUARE_FIND_ITEM_DECL, SQUARE_ORDER_STATUS_DECL);

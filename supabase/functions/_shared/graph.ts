@@ -70,6 +70,14 @@ export const M365_BUNDLES = {
   mail: { scopes: ["Mail.Read"], label: "Find mail", why: "Search a person's own mailbox for a message." },
   mail_send: { scopes: ["Mail.Send"], label: "Send mail", why: "Send an email from a person's own mailbox, in their name." },
   tasks: { scopes: ["Tasks.ReadWrite"], label: "Tasks", why: "Read and add tasks in a person's Microsoft To Do." },
+  // Writing to a spreadsheet needs more than reading one, and asking for it only
+  // when a workbook is actually made writable keeps the connect-time consent
+  // screen to the low-impact set.
+  spreadsheets_write: {
+    scopes: ["Files.ReadWrite.All", "Sites.ReadWrite.All"],
+    label: "Update trackers",
+    why: "Add and change rows in the spreadsheets this assistant has been told to work in.",
+  },
 } as const;
 
 export type M365Bundle = keyof typeof M365_BUNDLES;
