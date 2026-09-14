@@ -72,6 +72,8 @@ import { executeHttpTool, httpToolDeclaration, type HttpTool, type Visitor } fro
 import { executeMcpTool, mcpToolDeclaration, type McpTool } from "./mcp.ts";
 import { logToolCall, actedAsLabel } from "./audit.ts";
 import { routeHeldAction } from "./holds.ts";
+import { decideAction } from "./policy.ts";
+import { describeCapabilities } from "./capabilities.ts";
 
 // ── Gemini functionDeclaration shapes ───────────────────────────────────────
 // A JSON-Schema-ish node; `items`/`properties` may nest (e.g. an array of objects).
@@ -1667,6 +1669,18 @@ const M365_SEND_MAIL_DECL: FunctionDeclaration = {
   },
 };
 
+const WHAT_I_CAN_DO_DECL: FunctionDeclaration = {
+  name: "what_i_can_do",
+  description:
+    "Call this when someone asks what you can do, what you have access to, what systems you are " +
+    "connected to, or whether you can help with some area of their work - and when a new person " +
+    "is clearly working out whether you are useful to them. It returns what is actually set up " +
+    "for THIS organisation and THIS person right now, including what needs someone to approve it. " +
+    "Answer from the result, never from what assistants can do in general: offering something that " +
+    "is not connected here is worse than admitting the gap.",
+  parameters: { type: "object", properties: {}, required: [] },
+};
+
 /**
  * Trackers — the spreadsheets this account has told the assistant to work in.
  *
@@ -1864,6 +1878,44 @@ export function buildToolset(
   // One calendar tool pair serves whichever calendar the store connected — prefer
   // Google if both are on. (Most stores connect just one.)
   const calProvider: CalProvider | null = connected.includes("google") ? "google" : connected.includes("microsoft") ? "microsoft" : null;
+  /**
+   * A write to a tracker. Held by default, and held whatever the size unless the
+   * owner set a threshold on that workbook — at which point small ones run and
+   * big ones still wait. Same rule, from the same place, as the HTTP and MCP
+   * tools: three copies of "is this one big enough to need a person" would
+   * disagree the first time a number arrived with a currency symbol on it.
+   */
+  const trackerWrite = async (tool: "add_tracker_row" | "update_tracker_row", args: Record<string, unknown>) => {
+    const wb = workbooks.find(
+      (w) => w.name.toLowerCase() === String(args.tracker ?? "").trim().toLowerCase(),
+    ) ?? workbooks.find((w) => w.name.toLowerCase().includes(String(args.tracker ?? "").trim().toLowerCase()));
+    const decision = decideAction(wb ?? { action_policy: "hold" }, args);
+
+    if (decision.mode === "hold") {
+      const routed = await routeHeldAction(db, store, sessionId, {
+        tool, kind: "workbook", actedAs: visitor?.email ?? null, args,
+      });
+      void logToolCall(db, store, sessionId, {
+        tool, kind: "connector", actedAs: visitor?.email ?? null, sideEffect: true, status: "held",
+      });
+      return {
+        ok: false, held: true,
+        ...(routed.reference ? { reference: routed.reference } : {}),
+        ...(decision.reason ? { because: decision.reason } : {}),
+        note: routed.note,
+      };
+    }
+
+    const out = tool === "add_tracker_row"
+      ? await appendWorkbookRow(db, store, String(args.tracker ?? ""), (args.values ?? {}) as Record<string, unknown>)
+      : await updateWorkbookRow(db, store, String(args.tracker ?? ""), String(args.match ?? ""), (args.values ?? {}) as Record<string, unknown>);
+    void logToolCall(db, store, sessionId, {
+      tool, kind: "connector", actedAs: visitor?.email ?? null,
+      sideEffect: true, status: out?.ok === false ? "error" : "ok",
+    });
+    return out;
+  };
+
   const executors: Record<string, ToolExecutor> = {
     search_products: (args) => executeSearchProducts(db, store, args),
     show_products: (args) => executeShowProducts(db, store, sessionId, ui, args),
@@ -1903,28 +1955,19 @@ export function buildToolset(
       });
       return out;
     },
+    what_i_can_do: () => describeCapabilities(db, store, {
+      email: visitor?.email,
+      connected,
+      httpTools: httpTools.map((t) => ({ name: t.name, description: t.description, side_effect: t.side_effect })),
+      mcpTools: mcpTools.map((t) => ({ name: t.name, description: t.description, side_effect: t.side_effect })),
+      escalationTopics,
+    }),
     read_tracker: (args) => readWorkbook(db, store, String(args.tracker ?? ""), args.match ? String(args.match) : undefined),
     // Writing to somebody's tracker is an action in their system, so it takes the
     // same road as every other write: held by default, approved by a named person,
     // and RUN by that approval (resolve.ts) rather than left as paperwork.
-    add_tracker_row: async (args) => {
-      const routed = await routeHeldAction(db, store, sessionId, {
-        tool: "add_tracker_row", kind: "workbook", actedAs: visitor?.email ?? null, args,
-      });
-      void logToolCall(db, store, sessionId, {
-        tool: "add_tracker_row", kind: "connector", actedAs: visitor?.email ?? null, sideEffect: true, status: "held",
-      });
-      return { ok: false, held: true, ...(routed.reference ? { reference: routed.reference } : {}), note: routed.note };
-    },
-    update_tracker_row: async (args) => {
-      const routed = await routeHeldAction(db, store, sessionId, {
-        tool: "update_tracker_row", kind: "workbook", actedAs: visitor?.email ?? null, args,
-      });
-      void logToolCall(db, store, sessionId, {
-        tool: "update_tracker_row", kind: "connector", actedAs: visitor?.email ?? null, sideEffect: true, status: "held",
-      });
-      return { ok: false, held: true, ...(routed.reference ? { reference: routed.reference } : {}), note: routed.note };
-    },
+    add_tracker_row: (args) => trackerWrite("add_tracker_row", args),
+    update_tracker_row: (args) => trackerWrite("update_tracker_row", args),
     check_calendar_availability: (args) => executeCheckAvailability(db, store, timezone, calProvider, args),
     book_appointment: (args) => executeBookAppointment(db, store, timezone, calProvider, args),
     square_find_item: (args) => executeSquareFindItem(db, store, args),
@@ -2003,6 +2046,10 @@ export function buildToolset(
   ];
   // Connected-provider tools — attached only when that provider is connected.
   if (calProvider) declarations.push(CHECK_AVAILABILITY_DECL, BOOK_APPOINTMENT_DECL);
+  // Always available. Every assistant can say what it is for, and the one with
+  // nothing connected needs it most: that is the answer that stops someone
+  // deciding it is useless on their first try.
+  declarations.push(WHAT_I_CAN_DO_DECL);
   // Microsoft 365. The organisation connecting it is what turns the whole group on.
   // The personal tools are offered to anyone the channel identified — they prompt
   // that person to connect their own account rather than borrowing somebody else's,
