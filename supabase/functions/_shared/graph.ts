@@ -89,7 +89,7 @@ export async function enabledBundles(
  * The link asks for everything already granted plus the new bundle, so adding a
  * capability never silently narrows the connection that was working before.
  */
-async function requireBundle(
+export async function requireBundle(
   db: SupabaseClient, storeId: string, bundle: M365Bundle, userKey: string,
 ): Promise<{ ok: true } | { ok: false; offer: Json }> {
   const need = M365_BUNDLES[bundle].scopes;
