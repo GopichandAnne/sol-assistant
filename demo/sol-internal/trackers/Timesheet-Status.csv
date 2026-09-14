@@ -1,0 +1,15 @@
+Name,Week Ending,Engagement Code,Hours Billable,Hours Non Billable,Submitted,Approved,Approver,Notes
+Priya Shah,2026-09-05,ENG-2411,38,2,Yes,Yes,Marcus Bell,
+Joe Duffy,2026-09-05,ENG-2411,40,0,Yes,Yes,Marcus Bell,
+Leah Mbeki,2026-09-05,ENG-2418,36,4,Yes,Yes,Marcus Bell,
+Nina Kaur,2026-09-05,ENG-2423,40,0,Yes,Yes,Ana Ruiz,
+Sam Patel,2026-09-05,ENG-2423,37,3,Yes,No,Ana Ruiz,Awaiting approval 6 days
+Ana Ruiz,2026-09-05,ENG-2427,34,6,Yes,Yes,Marcus Bell,
+Grace Lin,2026-09-05,ENG-2427,40,0,No,No,Ana Ruiz,Not submitted
+Raj Menon,2026-09-05,ENG-2430,39,1,Yes,Yes,Marcus Bell,
+Tom Wheeler,2026-09-05,,0,40,No,No,Marcus Bell,On bench - still needs a timesheet
+Ellie Frost,2026-09-05,,0,40,No,No,Dan Okafor,On bench - still needs a timesheet
+Dan Okafor,2026-09-05,,0,40,Yes,Yes,Marcus Bell,SAGE development
+Priya Shah,2026-09-12,ENG-2411,40,0,No,No,Marcus Bell,Not submitted
+Joe Duffy,2026-09-12,ENG-2411,38,2,No,No,Marcus Bell,Not submitted
+Leah Mbeki,2026-09-12,ENG-2418,40,0,Yes,No,Marcus Bell,Awaiting approval

@@ -1,0 +1,11 @@
+Client,Engagement Code,Requirement,Applies To,Lead Time,Owner,Status,Renews,Notes
+Commonwealth IT,ENG-2423,State of Virginia background check,Everyone client facing,15 working days,People Ops,In place,Every 2 years,Fingerprints in person at a Virginia site
+Commonwealth IT,ENG-2423,Client VPN and GovCloud account,Everyone with system access,5 working days,Client IT,In place,Annual,Requires background check to be cleared first
+Commonwealth IT,ENG-2423,Accessibility training (WCAG 2.2),Anyone touching the UI,Self paced 3 hours,People Ops,In place,Every 2 years,
+Calder Health,ENG-2418,HIPAA awareness training,Everyone on the account,Self paced 2 hours,People Ops,In place,Annual,Certificate goes to the client security team
+Calder Health,ENG-2418,Business associate agreement acknowledgement,Everyone on the account,1 working day,Legal,In place,Per engagement,
+Calder Health,ENG-2418,No PHI in any AI tool,Everyone on the account,Immediate,Information Security,In place,Continuous,Explicitly includes SAGE and the assistant
+Brightwater Bank,ENG-2427,Financial services screening,Everyone client facing,10 working days,People Ops,In place,Every 3 years,Credit and criminal record check
+Brightwater Bank,ENG-2427,Client laptop (no BYOD),Anyone with system access,10 working days,Client IT,In place,Per engagement,Sol laptops are not permitted on their network
+Meridian Media,ENG-2411,Content embargo NDA,Everyone on the account,1 working day,Legal,In place,Per engagement,Unreleased programming is commercially sensitive
+Northgate Retail,ENG-2430,Standard mutual NDA,Everyone on the account,1 working day,Legal,In place,Per engagement,
