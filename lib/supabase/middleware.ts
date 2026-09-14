@@ -25,6 +25,13 @@ const PUBLIC_PREFIXES = [
   // bouncing them to a sign-in page after a successful connection would read as a
   // failure.
   "/connected",
+  // The demonstration service desk: a stand-in for a client system, reached over
+  // its own API by the assistant and looked at on its own page during a demo.
+  // It carries its own API key and holds nothing but invented tickets for
+  // fictional people — bouncing it to /login would make it useless as a stand-in
+  // for an external system, which is the only thing it is for.
+  "/api/demo",
+  "/demo",
 ];
 
 function isPublic(pathname: string) {
