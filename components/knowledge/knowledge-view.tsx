@@ -15,6 +15,7 @@ import {
 import { useStore } from "@/components/store/store-provider";
 import { QADialog } from "./qa-dialog";
 import { DocumentDialog } from "./document-dialog";
+import { SharePointPanel } from "./sharepoint-panel";
 import { DocumentDatesDialog, docValidity } from "./document-dates-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -176,6 +177,8 @@ export function KnowledgeView({
           </div>
         )}
       </header>
+
+      {isOwner && <SharePointPanel />}
 
       <section className="space-y-2">
         <div className="flex items-center justify-between gap-2">
