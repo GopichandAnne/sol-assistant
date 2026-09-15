@@ -58,10 +58,10 @@ export function SharePointPanel() {
     reload();
     listMicrosoftConnections().then((c) => {
       setConns(c);
-      // Default to a person who has actually connected, so the common case needs
-      // no typing and the uncommon one is still possible.
-      const person = c.find((x) => x.userKey);
-      if (person) setWho(person.userKey);
+      // Default to whatever is actually connected, which is usually the
+      // organisation connection with an empty key. Defaulting to a person only
+      // when one exists stops the field inviting an address that will not match.
+      if (c.length > 0) setWho(c[0].userKey);
     }).catch(() => {});
   }, [reload]);
 
@@ -189,7 +189,7 @@ export function SharePointPanel() {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="sp-who" className="text-xs">Read as</Label>
-          {conns.length > 1 ? (
+          {conns.length > 0 ? (
             <select
               id="sp-who"
               value={who}
@@ -206,14 +206,14 @@ export function SharePointPanel() {
               id="sp-who"
               value={who}
               onChange={(e) => setWho(e.target.value)}
-              placeholder="you@yourcompany.com"
-              disabled={busy}
+              placeholder="Connect Microsoft 365 first"
+              disabled
               autoComplete="off"
             />
           )}
           <p className="text-muted-foreground text-xs">
-            The folder is read with this person&apos;s access, so it reaches exactly what they can
-            reach &mdash; and nothing they can&apos;t.
+            The folder is read with this account&apos;s access, so it reaches exactly what it can
+            reach &mdash; and nothing it can&apos;t.
           </p>
         </div>
       </div>

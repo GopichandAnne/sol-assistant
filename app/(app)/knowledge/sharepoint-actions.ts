@@ -94,10 +94,21 @@ export async function listMicrosoftConnections(): Promise<{ userKey: string; lab
     .eq("store_id", store.id)
     .eq("provider", "microsoft")
     .eq("status", "connected");
-  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
-    userKey: String(r.user_key ?? ""),
-    label: String(r.account_label ?? r.user_key ?? "this assistant's connection"),
-  }));
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => {
+    const key = String(r.user_key ?? "");
+    const account = String(r.account_label ?? "").trim();
+    return {
+      userKey: key,
+      // The organisation connection has an empty key, and naming it after the
+      // person who made it is how somebody types that address into "Read as" and
+      // gets told they have not connected. Say which kind it is.
+      label: key
+        ? account || key
+        : account
+          ? `This assistant's connection (${account})`
+          : "This assistant's connection",
+    };
+  });
 }
 
 /**
