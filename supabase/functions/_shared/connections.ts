@@ -272,7 +272,7 @@ export function buildAuthorizeUrl(id: ProviderId, clientId: string, state: strin
   return `${u.toString()}${sep}scope=${encodeURIComponent(scope).replace(/%2B/g, "+")}`;
 }
 
-export interface RawTokens { access_token?: string; refresh_token?: string; expires_in?: number; expires_at?: string }
+export interface RawTokens { access_token?: string; refresh_token?: string; expires_in?: number; expires_at?: string; scope?: string }
 export interface Tokens { accessToken: string; refreshToken: string | null; expiresAt: string | null; scope: string | null }
 
 async function callToken(id: ProviderId, body: Record<string, string>): Promise<RawTokens> {
@@ -286,11 +286,28 @@ async function callToken(id: ProviderId, body: Record<string, string>): Promise<
   return JSON.parse(txt) as RawTokens;
 }
 
-function normalize(raw: RawTokens, scope: string | null): Tokens {
+/**
+ * `fallback` is what we ASKED for. `raw.scope` is what the provider says it
+ * GRANTED, and it wins.
+ *
+ * This used to record the fallback unconditionally, which quietly broke the whole
+ * incremental-consent mechanism: whatever extra capability somebody approved, the
+ * row still said the connect-time set, so requireBundle refused forever and the
+ * approval link could be followed all day without changing anything. Recording
+ * what we hoped for instead of what we were given is the kind of bug that looks
+ * like a Microsoft problem.
+ */
+function normalize(raw: RawTokens, fallback: string | null): Tokens {
   let expiresAt: string | null = null;
   if (raw.expires_at) expiresAt = new Date(raw.expires_at).toISOString();
   else if (typeof raw.expires_in === "number") expiresAt = new Date(Date.now() + raw.expires_in * 1000).toISOString();
-  return { accessToken: String(raw.access_token ?? ""), refreshToken: raw.refresh_token ?? null, expiresAt, scope };
+  const granted = (raw.scope ?? "").trim();
+  return {
+    accessToken: String(raw.access_token ?? ""),
+    refreshToken: raw.refresh_token ?? null,
+    expiresAt,
+    scope: granted || fallback,
+  };
 }
 
 export async function exchangeCode(id: ProviderId, code: string, clientId: string, clientSecret: string): Promise<Tokens> {
@@ -300,10 +317,16 @@ export async function exchangeCode(id: ProviderId, code: string, clientId: strin
   });
   return normalize(raw, PROVIDERS[id].scope);
 }
-async function refreshToken(id: ProviderId, refresh: string, clientId: string, clientSecret: string): Promise<Tokens> {
+async function refreshToken(
+  id: ProviderId, refresh: string, clientId: string, clientSecret: string,
+  /** What the row already records. A refresh that answers without a scope must
+   *  not erase it, or an hour after somebody approved a capability it would be
+   *  refused again with nothing to show why. */
+  knownScope: string | null = null,
+): Promise<Tokens> {
   const raw = await callToken(id, { grant_type: "refresh_token", refresh_token: refresh, client_id: clientId, client_secret: clientSecret });
   // Some providers don't re-issue a refresh token on refresh — keep the old one.
-  const t = normalize(raw, null);
+  const t = normalize(raw, knownScope);
   if (!t.refreshToken) t.refreshToken = refresh;
   return t;
 }
@@ -363,7 +386,7 @@ export async function getAccessToken(
     if (!row.refresh_token) return await decrypt(row.access_token); // no refresh token; hand back what we have
     const client = providerClient(id);
     if (!client) return null;
-    const refreshed = await refreshToken(id, await decrypt(row.refresh_token), client.clientId, client.clientSecret);
+    const refreshed = await refreshToken(id, await decrypt(row.refresh_token), client.clientId, client.clientSecret, row.scope);
     await saveConnection(db, storeId, id, refreshed, row.account_label, null, key);
     return refreshed.accessToken;
   } catch (e) {
