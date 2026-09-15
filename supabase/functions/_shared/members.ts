@@ -372,3 +372,38 @@ export function identityContext(member: MemberContext | null, mode: AccessMode):
   }
   return "";
 }
+
+/**
+ * Who the channel says this is, when no membership has been established.
+ *
+ * Teams and Slack authenticate a person before we ever see their message. Entra
+ * checked them, their verified address is what every tool call is attributed to,
+ * and the code that hands it over says as much: "we ALWAYS know who they are".
+ *
+ * That knowledge reached the executors and not the prompt. So the assistant would
+ * act as somebody in their own systems while telling them, in the same breath,
+ * that it could not tell who they were. It reads as broken, and "who am I" is the
+ * first thing anybody types.
+ *
+ * Deliberately NOT a membership claim. It says who they are, not what they may
+ * see: members-only knowledge still requires a member record, and the sentence
+ * below says so in case the model is tempted.
+ */
+export function channelIdentity(
+  visitor?: { email?: string | null; name?: string | null; channel?: string },
+): string {
+  const email = (visitor?.email ?? "").trim();
+  const name = (visitor?.name ?? "").trim();
+  if (!email && !name) return "";
+  const where =
+    visitor?.channel === "teams" ? "Microsoft Teams" :
+    visitor?.channel === "slack" ? "Slack" :
+    "their workplace account";
+  const who = name && email ? `${name} (${email})` : name || email;
+  return (
+    `${String.fromCharCode(10)}[END-USER IDENTITY: signed in to ${where} as ${who}. Their organisation has ` +
+    `already authenticated them, so you DO know who this is — use their name naturally and never say you ` +
+    `cannot tell who they are. This establishes WHO they are, not what they may see: anything members-only ` +
+    `still needs them to be a member.]`
+  );
+}

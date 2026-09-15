@@ -36,7 +36,7 @@ import { loadHttpTools, type Visitor } from "./httptool.ts";
 import { loadMcpTools } from "./mcp.ts";
 import { listWorkbooks } from "./workbook.ts";
 import { loadRequestTypes } from "./requests.ts";
-import { accessMode, identityContext, resolveMember } from "./members.ts";
+import { accessMode, channelIdentity, identityContext, resolveMember } from "./members.ts";
 import {
   cancelFollowup,
   getFollowupSettings,
@@ -81,7 +81,11 @@ export async function generateTurnReply(
       toolsUsed: [],
     };
   }
-  const idCtx = identityContext(member, mode);
+  // A member record wins, because it carries a role and any metadata. Failing
+  // that, fall back to who the channel authenticated — otherwise a Teams user who
+  // has never been added as a member is anonymous to the model while every tool
+  // call is still attributed to them.
+  const idCtx = identityContext(member, mode) || channelIdentity(opts.visitor);
 
   const history = await loadHistory(db, store.slug, opts.sessionId, config.historyTurns);
   // Per-store connectors — loaded before the prompt so a live-price connector can

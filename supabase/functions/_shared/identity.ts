@@ -188,6 +188,7 @@ export async function resolveIdentity(
     channel: opts.channel,
     token: rawToken,
     email: claim.email ?? null,
+    name: claim.name ?? null,
     phone: claim.phone ?? null,
     sub: sub != null ? String(sub) : null,
   };

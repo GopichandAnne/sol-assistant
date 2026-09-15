@@ -55,6 +55,8 @@ export interface Visitor {
   channel?: string;
   token?: string; // the raw verified identity token, to forward to the host's own API
   email?: string | null;
+  /** Display name from the channel, where it hands one over. */
+  name?: string | null;
   phone?: string | null;
   sub?: string | null; // external user id, if the token carried one
 }
