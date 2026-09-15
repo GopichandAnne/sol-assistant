@@ -165,14 +165,24 @@ async function handleActivity(activity: Record<string, unknown>, appId: string, 
     // before setup: someone messages the app, nothing happens, no explanation.
     // Record the tenant so the console can offer a one-click link, and TELL the
     // person, so the identifier reaches us without anyone visiting Azure.
-    try {
-      await db.from("teams_pending_tenant").upsert({
-        tenant_id: ev.tenantId,
-        sample_user: ev.name || null,
-        last_seen: new Date().toISOString(),
-      }, { onConflict: "tenant_id" });
-    } catch (e) {
-      console.warn(`[teams] record pending tenant: ${(e as Error)?.message ?? e}`);
+    // Only a real tenant is worth recording. Channels other than Teams — the Web
+    // Chat tester in the Azure portal, Direct Line — carry no tenant at all, and
+    // an empty one used to be written here anyway. It then appeared in the console
+    // as an organisation waiting to connect, with a blank name, and linking it
+    // would have pointed every unmatched message at that assistant. A junk row
+    // somebody can click during a demo is worse than no row.
+    if (ev.tenantId) {
+      try {
+        await db.from("teams_pending_tenant").upsert({
+          tenant_id: ev.tenantId,
+          sample_user: ev.name || null,
+          last_seen: new Date().toISOString(),
+        }, { onConflict: "tenant_id" });
+      } catch (e) {
+        console.warn(`[teams] record pending tenant: ${(e as Error)?.message ?? e}`);
+      }
+    } else {
+      console.warn("[teams] message with no tenant (not Teams) — nothing to link");
     }
     console.warn(`[teams] no install for tenant ${ev.tenantId} — told the user`);
     await postTeamsReply(
