@@ -14,10 +14,14 @@ export async function callBotAdmin(
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const adminSecret = process.env.ADMIN_TASK_SECRET;
   if (!base || !serviceKey || !adminSecret) {
+    // Named precisely, because this bridge carries far more than indexing:
+    // approvals, inbox replies, agent settings. A message that says "indexing"
+    // on the Approve button sends whoever reads it looking in the wrong place.
+    const missing = [!base && "NEXT_PUBLIC_SUPABASE_URL", !serviceKey && "SUPABASE_SERVICE_ROLE_KEY", !adminSecret && "ADMIN_TASK_SECRET"]
+      .filter(Boolean).join(", ");
     return {
       ok: false,
-      error:
-        "Knowledge indexing isn't configured (needs SUPABASE_SERVICE_ROLE_KEY and ADMIN_TASK_SECRET).",
+      error: `The console can't reach the assistant's back end: ${missing} is not set on this deployment.`,
     };
   }
   try {
@@ -33,7 +37,7 @@ export async function callBotAdmin(
     });
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
-      return { ok: false, error: String(data.error ?? `Indexing failed (HTTP ${res.status}).`) };
+      return { ok: false, error: String(data.error ?? `The back end refused the request (HTTP ${res.status}).` ) };
     }
     return { ok: true, data };
   } catch (e) {
