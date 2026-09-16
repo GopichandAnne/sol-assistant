@@ -112,6 +112,12 @@ async function handleEvent(body: Record<string, unknown>): Promise<void> {
 
   const nowIso = new Date().toISOString();
   const threadId = `thr_${sessionId}_${store.slug}`;
+  // The thread has to exist before its messages (thread_messages references it),
+  // or every Slack message is refused and never reaches the console.
+  await db.from("threads").upsert(
+    { thread_id: threadId, store_slug: store.slug, customer_phone: sessionId, customer_name: profile?.name ?? profile?.email ?? null, last_message_at: nowIso },
+    { onConflict: "thread_id" },
+  );
   // Persist the inbound so history works across turns (like web/WhatsApp).
   await db.from("thread_messages").insert({
     message_id: `msg_slack_${crypto.randomUUID()}`,

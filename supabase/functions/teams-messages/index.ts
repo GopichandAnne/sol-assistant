@@ -241,6 +241,13 @@ async function handleActivity(activity: Record<string, unknown>, appId: string, 
   if (resolved) visitor = resolved.visitor;
 
   const threadId = `thr_${sessionId}_${store.slug}`;
+  // The thread has to exist before its messages: thread_messages references it,
+  // and without this every Teams message was refused and the conversation never
+  // appeared in the console. Web chat has always done this; Teams never did.
+  await db.from("threads").upsert(
+    { thread_id: threadId, store_slug: store.slug, customer_phone: sessionId, customer_name: ev.name ?? email ?? null, last_message_at: new Date().toISOString() },
+    { onConflict: "thread_id" },
+  );
   await db.from("thread_messages").insert({
     message_id: `msg_teams_${crypto.randomUUID()}`,
     thread_id: threadId,
