@@ -11,7 +11,7 @@ import { listTickets } from "@/lib/demo/service-desk";
  * carries Sol's branding the illusion does the opposite of its job.
  *
  * Read-only and unauthenticated by design. It shows a queue of invented tickets
- * for fictional people at northwind.example; there is nothing here to protect,
+ * for fictional people at solconsulting.example; there is nothing here to protect,
  * and a login screen in the middle of a demo is a fumble waiting to happen.
  */
 export const metadata: Metadata = { title: "Service Desk — Northwind" };

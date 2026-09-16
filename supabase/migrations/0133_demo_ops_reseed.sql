@@ -57,3 +57,17 @@ insert into public.demo_ops_row (dataset, ref, data) values
   ('timesheets', 'timesheets-020', '{"Name": "Dan Okafor", "Week Ending": "2026-09-12", "Engagement Code": "", "Hours Billable": "0", "Hours Non Billable": "40", "Submitted": "Yes", "Approved": "Yes", "Approver": "Marcus Bell", "Notes": "SAGE development"}'::jsonb),
   ('timesheets', 'timesheets-021', '{"Name": "Tom Wheeler", "Week Ending": "2026-09-12", "Engagement Code": "", "Hours Billable": "0", "Hours Non Billable": "40", "Submitted": "Yes", "Approved": "Yes", "Approver": "Marcus Bell", "Notes": "On bench"}'::jsonb),
   ('timesheets', 'timesheets-022', '{"Name": "Ellie Frost", "Week Ending": "2026-09-12", "Engagement Code": "", "Hours Billable": "0", "Hours Non Billable": "40", "Submitted": "Yes", "Approved": "Yes", "Approver": "Dan Okafor", "Notes": "On bench"}'::jsonb);
+
+-- The service desk queue still addressed everyone at northwind.example, left over
+-- from when the demo was set in a made-up company. The page only ever renders the
+-- part before the @, so nobody saw it there — but the assistant reads the whole
+-- record, and quoting a different company's domain back into a Sol demo is exactly
+-- the detail a practice leader notices. The tenant key stays as it is: it
+-- partitions the rows and is never shown.
+update public.demo_ticket
+   set requester = replace(requester, '@northwind.example', '@solconsulting.example')
+ where requester like '%@northwind.example';
+
+update public.demo_ticket
+   set assignee = replace(assignee, '@northwind.example', '@solconsulting.example')
+ where assignee like '%@northwind.example';

@@ -49,14 +49,33 @@ export function checkKey(header: string | null): { ok: true } | { ok: false; sta
   return { ok: true };
 }
 
+/**
+ * People are stored as addresses and asked about by name.
+ *
+ * A service desk holds `leah.mbeki@sol.example` and gets asked "what is open for
+ * Leah Mbeki", so a single LIKE over the whole phrase matches nothing: the dot
+ * is not a space. Every word has to appear somewhere in the address instead,
+ * which also survives "Mbeki", "leah.mbeki" and a middle name nobody uses.
+ *
+ * Words rather than a regex because this runs through PostgREST, where each
+ * ilike is a separate AND-ed filter and there is no normalising the column first.
+ */
+function eachWord(value: string): string[] {
+  return value.toLowerCase().split(/[^a-z0-9]+/i).filter((w) => w.length > 1).slice(0, 4);
+}
+
 export async function listTickets(opts: {
   status?: string; assignee?: string; requester?: string; q?: string; limit?: number;
 }): Promise<Ticket[]> {
   const from = untyped(createAdminClient());
   let query = from("demo_ticket").select(FIELDS).eq("tenant", TENANT);
   if (opts.status) query = query.ilike("status", opts.status);
-  if (opts.assignee) query = query.ilike("assignee", `%${opts.assignee}%`);
-  if (opts.requester) query = query.ilike("requester", `%${opts.requester}%`);
+  for (const w of opts.assignee ? eachWord(opts.assignee) : []) {
+    query = query.ilike("assignee", `%${w}%`);
+  }
+  for (const w of opts.requester ? eachWord(opts.requester) : []) {
+    query = query.ilike("requester", `%${w}%`);
+  }
   if (opts.q) query = query.or(`title.ilike.%${opts.q}%,description.ilike.%${opts.q}%`);
   const { data } = await query
     .order("created_at", { ascending: false })
