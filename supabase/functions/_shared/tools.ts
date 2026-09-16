@@ -1918,7 +1918,7 @@ export function buildToolset(
       const routed = await routeHeldAction(db, store, sessionId, {
         tool, kind: "workbook", actedAs: visitor?.email ?? null, args,
       });
-      void logToolCall(db, store, sessionId, {
+      void logToolCall(db, store, sessionId, { requestedBy: visitor?.email ?? null,
         tool, kind: "connector", actedAs: visitor?.email ?? null, sideEffect: true, status: "held",
       });
       return {
@@ -1932,7 +1932,7 @@ export function buildToolset(
     const out = tool === "add_tracker_row"
       ? await appendWorkbookRow(db, store, String(args.tracker ?? ""), (args.values ?? {}) as Record<string, unknown>)
       : await updateWorkbookRow(db, store, String(args.tracker ?? ""), String(args.match ?? ""), (args.values ?? {}) as Record<string, unknown>);
-    void logToolCall(db, store, sessionId, {
+    void logToolCall(db, store, sessionId, { requestedBy: visitor?.email ?? null,
       tool, kind: "connector", actedAs: visitor?.email ?? null,
       sideEffect: true, status: out?.ok === false ? "error" : "ok",
     });
@@ -1963,7 +1963,7 @@ export function buildToolset(
         const routed = await routeHeldAction(db, store, sessionId, {
           tool: "send_email", kind: "m365", actedAs: visitor?.email ?? null, args,
         });
-        void logToolCall(db, store, sessionId, {
+        void logToolCall(db, store, sessionId, { requestedBy: visitor?.email ?? null,
           tool: "send_email", kind: "connector", actedAs: visitor?.email ?? null, sideEffect: true, status: "held",
         });
         return { ok: false, held: true, ...(routed.reference ? { reference: routed.reference } : {}), note: routed.note };
@@ -1972,7 +1972,7 @@ export function buildToolset(
         db, store, visitor?.email,
         String(args.to ?? ""), String(args.subject ?? ""), String(args.body ?? ""), visitor?.channel,
       );
-      void logToolCall(db, store, sessionId, {
+      void logToolCall(db, store, sessionId, { requestedBy: visitor?.email ?? null,
         tool: "send_email", kind: "connector", actedAs: visitor?.email ?? null,
         sideEffect: true, status: out.ok === false ? "error" : "ok",
       });
@@ -2128,7 +2128,7 @@ export function buildToolset(
     executors[t.name] = async (args) => {
       const out = await executeHttpTool(db, store, t, args, visitor);
       const actedAs = actedAsLabel(t.auth?.type, visitor);
-      void logToolCall(db, store, sessionId, {
+      void logToolCall(db, store, sessionId, { requestedBy: visitor?.email ?? null,
         tool: t.name, kind: "http", actedAs,
         sideEffect: !!t.side_effect, status: out?.held ? "held" : out && (out.error || out.ok === false) ? "error" : "ok",
       });
@@ -2152,7 +2152,7 @@ export function buildToolset(
     executors[t.name] = async (args) => {
       const out = await executeMcpTool(db, store, t, args, visitor);
       const actedAs = actedAsLabel(t.server.auth?.type, visitor);
-      void logToolCall(db, store, sessionId, {
+      void logToolCall(db, store, sessionId, { requestedBy: visitor?.email ?? null,
         tool: t.name, kind: "mcp", actedAs,
         sideEffect: !!t.side_effect, status: out?.held ? "held" : out && (out.error || out.ok === false) ? "error" : "ok",
       });

@@ -19,6 +19,8 @@ type Row = {
   tool: string;
   kind: string;
   acted_as: string | null;
+  requested_by: string | null;
+  approved_by: string | null;
   side_effect: boolean;
   status: string;
 };
@@ -41,7 +43,7 @@ export default async function ActivityPage() {
   const [{ data }, { data: pending }] = await Promise.all([
     db
       .from("agent_action_log")
-      .select("id, ts, tool, kind, acted_as, side_effect, status")
+      .select("id, ts, tool, kind, acted_as, requested_by, approved_by, side_effect, status")
       .eq("store_id", store.id)
       .order("ts", { ascending: false })
       .limit(200),
@@ -53,7 +55,8 @@ export default async function ActivityPage() {
       .order("created_at", { ascending: false })
       .limit(50),
   ]);
-  const rows = (data ?? []) as Row[];
+  // requested_by and approved_by post-date the generated types (0137).
+  const rows = (data ?? []) as unknown as Row[];
   const approvals = (pending ?? []) as Approval[];
 
   const total = rows.length;
@@ -104,7 +107,7 @@ export default async function ActivityPage() {
               <tr className="text-muted-foreground border-b text-left text-[11px] font-mono uppercase tracking-wide">
                 <th className="p-3 font-semibold">When</th>
                 <th className="p-3 font-semibold">Tool</th>
-                <th className="p-3 font-semibold">Acted as</th>
+                <th className="p-3 font-semibold">Who</th>
                 <th className="p-3 font-semibold">Type</th>
                 <th className="p-3 font-semibold">Result</th>
               </tr>
@@ -115,11 +118,19 @@ export default async function ActivityPage() {
                   <td className="text-muted-foreground whitespace-nowrap p-3 tabular-nums">{fmt(r.ts)}</td>
                   <td className="p-3"><span className="font-mono text-[13px]">{r.tool}</span> <span className="text-muted-foreground text-xs">· {r.kind}</span></td>
                   <td className="p-3">
-                    {r.acted_as ? (
-                      <span className="text-teal-deep inline-flex items-center gap-1"><UserCheck className="size-3.5" /> {r.acted_as}</span>
+                    {/* Who asked, first: it is the question an auditor opens this
+                        page with. Then how it ran, which is a separate fact: an
+                        API-key tool runs on the account's connection even when a
+                        named person asked for it. */}
+                    {r.requested_by ?? r.acted_as ? (
+                      <span className="text-teal-deep inline-flex items-center gap-1"><UserCheck className="size-3.5" /> {r.requested_by ?? r.acted_as}</span>
                     ) : (
                       <span className="text-muted-foreground inline-flex items-center gap-1"><OrgIcon className="size-3.5" /> the account</span>
                     )}
+                    <span className="text-muted-foreground block text-xs">
+                      {r.acted_as ? `as ${r.acted_as}` : "on the account's connection"}
+                      {r.approved_by ? ` · approved by ${r.approved_by}` : ""}
+                    </span>
                   </td>
                   <td className="p-3">
                     {r.side_effect

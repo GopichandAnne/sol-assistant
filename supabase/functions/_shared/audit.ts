@@ -18,7 +18,16 @@ export async function logToolCall(
   db: SupabaseClient,
   store: Store,
   sessionId: string,
-  e: { tool: string; kind: "http" | "mcp" | "connector" | "m365" | "workbook"; actedAs: string | null; sideEffect: boolean; status: "ok" | "error" | "held" },
+  e: {
+    tool: string; kind: "http" | "mcp" | "connector" | "m365" | "workbook";
+    /** Whose credential the call used: a person for identity tools, null for the account's own. */
+    actedAs: string | null;
+    /** The person who asked for it, whatever credential it ran with. */
+    requestedBy?: string | null;
+    /** Who let a held call through, when it was held. */
+    approvedBy?: string | null;
+    sideEffect: boolean; status: "ok" | "error" | "held";
+  },
 ): Promise<void> {
   try {
     await db.from("agent_action_log").insert({
@@ -27,6 +36,8 @@ export async function logToolCall(
       tool: e.tool.slice(0, 80),
       kind: e.kind,
       acted_as: e.actedAs ? e.actedAs.slice(0, 160) : null,
+      requested_by: e.requestedBy ? e.requestedBy.slice(0, 160) : null,
+      approved_by: e.approvedBy ? e.approvedBy.slice(0, 160) : null,
       side_effect: e.sideEffect,
       status: e.status,
     });

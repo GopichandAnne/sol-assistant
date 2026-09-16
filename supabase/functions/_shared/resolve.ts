@@ -24,7 +24,7 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import type { Store } from "./types.ts";
 import { loadHttpTools, executeHttpTool } from "./httptool.ts";
 import { loadMcpTools, executeMcpTool } from "./mcp.ts";
-import { logToolCall } from "./audit.ts";
+import { actedAsLabel, logToolCall } from "./audit.ts";
 import { relayToAsker } from "./responders.ts";
 import { sendMail } from "./graph.ts";
 import { appendWorkbookRow, updateWorkbookRow } from "./workbook.ts";
@@ -121,7 +121,7 @@ export async function resolveActionRequest(
     return { ok: true, decision, completed: false, note: "Declined. Nothing ran.", told };
   }
 
-  const outcome = await runApproved(db, store, req);
+  const outcome = await runApproved(db, store, req, by);
   await db
     .from("action_request")
     .update({ completed: outcome.completed, result_note: outcome.note.slice(0, 600) })
@@ -142,6 +142,7 @@ async function runApproved(
   db: SupabaseClient,
   store: Store,
   req: Row,
+  by: string,
 ): Promise<{ completed: boolean; note: string }> {
   const args = (req.args ?? {}) as Record<string, unknown>;
   // Act as the person it was raised for. `acted_as` was written from a
@@ -155,14 +156,14 @@ async function runApproved(
       if (!t) return { completed: false, note: "that tool no longer exists" };
       // The ONLY place a hold is lifted, and only for this one approved call.
       const out = await executeHttpTool(db, store, { ...t, action_policy: "auto" }, args, visitor);
-      return finish(db, store, req, out, "http");
+      return finish(db, store, req, out, "http", by, actedAsLabel(t.auth?.type, visitor));
     }
     if (req.kind === "mcp") {
       const tools = await loadMcpTools(db, store.id);
       const t = tools.find((x) => x.name === req.tool);
       if (!t) return { completed: false, note: "that tool no longer exists" };
       const out = await executeMcpTool(db, store, { ...t, action_policy: "auto" }, args, visitor);
-      return finish(db, store, req, out, "mcp");
+      return finish(db, store, req, out, "mcp", by, actedAsLabel(t.server?.auth?.type, visitor));
     }
     // Built-in connector writes. A held action must complete on approval whatever
     // kind of tool raised it — governance that only works for tools an owner wired
@@ -173,7 +174,7 @@ async function runApproved(
         db, store, req.acted_as,
         String(args.to ?? ""), String(args.subject ?? ""), String(args.body ?? ""),
       );
-      return finish(db, store, req, out, "m365");
+      return finish(db, store, req, out, "m365", by, req.acted_as);
     }
     // A tracker write. Same contract as the others: approving it is what makes it
     // happen, and it happens as the person who asked, not as the approver.
@@ -186,7 +187,7 @@ async function runApproved(
         ? await updateWorkbookRow(db, store, tracker, String(args.match ?? ""), values)
         : null;
       if (!out) return { completed: false, note: `cannot replay ${req.tool}` };
-      return finish(db, store, req, out, "workbook");
+      return finish(db, store, req, out, "workbook", by, req.acted_as);
     }
     return { completed: false, note: `unknown tool kind: ${req.kind}` };
   } catch (e) {
@@ -202,12 +203,17 @@ function finish(
   req: Row,
   out: Record<string, unknown>,
   kind: "http" | "mcp" | "m365" | "workbook",
+  approvedBy: string,
+  /** Whose credential the replay used. For an API-key tool that is the account,
+   *  not the requester, and the log must not say otherwise. */
+  credential: string | null,
 ): { completed: boolean; note: string } {
   const failed = !!out?.error || out?.ok === false;
   // Audited like any other call, so the log shows the action running at approval
   // time and who it ran for — not just that a request was held hours earlier.
   void logToolCall(db, store, req.session_id ?? "approval", {
-    tool: req.tool, kind, actedAs: req.acted_as,
+    tool: req.tool, kind, actedAs: credential,
+    requestedBy: req.acted_as, approvedBy,
     sideEffect: true, status: failed ? "error" : "ok",
   });
   if (failed) {
