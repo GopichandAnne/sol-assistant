@@ -9,6 +9,7 @@
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import type { Store } from "./types.ts";
+import { untyped } from "./untyped.ts";
 import { loadAgentConfig } from "./agent.ts";
 import { loadHistory } from "./history.ts";
 import {
@@ -143,7 +144,8 @@ export async function generateTurnReply(
   const docCtx = opts.document
     ? `\n[The visitor uploaded a file "${opts.document.name}" (${opts.document.mime}). Its URL is ${opts.document.url} — if it's relevant (e.g. a résumé for a request type that accepts uploads), call the appropriate parse tool with file_url set to this URL, then use the returned fields to fill and confirm the request.]`
     : "";
-  const contents = buildContents(history, `${nowCtx}${proposalCtx}${listingCtx}${docCtx}${idCtx}\n${opts.inboundText}`);
+  const approvalCtx = await approverContext(db, store, opts.visitor?.email ?? null);
+  const contents = buildContents(history, `${nowCtx}${proposalCtx}${listingCtx}${docCtx}${idCtx}${approvalCtx}\n${opts.inboundText}`);
   // Attach the customer's photo (if any) to the current user turn so the model sees it.
   if (opts.image && contents.length > 0) {
     contents[contents.length - 1].parts.unshift({
@@ -216,6 +218,47 @@ export async function generateTurnReply(
   }
 
   return { ...reply, catalogView: ui.catalog_view };
+}
+
+/**
+ * When the person talking is the one who approves held changes, say so, and say
+ * what is waiting for them.
+ *
+ * Without this the assistant had no idea approvals existed. An approver who asked
+ * it "what do I have to do to approve?" got expense-claim bands, then an
+ * instruction to reply "yes" — which approves nothing, and invites the model to
+ * run the held change again itself, as the approver. Approving happens on the
+ * card or in the console, where separation of duties is enforced; the assistant's
+ * job is to point there and never to act on someone else's request.
+ */
+async function approverContext(db: SupabaseClient, store: Store, email: string | null): Promise<string> {
+  if (!email) return "";
+  try {
+    const from = untyped(db);
+    const { data: install } = await from("teams_installs")
+      .select("approvals_email").eq("store_id", store.id).eq("active", true).maybeSingle();
+    const approver = String(install?.approvals_email ?? "").trim().toLowerCase();
+    if (!approver || approver !== email.trim().toLowerCase()) return "";
+
+    const { data: pending } = await from("action_request")
+      .select("tool, detail, acted_as, created_at")
+      .eq("store_id", store.id).eq("status", "pending")
+      .order("created_at", { ascending: false }).limit(5);
+    const rows = (pending ?? []) as { tool: string; detail: string; acted_as: string | null }[];
+    const list = rows.length
+      ? rows.map((r) => `- ${r.detail}${r.acted_as ? ` (asked for by ${r.acted_as})` : ""}`).join("\n")
+      : "- nothing is waiting right now";
+    return (
+      "\nAPPROVER: the person you are talking to approves changes that are held for a person.\n" +
+      `Waiting for their decision:\n${list}\n` +
+      "They approve or decline with the Approve and Decline buttons on the approval card this assistant " +
+      "sent them in this chat, or in the console under What it did. Replying yes, confirm or approve in " +
+      "chat does NOT approve anything; say so if they try. Never call a tool to carry out a change someone " +
+      "else asked for: that would make a new request in their name rather than approving the original."
+    );
+  } catch {
+    return "";
+  }
 }
 
 /** One subject per line, as the owner typed them. The key is a slug so it can sit

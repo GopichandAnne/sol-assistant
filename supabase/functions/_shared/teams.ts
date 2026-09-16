@@ -69,9 +69,27 @@ export function buildTeamsRawIdentity(aadObjectId: string, userId: string, name?
  *  both channels say the same thing: what was asked, who it was acting as, and
  *  that nothing has happened yet. Action.Submit posts `data` straight back to the
  *  bot as activity.value, which teams-messages routes to the approval handler. */
-export function buildApprovalCard(req: { id: string; detail: string; orgName: string; actedAs: string | null }) {
-  const facts = [{ title: "Account", value: req.orgName }];
-  if (req.actedAs) facts.push({ title: "Acting as", value: req.actedAs });
+/** "add_compliance_record" -> "Add compliance record". */
+function humanTool(name: string): string {
+  const words = name.replace(/[_-]+/g, " ").trim();
+  return words ? words[0].toUpperCase() + words.slice(1) : name;
+}
+
+export function buildApprovalCard(req: {
+  id: string; detail: string; orgName: string; actedAs: string | null;
+  /** The held call itself, when known, so the approver reads fields rather than a string. */
+  tool?: string; args?: Record<string, unknown>;
+}) {
+  const facts: { title: string; value: string }[] = [];
+  if (req.actedAs) facts.push({ title: "Requested by", value: req.actedAs });
+  const shown = Object.entries(req.args ?? {})
+    .filter(([k, v]) => v !== undefined && v !== null && v !== "" && !/token|secret|password|key|authorization/i.test(k))
+    .slice(0, 10);
+  for (const [k, v] of shown) {
+    const value = typeof v === "object" ? JSON.stringify(v) : String(v);
+    facts.push({ title: humanTool(k), value: value.length > 140 ? value.slice(0, 137) + "…" : value });
+  }
+  facts.push({ title: "Account", value: req.orgName });
   return {
     type: "message",
     attachments: [{
@@ -82,9 +100,12 @@ export function buildApprovalCard(req: { id: string; detail: string; orgName: st
         version: "1.4",
         body: [
           { type: "TextBlock", text: "Approval needed", weight: "Bolder", size: "Medium", wrap: true },
-          { type: "TextBlock", text: req.detail, wrap: true },
+          { type: "TextBlock", text: req.tool ? humanTool(req.tool) : req.detail, wrap: true, weight: req.tool ? "Bolder" : "Default" },
           { type: "FactSet", facts },
-          { type: "TextBlock", text: "Nothing has happened yet. Approving records your decision; complete the action in your systems as usual.", wrap: true, isSubtle: true, size: "Small" },
+          // Said plainly, because the old wording ("complete the action in your
+          // systems as usual") predates approvals running the change, and it sent
+          // an approver off asking the assistant what they were meant to do.
+          { type: "TextBlock", text: "Nothing has changed yet. Approve makes this change now, as the person who asked, and tells them it is done. Decline changes nothing. Use the buttons below; replying in chat does not approve.", wrap: true, isSubtle: true, size: "Small" },
         ],
         actions: [
           { type: "Action.Submit", title: "Approve", data: { kind: "approval", id: req.id, decision: "approved" } },

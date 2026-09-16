@@ -56,6 +56,7 @@ async function postTeamsApproval(
   reqId: string,
   detail: string,
   actedAs: string | null,
+  held?: { tool: string; args: Record<string, unknown> },
 ): Promise<boolean> {
   try {
     const appId = Deno.env.get("MICROSOFT_APP_ID");
@@ -82,6 +83,7 @@ async function postTeamsApproval(
 
     const card = buildApprovalCard({
       id: reqId, detail, orgName: store.store_display_name ?? store.slug, actedAs,
+      tool: held?.tool, args: held?.args,
     });
     return await postTeamsActivity(appId, appPassword, approver.service_url, approver.conversation_id, card);
   } catch (e) {
@@ -185,7 +187,7 @@ export async function routeHeldAction(
     // In-channel approval: Approve/Decline buttons in Slack, if configured.
     const reqId = (inserted as { id: string }).id;
     if (await postSlackApproval(db, store, reqId, detail, h.actedAs)) notified++;
-    if (await postTeamsApproval(db, store, reqId, detail, h.actedAs)) notified++;
+    if (await postTeamsApproval(db, store, reqId, detail, h.actedAs, { tool: h.tool, args: h.args })) notified++;
 
     // Same honesty rule as an escalation: the request is recorded and visible in
     // the console either way, but telling someone it was "flagged to your team"

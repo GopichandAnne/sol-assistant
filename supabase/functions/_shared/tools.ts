@@ -2134,7 +2134,11 @@ export function buildToolset(
       });
       // A held write becomes a real, resolvable approval request + team notice.
       if (out?.held) {
-        const routed = await routeHeldAction(db, store, sessionId, { tool: t.name, kind: "http", actedAs, args });
+        // The requester, not the credential. `actedAs` says whose login the call
+        // uses, which for an API-key tool is nobody; the approval still needs to
+        // know who asked, or separation of duties has no one to compare against
+        // and the requester could approve their own change.
+        const routed = await routeHeldAction(db, store, sessionId, { tool: t.name, kind: "http", actedAs: actedAs ?? visitor?.email ?? null, args });
         return { ...out, ...(routed.reference ? { reference: routed.reference } : {}), note: routed.note };
       }
       return out;
@@ -2154,7 +2158,7 @@ export function buildToolset(
       });
       // A held write becomes a real, resolvable approval request + team notice.
       if (out?.held) {
-        const routed = await routeHeldAction(db, store, sessionId, { tool: t.name, kind: "mcp", actedAs, args });
+        const routed = await routeHeldAction(db, store, sessionId, { tool: t.name, kind: "mcp", actedAs: actedAs ?? visitor?.email ?? null, args });
         return { ...out, ...(routed.reference ? { reference: routed.reference } : {}), note: routed.note };
       }
       return out;
