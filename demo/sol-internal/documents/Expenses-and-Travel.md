@@ -29,12 +29,12 @@ Once an engagement reaches **80% of its expense cap**, Finance notifies the deli
 
 | Amount, per claim | Approver |
 | --- | --- |
-| Up to £100 | Line manager approves the claim, no pre-approval |
-| £100 to £750 | Line manager, in writing, before the cost is incurred |
-| £750 to £3,000 | Engagement partner |
-| Above £3,000 | Finance Director |
+| Up to $100 | Line manager approves the claim, no pre-approval |
+| $100 to $750 | Line manager, in writing, before the cost is incurred |
+| $750 to $3,000 | Engagement partner |
+| Above $3,000 | Finance Director |
 
-A cost may not be split across claims to stay under a threshold. Where a single trip exceeds £3,000 in total, the trip needs Finance Director approval even where each element is smaller.
+A cost may not be split across claims to stay under a threshold. Where a single trip exceeds $3,000 in total, the trip needs Finance Director approval even where each element is smaller.
 
 ## 4. Deadline
 
@@ -48,14 +48,14 @@ Applies when away overnight on client business. Receipts are not required within
 
 | Location | Per 24 hours |
 | --- | --- |
-| UK outside London | £50 |
-| London | £68 |
-| Ireland and EU | €75 |
+| United Kingdom outside London | $65 |
+| London | $88 |
+| Ireland and EU | $85 |
 | United States, outside NY and SF | $90 |
 | New York and San Francisco | $110 |
-| Rest of world | £75 equivalent |
+| Rest of world | $95 equivalent |
 
-Where a meal is provided by a hotel, a client or a conference, reduce by **£14 breakfast, £20 lunch, £28 dinner**.
+Where a meal is provided by a hotel, a client or a conference, reduce by **$18 breakfast, $26 lunch, $36 dinner**.
 
 Alcohol is not reimbursable except within an approved client entertainment claim.
 
@@ -73,9 +73,9 @@ Taxis where public transport is unavailable, before 06:00, after 22:00, or where
 
 Book through the Sol travel portal. Caps exclude breakfast and local taxes:
 
-- London £230 · UK other £160
+- London $295 · UK other $205
 - New York and San Francisco $370 · US other $260
-- Other international £190
+- Other international $245
 
 Where nothing is available inside the cap, book the nearest and note why on the claim. Do not stay somewhere unsafe to stay inside a cap.
 
@@ -83,7 +83,7 @@ Where nothing is available inside the cap, book the nearest and note why on the 
 
 Needs **engagement partner pre-approval whatever the amount**. Record every attendee by name and organisation. Sol people must not outnumber client attendees.
 
-Gifts to clients over **£50** need Finance Director approval and go in the Gifts and Hospitality register. Never cash or cash equivalents. Several of our public sector clients prohibit gifts of any value, and their rule wins.
+Gifts to clients over **$65** need Finance Director approval and go in the Gifts and Hospitality register. Never cash or cash equivalents. Several of our public sector clients prohibit gifts of any value, and their rule wins.
 
 ## 9. Not reimbursable
 

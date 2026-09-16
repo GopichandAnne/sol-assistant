@@ -44,7 +44,7 @@ Total: **26 weeks**, commencing 6 April 2026.
 
 ## 4. Commercial
 
-**Fixed fee: £485,000**, invoiced monthly in arrears against phase completion.
+**Fixed fee: $485,000**, invoiced monthly in arrears against phase completion.
 
 ### 4.1 Staffing assumption
 
@@ -57,7 +57,7 @@ The fee is built on the following blended team, which is the basis of the price 
 | Senior Consultant | 2.0 | Onshore |
 | Consultant | 3.0 | **2 offshore, 1 onshore** |
 
-Blended rate applied: **£118 per hour**, reflecting **40% of build hours delivered from the Hyderabad build pool** at the 2026 H1 offshore rate.
+Blended rate applied: **$118 per hour**, reflecting **40% of build hours delivered from the Hyderabad build pool** at the 2026 H1 offshore rate.
 
 ### 4.2 Assumptions the fee depends on
 

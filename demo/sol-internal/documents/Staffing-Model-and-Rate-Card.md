@@ -15,16 +15,16 @@ This is the single most consequential change in this document. **Any fee lifted 
 
 ## 2. Standard rates
 
-| Level | Day rate (GBP) | Day rate (USD) |
-| --- | --- | --- |
-| Partner | 2,400 | 3,100 |
-| Principal | 1,850 | 2,400 |
-| Senior Manager | 1,550 | 2,000 |
-| Manager | 1,300 | 1,700 |
-| Senior Consultant | 1,050 | 1,350 |
-| Consultant | 800 | 1,050 |
+| Level | Day rate (USD) |
+| --- | --- |
+| Partner | 3,100 |
+| Principal | 2,400 |
+| Senior Manager | 2,000 |
+| Manager | 1,700 |
+| Senior Consultant | 1,350 |
+| Consultant | 1,050 |
 
-Rates assume a 7.5 hour day and exclude expenses and VAT.
+Rates assume a 7.5 hour day and exclude expenses and sales tax.
 
 ## 3. Standard team shapes
 

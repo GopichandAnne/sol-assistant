@@ -26,11 +26,11 @@ Three causes, in order of size.
 
 ### 1. The staffing model in the SOW no longer exists (≈4 points)
 
-The fixed fee was priced at a **£118 blended rate assuming 40% of build hours from the Hyderabad build pool**. That pool was wound down at the end of June 2026 as part of the move to an onshore-plus-partner model. Every build hour after week 12 was delivered onshore at a materially higher cost, against a fee that had already been fixed.
+The fixed fee was priced at a **$118 blended rate assuming 40% of build hours from the Hyderabad build pool**. That pool was wound down at the end of June 2026 as part of the move to an onshore-plus-partner model. Every build hour after week 12 was delivered onshore at a materially higher cost, against a fee that had already been fixed.
 
 Nobody did anything wrong during delivery. The price was simply built on a delivery model the firm stopped running three months into a six-month engagement.
 
-> **If you are reusing this SOW, do not reuse its pricing.** The current rate card (effective 1 July 2026) is the only valid basis. Re-pricing this same scope under the current model lands near **£560,000**, not £485,000.
+> **If you are reusing this SOW, do not reuse its pricing.** The current rate card (effective 1 July 2026) is the only valid basis. Re-pricing this same scope under the current model lands near **$560,000**, not $485,000.
 
 ### 2. Metadata remediation crept in (≈2 points)
 

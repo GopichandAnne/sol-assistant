@@ -1,8 +1,8 @@
 Code,Client,Engagement,Practice,Partner,Delivery Lead,Start,End,Fee Type,Fee,Currency,Status,Margin Target,Margin Actual
-ENG-2411,Meridian Media,FAST channel migration,Media & Entertainment,Marcus Bell,Priya Shah,2026-04-06,2026-10-03,Fixed fee,485000,GBP,Delivery,38,31
-ENG-2418,Calder Health,Claims operations redesign,Operations,Marcus Bell,Leah Mbeki,2026-06-01,2026-11-14,Time and materials,392000,GBP,Delivery,42,44
+ENG-2411,Meridian Media,FAST channel migration,Media & Entertainment,Marcus Bell,Priya Shah,2026-04-06,2026-10-03,Fixed fee,485000,USD,Delivery,38,31
+ENG-2418,Calder Health,Claims operations redesign,Operations,Marcus Bell,Leah Mbeki,2026-06-01,2026-11-14,Time and materials,392000,USD,Delivery,42,44
 ENG-2423,Commonwealth IT,Case management modernisation,Public Sector,Ana Ruiz,Nina Kaur,2026-07-13,2027-01-30,Fixed fee,760000,USD,Delivery,35,36
 ENG-2427,Brightwater Bank,Regulatory reporting rebuild,Financial Services,Ana Ruiz,Ana Ruiz,2026-08-03,2026-12-19,Time and materials,540000,USD,Delivery,40,39
-ENG-2430,Northgate Retail,Inventory data platform,Data & Platform,Marcus Bell,Raj Menon,2026-05-18,2026-10-24,Fixed fee,310000,GBP,Delivery,38,27
-ENG-2402,Meridian Media,Ad tech assessment,Media & Entertainment,Marcus Bell,Joe Duffy,2026-01-12,2026-03-27,Fixed fee,95000,GBP,Closed,45,48
-ENG-2389,Harbour Point Resorts,Guest platform assessment,Travel & Hospitality,Marcus Bell,Leah Mbeki,2025-09-15,2025-12-19,Fixed fee,120000,GBP,Closed,40,41
+ENG-2430,Northgate Retail,Inventory data platform,Data & Platform,Marcus Bell,Raj Menon,2026-05-18,2026-10-24,Fixed fee,310000,USD,Delivery,38,27
+ENG-2402,Meridian Media,Ad tech assessment,Media & Entertainment,Marcus Bell,Joe Duffy,2026-01-12,2026-03-27,Fixed fee,95000,USD,Closed,45,48
+ENG-2389,Harbour Point Resorts,Guest platform assessment,Travel & Hospitality,Marcus Bell,Leah Mbeki,2025-09-15,2025-12-19,Fixed fee,120000,USD,Closed,40,41
