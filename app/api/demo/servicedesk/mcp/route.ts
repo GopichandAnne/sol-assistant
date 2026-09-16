@@ -27,7 +27,7 @@ const TOOLS = [
   {
     name: "list_tickets",
     description:
-      "Find tickets in the Northwind service desk. Use requester for 'what have I raised', " +
+      "Find tickets in the Sol IT service desk. Use requester for 'what have I raised', " +
       "assignee for 'what is assigned to me', status to narrow to open work, and q to search the " +
       "title and description. Newest first.",
     inputSchema: {
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
       // version-specific behaviour, and disagreeing about it only creates work.
       protocolVersion: String(params.protocolVersion ?? "2025-06-18"),
       capabilities: { tools: {} },
-      serverInfo: { name: "Northwind Service Desk", version: "2.4.0" },
+      serverInfo: { name: "Sol IT Service Desk", version: "2.4.0" },
     });
   }
 

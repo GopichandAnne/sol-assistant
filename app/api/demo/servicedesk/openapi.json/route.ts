@@ -21,10 +21,10 @@ export async function GET(req: NextRequest) {
   const spec = {
     openapi: "3.0.3",
     info: {
-      title: "Northwind Service Desk",
+      title: "Sol IT Service Desk",
       version: "2.4.0",
       description:
-        "Tickets raised by Northwind colleagues: IT faults, access requests, facilities and finance queries.",
+        "Tickets raised by Sol colleagues: IT faults, access requests, facilities and finance queries.",
     },
     servers: [{ url: `${origin}/api/demo/servicedesk` }],
     components: {

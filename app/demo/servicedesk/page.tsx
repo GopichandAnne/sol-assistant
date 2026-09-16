@@ -14,7 +14,7 @@ import { listTickets } from "@/lib/demo/service-desk";
  * for fictional people at solconsulting.example; there is nothing here to protect,
  * and a login screen in the middle of a demo is a fumble waiting to happen.
  */
-export const metadata: Metadata = { title: "Service Desk — Northwind" };
+export const metadata: Metadata = { title: "IT Service Desk" };
 export const dynamic = "force-dynamic";
 
 const TONE: Record<string, { bg: string; fg: string }> = {
@@ -43,7 +43,7 @@ export default async function ServiceDeskPage() {
     <main style={{ minHeight: "100vh", background: "#F4F5F7", color: "#1E2226", fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
       <div style={{ background: "#1E2A38", color: "#fff", padding: "14px 24px", display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ width: 24, height: 24, borderRadius: 5, background: "#3E9BD6", display: "inline-block" }} />
-        <strong style={{ fontSize: 15, letterSpacing: "-0.01em" }}>Northwind Service Desk</strong>
+        <strong style={{ fontSize: 15, letterSpacing: "-0.01em" }}>IT Service Desk</strong>
         <span style={{ fontSize: 12, opacity: 0.65, marginLeft: "auto" }}>Incident queue</span>
       </div>
 

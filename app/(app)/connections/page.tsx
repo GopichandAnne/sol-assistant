@@ -62,10 +62,11 @@ export default async function ConnectionsPage() {
 
   const { data: toolRows } = await db
     .from("http_tool")
-    .select("id, name, description, method, side_effect, auth, action_policy")
+    .select("id, name, description, method, side_effect, auth, action_policy, params, auto_below, amount_field")
     .eq("store_id", ctx.active.id)
     .order("created_at", { ascending: false });
-  const customTools = (toolRows ?? []) as ApiTool[];
+  // params, auto_below and amount_field post-date the generated types (0131).
+  const customTools = (toolRows ?? []) as unknown as ApiTool[];
 
   const [{ data: mcpServerRows }, { data: mcpToolRows }] = await Promise.all([
     db.from("mcp_server").select("id, name, url, auth, enabled").eq("store_id", ctx.active.id).order("created_at", { ascending: false }),

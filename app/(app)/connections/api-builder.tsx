@@ -8,8 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FlaskConical, Loader2, Lock, Trash2, Wand2 } from "lucide-react";
+import { setApiToolThreshold } from "./api-tool-actions";
 
-export type ApiTool = { id: string; name: string; description: string; method: string; side_effect: boolean; auth?: { type?: string; claim?: string; provider?: string } | null; action_policy?: string };
+export type ApiTool = {
+  id: string; name: string; description: string; method: string; side_effect: boolean;
+  auth?: { type?: string; claim?: string; provider?: string } | null; action_policy?: string;
+  params?: { properties?: Record<string, { type?: string; description?: string }> } | null;
+  auto_below?: number | null; amount_field?: string | null;
+};
 type BuiltTool = ApiTool & { tested?: "ok" | "failed" | "skipped" };
 
 const PROVIDER_NAMES: Record<string, string> = { google: "Google", microsoft: "Microsoft", square: "Square", hubspot: "HubSpot", calendly: "Calendly" };
@@ -40,6 +46,35 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
   const [policies, setPolicies] = useState<Record<string, string>>(() =>
     Object.fromEntries(tools.map((t) => [t.id, t.action_policy ?? "auto"])),
   );
+
+  // The approval limit being edited, if any. Same shape as a tracker's: a number,
+  // and which of the tool's own fields carries it.
+  const [limitFor, setLimitFor] = useState<string | null>(null);
+  const [limitValue, setLimitValue] = useState("");
+  const [limitField, setLimitField] = useState("");
+  const [savingLimit, setSavingLimit] = useState(false);
+
+  function openLimit(t: ApiTool) {
+    if (limitFor === t.id) { setLimitFor(null); return; }
+    setLimitFor(t.id);
+    setLimitValue(t.auto_below == null ? "" : String(t.auto_below));
+    const props = Object.entries(t.params?.properties ?? {});
+    const numeric = props.filter(([, p]) => p?.type === "number" || p?.type === "integer").map(([k]) => k);
+    setLimitField(t.amount_field ?? numeric[0] ?? props[0]?.[0] ?? "");
+  }
+
+  async function saveLimit(t: ApiTool) {
+    const raw = limitValue.trim();
+    const n = raw === "" ? null : Number(raw);
+    if (n != null && (!Number.isFinite(n) || n <= 0)) { toast.error("The limit has to be a number above zero."); return; }
+    setSavingLimit(true);
+    const res = await setApiToolThreshold(t.id, n, limitField);
+    setSavingLimit(false);
+    if (!res.ok) { toast.error("Couldn't save that", { description: res.error }); return; }
+    setLimitFor(null);
+    toast.success(n == null ? "Every call waits for approval" : `Calls under ${n} run on their own`);
+    router.refresh();
+  }
 
   async function setPolicy(id: string, hold: boolean) {
     const next = hold ? "hold" : "auto";
@@ -233,7 +268,8 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
         <div className="mt-4 space-y-2">
           <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Your custom tools</p>
           {tools.map((t) => (
-            <div key={t.id} className="flex items-center gap-3 rounded-lg border p-3">
+            <div key={t.id} className="rounded-lg border p-3">
+            <div className="flex items-center gap-3">
               <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-semibold">{t.method}</span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -243,6 +279,19 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
                   {t.auth?.type === "oauth" && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">via {provName(t.auth.provider)}</span>}
                 </div>
                 <p className="text-muted-foreground truncate text-xs">{t.description}</p>
+                {t.side_effect && (
+                  <button
+                    type="button"
+                    onClick={() => openLimit(t)}
+                    disabled={!isOwner}
+                    className="mt-1 text-xs underline underline-offset-2"
+                    style={{ color: "var(--sol-orange-dark)" }}
+                  >
+                    {t.auto_below == null
+                      ? "Every call waits for approval"
+                      : `Under ${t.auto_below} ${t.amount_field ?? ""} runs on its own; at or above waits`}
+                  </button>
+                )}
               </div>
               {t.side_effect && (
                 <Button
@@ -263,6 +312,44 @@ export function ApiBuilder({ storeSlug, isOwner, tools, connectedProviders = [] 
               <Button variant="ghost" size="icon" disabled={!isOwner || delId === t.id} onClick={() => remove(t.id)} aria-label="Remove tool">
                 {delId === t.id ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
               </Button>
+            </div>
+            {limitFor === t.id && (
+              <div className="bg-muted/40 mt-3 space-y-2 rounded-md border p-3">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="space-y-1">
+                    <span className="block text-xs font-medium">Run without approval below</span>
+                    <Input
+                      id={`api-limit-${t.id}`}
+                      inputMode="decimal"
+                      value={limitValue}
+                      onChange={(e) => setLimitValue(e.target.value)}
+                      placeholder="Leave empty: every call waits"
+                    />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="block text-xs font-medium">Field holding the amount</span>
+                    <Select value={limitField} onValueChange={setLimitField}>
+                      <SelectTrigger id={`api-field-${t.id}`}><SelectValue placeholder="Pick a field" /></SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(t.params?.properties ?? {}).map((k) => (
+                          <SelectItem key={k} value={k}>{k}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Below the number it runs on its own. At or above it, a person approves. A call where
+                  the amount is missing or unreadable always waits.
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => saveLimit(t)} disabled={savingLimit}>
+                    {savingLimit ? <Loader2 className="size-4 animate-spin" /> : null} Save
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setLimitFor(null)}>Cancel</Button>
+                </div>
+              </div>
+            )}
             </div>
           ))}
         </div>
