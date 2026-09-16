@@ -129,6 +129,7 @@ async function handleEvent(body: Record<string, unknown>): Promise<void> {
     sessionId,
     inboundText: ev.text,
     visitor,
+    log: { channel: "slack" },
   });
   const finalReply = reply || "Sorry, I had a brief hiccup — could you send that again?";
 

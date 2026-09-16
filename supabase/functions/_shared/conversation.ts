@@ -62,6 +62,22 @@ export async function generateTurnReply(
     activeListing?: string; // listing-scoped ("yard sign") token: lead with this listing, stay open
     listingRetired?: boolean; // the scanned listing is sold/off-market → pivot to similar
     visitor?: Visitor; // verified signed-in visitor (embed SSO) — for delegated-identity API tools
+    /**
+     * Write this turn to the history log.
+     *
+     * The history the next turn reads comes from `conversations`, and this
+     * function only ever READ it. WhatsApp logs through its own pipeline and
+     * web-chat inserts its own row, so nobody noticed that Teams and Slack —
+     * which reach the model through here and nowhere else — were writing
+     * nothing at all. Every message on those channels was a cold start: the
+     * assistant could propose a change and then not know what "yes, confirm"
+     * referred to one message later.
+     *
+     * Opt-in rather than automatic, so the two callers that already log do not
+     * start logging twice, and a preview or a scheduled run does not write
+     * turns that no person is having.
+     */
+    log?: { channel: string };
   },
 ): Promise<TurnReply> {
   const config = await loadAgentConfig(db, store);
@@ -162,6 +178,43 @@ export async function generateTurnReply(
   const reply = await generateReplyWith(mc as ModelChoice | null, systemInstruction, contents, toolset, {
     svc: db, storeId: store.id, kind: "bot_chat", ref: { sessionId: opts.sessionId },
   });
+
+  if (opts.log) {
+    // A model turn can come back with no text at all (a tool ran and said
+    // nothing). Log it as empty rather than skipping the row: the next turn
+    // still needs to know the question was asked.
+    const said = reply.text ?? "";
+    // Best-effort and awaited: a turn that fails to log is one the next turn
+    // cannot see, so it is worth the round trip, but it must never cost the
+    // caller its reply.
+    try {
+      const conversationId = `${opts.log.channel}-${crypto.randomUUID()}`;
+      const { error } = await db.from("conversations").insert({
+        conversation_id: conversationId,
+        store_slug: store.slug,
+        session_id: opts.sessionId,
+        timestamp: new Date().toISOString(),
+        user_message: opts.inboundText,
+        assistant_response: said,
+        device_type: opts.log.channel,
+        analytics_json: JSON.stringify({ language: detectLanguage(opts.inboundText) }),
+        synced_to_master: false,
+      });
+      if (error) throw new Error(error.message);
+      // Enrichment is what Home's "what people ask" reads, and it is the slow
+      // half. It does not block the reply.
+      void classifyTurn(opts.inboundText, said)
+        .then((a) =>
+          db.from("conversations")
+            .update({ analytics_json: JSON.stringify(a) })
+            .eq("conversation_id", conversationId)
+        )
+        .catch((e) => console.error(`[conv] analytics ${conversationId}:`, e));
+    } catch (e) {
+      console.error(`[conv] log turn ${opts.sessionId}: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
   return { ...reply, catalogView: ui.catalog_view };
 }
 

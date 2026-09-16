@@ -253,7 +253,9 @@ async function handleActivity(activity: Record<string, unknown>, appId: string, 
     created_at: new Date().toISOString(),
   });
 
-  const { text: reply } = await generateTurnReply(db, store, { sessionId, inboundText: ev.text, visitor });
+  const { text: reply } = await generateTurnReply(db, store, {
+    sessionId, inboundText: ev.text, visitor, log: { channel: "teams" },
+  });
 
   // If this person has no Microsoft 365 connection of their own, start the silent
   // sign-on now. Deliberately AFTER the reply is composed: the card is a
