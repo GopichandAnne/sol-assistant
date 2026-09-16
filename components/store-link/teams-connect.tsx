@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getTeamsStatus, linkPendingTenant, setTeamsApprover, setTeamsTenant, type TeamsStatus } from "@/app/(app)/link/teams-actions";
+import { getTeamsStatus, linkPendingTenant, setTeamsApprovers, setTeamsTenant, type TeamsStatus } from "@/app/(app)/link/teams-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
   const [status, setStatus] = useState<TeamsStatus | null>(null);
   const [tenant, setTenant] = useState("");
   const [saving, setSaving] = useState(false);
-  const [approver, setApprover] = useState("");
+  const [approvers, setApprovers] = useState<string[]>([]);
   const [savingApprover, setSavingApprover] = useState(false);
   const [linking, setLinking] = useState<string | null>(null);
   /** Why the status couldn't be read, when that is the actual problem. Kept apart
@@ -54,7 +54,7 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
 
   useEffect(() => {
     getTeamsStatus(storeId)
-      .then((s) => { setStatus(s); setTenant(s.tenantId ?? ""); setApprover(s.approvalsEmail ?? ""); })
+      .then((s) => { setStatus(s); setTenant(s.tenantId ?? ""); setApprovers(s.approvalsEmails ?? []); })
       .catch((e: unknown) => {
         setProblem(e instanceof Error ? e.message : String(e));
         setStatus({ configured: false, connected: false });
@@ -79,12 +79,23 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
     } else toast.error("Couldn't connect", { description: res.error });
   }
 
+  function toggleApprover(email: string) {
+    const e = email.trim().toLowerCase();
+    setApprovers((list) => (list.includes(e) ? list.filter((x) => x !== e) : [...list, e]));
+  }
+
   async function saveApprover() {
     setSavingApprover(true);
-    const res = await setTeamsApprover(storeId, approver);
+    const res = await setTeamsApprovers(storeId, approvers);
     setSavingApprover(false);
     if (res.ok) {
-      toast.success(approver.trim() ? `Approvals go to ${approver.trim()}` : "Teams approvals off");
+      toast.success(
+        approvers.length === 0
+          ? "Teams approvals off"
+          : approvers.length === 1
+            ? `Approvals go to ${approvers[0]}`
+            : `Approvals go to ${approvers.length} people; any one of them decides`,
+      );
       getTeamsStatus(storeId).then(setStatus).catch(() => {});
     } else toast.error("Couldn't save", { description: res.error });
   }
@@ -255,23 +266,48 @@ export function TeamsConnect({ storeId }: { storeId: string }) {
         <div className="space-y-1.5 rounded-md border p-3">
           <Label className="text-xs">Who approves held actions</Label>
           <p className="text-muted-foreground text-xs">
-            When the assistant is asked to do something you&apos;ve set to Hold, this person
-            gets an Approve / Decline card in Teams. It goes to a person rather than a
-            channel so nobody can approve their own request.
+            When the assistant is asked to do something you&apos;ve set to Hold, everyone ticked
+            here gets an Approve / Decline card in Teams, and <b>the first to decide settles it</b>.
+            Pick more than one so a change never waits on somebody who is away. Nobody is sent a
+            card for their own request, and nobody can approve one.
           </p>
-          <div className="flex gap-2">
-            <Input
-              list="teams-reachable"
-              value={approver}
-              onChange={(e) => setApprover(e.target.value)}
-              placeholder="approver@yourcompany.com"
-              className="text-sm"
-            />
-            <datalist id="teams-reachable">
-              {(status.reachable ?? []).map((r) => (
-                <option key={r.email} value={r.email}>{r.name ?? r.email}</option>
-              ))}
-            </datalist>
+          <ul className="space-y-1.5">
+            {(() => {
+              // Everyone reachable, plus anyone already chosen who isn't (so they can be
+              // seen and removed rather than silently receiving nothing).
+              const reachable = status.reachable ?? [];
+              const known = new Set(reachable.map((r) => r.email.toLowerCase()));
+              const extra = approvers.filter((e) => !known.has(e)).map((e) => ({ email: e, name: null, unreachable: true }));
+              return [...reachable.map((r) => ({ ...r, unreachable: false })), ...extra].map((r) => {
+                const email = r.email.toLowerCase();
+                const on = approvers.includes(email);
+                return (
+                  <li key={email}>
+                    <label className="hover:bg-muted/50 flex cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-2 text-sm">
+                      <input
+                        id={`approver-${email}`}
+                        type="checkbox"
+                        checked={on}
+                        onChange={() => toggleApprover(email)}
+                        className="size-4 accent-[var(--sol-orange-dark)]"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">{r.name ?? email}</span>
+                        {r.name && <span className="text-muted-foreground block truncate text-xs">{email}</span>}
+                      </span>
+                      {r.unreachable && (
+                        <span className="text-xs text-amber-700 dark:text-amber-300">hasn&apos;t messaged it yet</span>
+                      )}
+                    </label>
+                  </li>
+                );
+              });
+            })()}
+          </ul>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground text-xs">
+              {approvers.length === 0 ? "Nobody chosen: held changes wait in What it did." : `${approvers.length} chosen`}
+            </span>
             <Button size="sm" variant="outline" onClick={saveApprover} disabled={savingApprover}>
               {savingApprover ? <Loader2 className="size-4 animate-spin" /> : null} Save
             </Button>

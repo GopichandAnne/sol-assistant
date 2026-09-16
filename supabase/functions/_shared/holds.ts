@@ -14,7 +14,7 @@ import type { Store } from "./types.ts";
 import { notifyResponders } from "./responders.ts";
 import { buildApprovalBlocks } from "./slack.ts";
 import { slackPostMessage } from "./slack-api.ts";
-import { buildApprovalCard } from "./teams.ts";
+import { approverList, approversToNotify, buildApprovalCard } from "./teams.ts";
 import { postTeamsActivity } from "./teams-auth.ts";
 import { untyped } from "./untyped.ts";
 
@@ -64,20 +64,18 @@ async function postTeamsApproval(
     if (!appId || !appPassword) return false;
     const from = untyped(db);
     const { data: install } = await from("teams_installs")
-      .select("tenant_id, approvals_email")
+      .select("tenant_id, approvals_email, approvals_emails")
       .eq("store_id", store.id)
       .eq("active", true)
       .maybeSingle();
-    if (!install?.tenant_id || !install?.approvals_email) return false;
+    if (!install?.tenant_id) return false;
 
-    const { data: approver } = await from("teams_user")
-      .select("service_url, conversation_id")
-      .eq("tenant_id", install.tenant_id)
-      .ilike("email", String(install.approvals_email))
-      .maybeSingle();
-    if (!approver?.conversation_id) {
-      // We have never seen them, so there is no conversation to reach them on.
-      console.warn(`[holds] teams approver ${install.approvals_email} hasn't messaged the bot yet — no card sent`);
+    // Every approver gets the card, except whoever asked. The first to decide
+    // wins: resolving claims the request only while it is still pending, so a
+    // second tap is told it was already resolved rather than acting twice.
+    const targets = approversToNotify(approverList(install), actedAs);
+    if (targets.length === 0) {
+      console.warn(`[holds] ${reqId}: no approver to send a card to (none set, or the only one is the requester)`);
       return false;
     }
 
@@ -85,7 +83,23 @@ async function postTeamsApproval(
       id: reqId, detail, orgName: store.store_display_name ?? store.slug, actedAs,
       tool: held?.tool, args: held?.args,
     });
-    return await postTeamsActivity(appId, appPassword, approver.service_url, approver.conversation_id, card);
+    let sent = 0;
+    for (const email of targets) {
+      const { data: approver } = await from("teams_user")
+        .select("service_url, conversation_id")
+        .eq("tenant_id", install.tenant_id)
+        .ilike("email", email)
+        .order("last_seen", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!approver?.conversation_id) {
+        // Never seen them, so there is no conversation to reach them on.
+        console.warn(`[holds] teams approver ${email} hasn't messaged the bot yet — no card sent`);
+        continue;
+      }
+      if (await postTeamsActivity(appId, appPassword, approver.service_url, approver.conversation_id, card)) sent++;
+    }
+    return sent > 0;
   } catch (e) {
     console.warn(`[holds] teams approval post: ${(e as Error)?.message ?? e}`);
     return false;

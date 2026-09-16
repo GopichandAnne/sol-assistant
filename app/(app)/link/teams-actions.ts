@@ -48,6 +48,8 @@ export type TeamsStatus = {
   connected: boolean;
   tenantId?: string | null;
   approvalsEmail?: string | null;
+  /** Everyone who is sent an approval card. Any one of them decides. */
+  approvalsEmails?: string[];
   /** Consent URL for the CONNECTED tenant, so it can be re-sent if identity
    *  isn't resolving (the usual cause of everyone showing up anonymous). */
   consentUrl?: string | null;
@@ -79,7 +81,7 @@ export async function getTeamsStatus(storeId: string): Promise<TeamsStatus> {
   const db = createAdminClient();
   const from = untyped(db);
   const { data } = await from("teams_installs")
-    .select("tenant_id, approvals_email, consent_missing_at").eq("store_id", storeId).eq("active", true).maybeSingle();
+    .select("tenant_id, approvals_email, approvals_emails, consent_missing_at").eq("store_id", storeId).eq("active", true).maybeSingle();
   const configured = !!(process.env.MICROSOFT_APP_ID && process.env.MICROSOFT_APP_PASSWORD);
 
   // Only people the bot has already spoken to can be sent a card: Bot Framework
@@ -109,6 +111,12 @@ export async function getTeamsStatus(storeId: string): Promise<TeamsStatus> {
     connected: !!data,
     tenantId: data?.tenant_id ?? null,
     approvalsEmail: data?.approvals_email ?? null,
+    approvalsEmails: (() => {
+      const list = ((data?.approvals_emails ?? []) as string[]).length > 0
+        ? (data.approvals_emails as string[])
+        : [data?.approvals_email ?? ""];
+      return [...new Set(list.map((e) => String(e ?? "").trim().toLowerCase()).filter((e) => e.includes("@")))];
+    })(),
     consentUrl: data?.tenant_id ? consentUrlFor(data.tenant_id) : null,
     setupConsentUrl: commonConsentUrl(),
     consentMissing: !!data?.consent_missing_at,
@@ -138,16 +146,17 @@ export async function setTeamsTenant(storeId: string, tenantId: string): Promise
  *  posting into the conversation where a held action was raised would let the
  *  requester approve their own action. Empty clears it, and the Activity page
  *  remains the source of truth either way. */
-export async function setTeamsApprover(storeId: string, email: string): Promise<{ ok: boolean; error?: string }> {
+export async function setTeamsApprovers(storeId: string, emails: string[]): Promise<{ ok: boolean; error?: string }> {
   await requireOwner(storeId);
-  const e = email.trim().toLowerCase();
-  if (e && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) {
-    return { ok: false, error: "That doesn't look like an email address." };
-  }
+  const list = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
+  const bad = list.find((e) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
+  if (bad) return { ok: false, error: `"${bad}" doesn't look like an email address.` };
   const db = createAdminClient();
   const from = untyped(db);
+  // approvals_email keeps the first, for anything still reading the old column.
   const { error } = await from("teams_installs")
-    .update({ approvals_email: e || null }).eq("store_id", storeId).eq("active", true);
+    .update({ approvals_emails: list, approvals_email: list[0] ?? null })
+    .eq("store_id", storeId).eq("active", true);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

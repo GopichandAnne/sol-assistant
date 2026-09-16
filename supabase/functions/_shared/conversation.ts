@@ -10,6 +10,7 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import type { Store } from "./types.ts";
 import { untyped } from "./untyped.ts";
+import { approverList } from "./teams.ts";
 import { loadAgentConfig } from "./agent.ts";
 import { loadHistory } from "./history.ts";
 import {
@@ -236,9 +237,8 @@ async function approverContext(db: SupabaseClient, store: Store, email: string |
   try {
     const from = untyped(db);
     const { data: install } = await from("teams_installs")
-      .select("approvals_email").eq("store_id", store.id).eq("active", true).maybeSingle();
-    const approver = String(install?.approvals_email ?? "").trim().toLowerCase();
-    if (!approver || approver !== email.trim().toLowerCase()) return "";
+      .select("approvals_email, approvals_emails").eq("store_id", store.id).eq("active", true).maybeSingle();
+    if (!approverList(install).includes(email.trim().toLowerCase())) return "";
 
     const { data: pending } = await from("action_request")
       .select("tool, detail, acted_as, created_at")

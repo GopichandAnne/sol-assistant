@@ -69,6 +69,26 @@ export function buildTeamsRawIdentity(aadObjectId: string, userId: string, name?
  *  both channels say the same thing: what was asked, who it was acting as, and
  *  that nothing has happened yet. Action.Submit posts `data` straight back to the
  *  bot as activity.value, which teams-messages routes to the approval handler. */
+/**
+ * The approvers configured on an install, normalised. Reads the list, and falls
+ * back to the single legacy column so an install saved before the list existed
+ * still routes somewhere.
+ */
+export function approverList(row: { approvals_emails?: string[] | null; approvals_email?: string | null } | null | undefined): string[] {
+  const raw = (row?.approvals_emails ?? []).length > 0 ? row!.approvals_emails! : [row?.approvals_email ?? ""];
+  return [...new Set(raw.map((e) => String(e ?? "").trim().toLowerCase()).filter((e) => e.includes("@")))];
+}
+
+/**
+ * Who gets a card for this request: every approver except the person who asked.
+ * They could not approve it anyway, since separation of duties refuses that at the
+ * point of deciding, and a card with a button that only ever says no is noise.
+ */
+export function approversToNotify(approvers: string[], requester: string | null | undefined): string[] {
+  const asker = String(requester ?? "").trim().toLowerCase();
+  return approvers.filter((a) => a !== asker);
+}
+
 /** "add_compliance_record" -> "Add compliance record". */
 function humanTool(name: string): string {
   const words = name.replace(/[_-]+/g, " ").trim();
