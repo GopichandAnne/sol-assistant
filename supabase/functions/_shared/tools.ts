@@ -47,7 +47,7 @@ import {
   searchMyMail as m365SearchMyMail,
   sendMail as m365SendMail,
 } from "./graph.ts";
-import { listWorkbooks, readWorkbook, appendWorkbookRow, updateWorkbookRow, type Workbook } from "./workbook.ts";
+import { listWorkbooks, readWorkbook, appendWorkbookRow, updateWorkbookRow, countWorkbookMatches, type Workbook } from "./workbook.ts";
 import { getStoreAccessToken } from "./config.ts";
 import { sendImage } from "./wa.ts";
 import {
@@ -1889,6 +1889,29 @@ export function buildToolset(
     const wb = workbooks.find(
       (w) => w.name.toLowerCase() === String(args.tracker ?? "").trim().toLowerCase(),
     ) ?? workbooks.find((w) => w.name.toLowerCase().includes(String(args.tracker ?? "").trim().toLowerCase()));
+    // An ambiguous reference is settled with the person asking, before anyone is
+    // asked to approve it. Holding first and finding the ambiguity on replay
+    // means a named approver signs off a change that then fails, which reads as
+    // the governance being broken when it is only the reference being vague.
+    if (tool === "update_tracker_row") {
+      const hits = await countWorkbookMatches(
+        db, store, String(args.tracker ?? ""), String(args.match ?? ""),
+      );
+      if (hits && hits.count === 0) {
+        return { ok: false, note: `Nothing in that tracker matches "${String(args.match ?? "")}".` };
+      }
+      if (hits && hits.count > 1) {
+        return {
+          ok: false,
+          note:
+            `${hits.count} rows match "${String(args.match ?? "")}". Ask which one they mean, ` +
+            `then try again with enough to identify a single row. Nothing has been changed ` +
+            `and nothing has been sent for approval.`,
+          matches: hits.rows,
+        };
+      }
+    }
+
     const decision = decideAction(wb ?? { action_policy: "hold" }, args);
 
     if (decision.mode === "hold") {

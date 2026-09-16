@@ -238,6 +238,52 @@ export async function appendWorkbookRow(
  * when there are two Priyas is the kind of write that looks like it worked and
  * is discovered a month later, so it asks rather than picks.
  */
+/**
+ * How many rows a reference would change, without changing any of them.
+ *
+ * Asked BEFORE a write is held, because an ambiguous reference is a question for
+ * the person asking, not for the person approving. Holding first and discovering
+ * the ambiguity on replay produces the worst possible sequence: a named approver
+ * signs the change off, and only then does it fail. So the "which one did you
+ * mean" happens while the asker is still in the conversation, and whatever is
+ * eventually sent for approval is a change that can actually be made.
+ *
+ * Read-only, and deliberately tolerant: if the file cannot be opened or the
+ * account is not connected we return null, meaning "could not tell", and the
+ * caller carries on to the normal hold path rather than blocking a write on a
+ * pre-flight check.
+ */
+export async function countWorkbookMatches(
+  db: SupabaseClient, store: Store, name: string, match: string,
+): Promise<{ count: number; rows: Record<string, string>[] } | null> {
+  try {
+    const all = await listWorkbooks(db, store.id);
+    const wb = pick(all, name);
+    if (!wb) return null;
+    const needle = (match ?? "").trim().toLowerCase();
+    if (!needle) return null;
+
+    const t = await tokenFor(db, store, wb, true);
+    if ("offer" in t) return null;
+    const at = await locate(db, t.token, wb);
+    if (!at) return null;
+
+    const res = await call(
+      t.token,
+      `/drives/${at.driveId}/items/${at.itemId}/workbook/tables/${encodeURIComponent(wb.table_name)}/range`,
+    );
+    if (!res.ok) return null;
+    const { headers, rows } = rowsFrom(res.data);
+    const hits = rows.filter((r) => r.join(" ").toLowerCase().includes(needle));
+    return {
+      count: hits.length,
+      rows: hits.slice(0, 5).map((r) => Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""]))),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function updateWorkbookRow(
   db: SupabaseClient, store: Store, name: string, match: string, values: Record<string, unknown>,
 ): Promise<Json> {
