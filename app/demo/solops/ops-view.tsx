@@ -19,6 +19,12 @@ const FLASH_MS = 9000;
 /** A row touched this recently says so, even after a reload or a tab switch. */
 const RECENT_MS = 20 * 60 * 1000;
 
+/** Bench rows are addressed by the person's name and engagements by their code,
+ *  so a separate Ref column there only repeats the first column. It earns its
+ *  space where the ref is the thing the assistant quotes back: compliance-011,
+ *  timesheets-014. */
+const SHOWS_REF = new Set(["compliance", "timesheets"]);
+
 const NUMERIC = new Set(["Fee", "Margin Target", "Margin Actual", "Hours Billable", "Hours Non Billable"]);
 
 function pillTone(column: string, value: string): string | null {
@@ -96,6 +102,7 @@ export function OpsView({ datasets, renderedAt }: { datasets: OpsDataset[]; rend
   );
 
   const current = datasets.find((d) => d.key === active) ?? datasets[0];
+  const showRef = SHOWS_REF.has(current.key);
   const sinceRender = now - new Date(renderedAt).getTime();
 
   return (
@@ -144,7 +151,7 @@ export function OpsView({ datasets, renderedAt }: { datasets: OpsDataset[]; rend
               <thead>
                 <tr>
                   <th scope="col" className="ops-num">#</th>
-                  <th scope="col">Ref</th>
+                  {showRef && <th scope="col">Ref</th>}
                   {current.columns.map((c) => (
                     <th key={c} scope="col" className={NUMERIC.has(c) ? "is-num" : undefined}>{c}</th>
                   ))}
@@ -159,11 +166,11 @@ export function OpsView({ datasets, renderedAt }: { datasets: OpsDataset[]; rend
                   const underTarget = current.key === "engagements" && target - actual > 5;
                   return (
                     <tr key={key} className={`${lit.has(key) ? "is-lit" : ""}${recent ? " is-recent" : ""}`}>
-                      <td className="ops-num">{i + 1}</td>
-                      <td className="ops-ref">
-                        {r.ref}
+                      <td className="ops-num">
+                        {i + 1}
                         {recent && <span className="ops-changed">changed {ago(now - new Date(r.changedAt).getTime())}</span>}
                       </td>
+                      {showRef && <td className="ops-ref">{r.ref}</td>}
                       {current.columns.map((c, ci) => {
                         const v = r.cells[ci] ?? "";
                         const tone = pillTone(c, v);
@@ -240,7 +247,7 @@ const CSS = `
 .ops-table .is-num { text-align: right; font-variant-numeric: tabular-nums; }
 .ops-num { width: 1%; color: #9AA1A5; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
 .ops-ref { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12.5px; color: #3B5E7A; }
-.ops-changed { display: block; font-family: system-ui, sans-serif; font-size: 10.5px; font-weight: 600; color: #8A5A00; margin-top: 2px; }
+.ops-changed { display: block; font-size: 10.5px; font-weight: 600; color: #8A5A00; margin-top: 2px; white-space: nowrap; text-align: left; }
 .is-recent td:first-child { box-shadow: inset 3px 0 0 #D98E04; }
 .is-warn { color: #B42318; font-weight: 600; }
 
